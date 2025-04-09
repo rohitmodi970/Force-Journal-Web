@@ -236,7 +236,7 @@ const processWithHumeAI = async (filePath: string): Promise<EmotionData> => {
         maxBodyLength: Infinity,
         maxContentLength: Infinity,
         timeout: 30000 // 30 seconds timeout
-      }
+      } as any
     );
 
     // Process emotions
