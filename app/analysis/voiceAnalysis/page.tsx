@@ -90,19 +90,24 @@ const VoiceAnalysisDashboard: React.FC = () => {
             setError("Please record or upload audio first");
             return;
         }
-
+    
         setIsLoading(true);
         setError(null);
-
+    
         try {
             const formData = new FormData();
             formData.append("audioFile", audioFile);
-
+    
+            // Fix: Add type assertion to the config object
             const response = await axios.post<AnalysisResults>("/api/voice-analysis", formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
                 },
-            });
+                maxBodyLength: Infinity,  // This is causing the type error
+                maxContentLength: Infinity,
+                timeout: 30000 // 30 seconds timeout
+            } as any); // Add type assertion here
+            
             setAnalysisResults(response.data);
         } catch (err: any) {
             setError(`Failed to analyze audio: ${err.response?.data?.message || err.message}`);
