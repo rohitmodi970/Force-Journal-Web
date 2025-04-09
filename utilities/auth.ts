@@ -5,6 +5,22 @@ import bcrypt from 'bcrypt';
 import connectDB from '@/db/connectDB';
 import User from '@/models/User';
 
+// Extend the next-auth types
+declare module "next-auth" {
+  interface Session {
+    user: {
+      id?: string;
+      name?: string | null;
+      email?: string | null;
+      image?: string | null;
+    }
+  }
+  
+  interface JWT {
+    id?: string;
+  }
+}
+
 export const authOptions: NextAuthOptions = {
     providers: [
       CredentialsProvider({
@@ -71,7 +87,7 @@ export const authOptions: NextAuthOptions = {
         await connectDB();
   
         if (session.user && token.id) {
-          session.user.id = token.id;
+          session.user.id = token.id as string;
         }
   
         return session;
