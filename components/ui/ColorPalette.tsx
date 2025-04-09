@@ -1,7 +1,6 @@
 import React from 'react';
 import { Check, Palette } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTheme } from '@/utilities/context/ThemeContext';
 
 interface ColorPaletteProps {
   showColorPalette: boolean;

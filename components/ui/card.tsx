@@ -1,6 +1,5 @@
 import React, { ReactNode } from 'react';
 import clsx from 'clsx';
-import { useTheme } from '@/utilities/context/ThemeContext';
 
 interface CardProps {
   className?: string;

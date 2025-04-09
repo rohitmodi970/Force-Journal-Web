@@ -204,7 +204,7 @@ const DigitalJournal: React.FC = () => {
               },
             ].map((item, i) => (
               <div key={i} className={`w-1/2 ${i === 0 ? 'pr-4' : 'pl-4'}`}>
-                <img src={item.img} alt={item.alt} className="object-cover rounded mb-2" />
+                {/* <img src={item.img} alt={item.alt} className="object-cover rounded mb-2" /> */}
                 <div className="text-xs font-bold mb-1">{item.title}</div>
                 <div className="text-xs">{item.text}</div>
               </div>

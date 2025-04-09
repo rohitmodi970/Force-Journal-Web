@@ -5,7 +5,6 @@ import { HiHome, HiUser, HiMail, HiDocumentText, HiSun, HiMoon, HiLogin, HiLogou
 import { useTheme } from "@/utilities/context/ThemeContext";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
-import Dock from "./ui/Dock";
 
 // Define menu item interface
 interface MenuItem {

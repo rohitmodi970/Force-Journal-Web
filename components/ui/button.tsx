@@ -1,6 +1,5 @@
-import React, { ReactNode } from 'react';
+import React from 'react';
 import clsx from 'clsx';
-import { useTheme } from '@/utilities/context/ThemeContext';
 
 interface ButtonProps {
   children: React.ReactNode;

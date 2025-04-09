@@ -1,9 +1,6 @@
-import { createWriteStream } from 'fs';
-import { pipeline } from 'stream/promises';
+
 import axios from 'axios';
-import FormData from 'form-data';
 import fs from 'fs';
-import path from 'path';
 
 // Define TypeScript interfaces for the Deepgram API response structure
 interface DeepgramAlternative {

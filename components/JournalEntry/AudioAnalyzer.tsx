@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import TextTab from "@/components/voiceAnalysis/TextTab";
 import { useTheme } from "@/utilities/context/ThemeContext";
 import { Loader, AlertCircle, Mic, FileText } from "lucide-react";

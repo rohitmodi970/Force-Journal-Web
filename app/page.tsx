@@ -2,7 +2,6 @@
 import { useSession } from "next-auth/react";
 import LoginForm from "@/components/LoginForm";
 import ThemeSelector from '../components/ThemeSelector';
-// import JournalEntry from "@/components/JournalEntry";
 import { useTheme } from "@/utilities/context/ThemeContext";
 
 const MainContent = () => {
@@ -29,7 +28,6 @@ const MainContent = () => {
         }}
       >
         {/* Main content */}
-        {/* <JournalEntry /> */}
       </div>
     </div>
   );

@@ -5,7 +5,6 @@ import { HiHome, HiUser, HiMail, HiDocumentText, HiSun, HiMoon } from "react-ico
 import { signIn, signOut } from "next-auth/react";
 import { JSX } from "react/jsx-runtime";
 import { Palette } from "lucide-react";
-import { useTheme } from "@/utilities/context/ThemeContext";
 // Define props interface for regular navbar
 interface RegularNavbarProps {
   currentTheme: {

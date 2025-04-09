@@ -1,5 +1,4 @@
-import React, { ReactNode } from 'react';
-import clsx from 'clsx';
+import React from 'react';
 import { useTheme } from '@/utilities/context/ThemeContext';
 interface ProgressProps {
   value?: number;
