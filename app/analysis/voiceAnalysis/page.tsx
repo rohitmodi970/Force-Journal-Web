@@ -21,6 +21,8 @@ interface AnalysisResults {
     energyLevels?: any;
     overviewData?: any;
     correlations?: any;
+    linguistics?: any; 
+
 }
 
 // Tab options type
