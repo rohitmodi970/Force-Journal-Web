@@ -166,6 +166,7 @@ const extractAudioFeatures = async (filePath: string): Promise<AudioFeatures> =>
 };
 
 // Process audio with Hume AI API
+// Process audio with Hume AI API
 const processWithHumeAI = async (filePath: string): Promise<EmotionData> => {
   try {
     // Validate environment variables
@@ -213,7 +214,7 @@ const processWithHumeAI = async (filePath: string): Promise<EmotionData> => {
       fileType: fileExtension
     });
 
-    // Make API request
+    // Make API request - add type assertion to fix TypeScript error
     const response = await axios.post('https://api.hume.ai/v0/batch/jobs', formData, {
       headers: {
         'x-api-key': process.env.HUME_AI_API_KEY,
@@ -223,7 +224,7 @@ const processWithHumeAI = async (filePath: string): Promise<EmotionData> => {
       maxBodyLength: Infinity,
       maxContentLength: Infinity,
       timeout: 30000 // 30 seconds timeout
-    });
+    } as any); // Add this type assertion to fix the TypeScript error
 
     // Process emotions
     const emotions: Record<string, number> = {};
