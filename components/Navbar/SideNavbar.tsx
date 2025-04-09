@@ -63,7 +63,7 @@ const DockItem: React.FC<DockItemProps> = ({
   
   const mouseDistance = useTransform(mouseY, (val) => {
     const rect = itemRef.current?.getBoundingClientRect() ?? { y: 0, height: baseSize };
-    return val - rect.y - baseSize / 2;
+    return (val as number) - rect.y - baseSize / 2;
   });
   
   const size = useTransform(
@@ -216,7 +216,7 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
   };
 
   // Handle mouse move to update mouseY value for dock effect
-  const handleMouseMove = (e) => {
+  const handleMouseMove = (e: React.MouseEvent) => {
     const containerRect = navbarRef.current?.getBoundingClientRect();
     if (containerRect) {
       mouseY.set(e.clientY - containerRect.top);

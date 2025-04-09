@@ -110,6 +110,16 @@ interface AnalysisResults {
   speech: SpeechParameters;
 }
 
+// Define Hume AI API response interface
+interface HumeAIResponse {
+  predictions?: Array<{
+    emotions?: Array<{
+      name: string;
+      score: number;
+    }>;
+  }>;
+}
+
 // Helper to save uploaded file to a temporary location
 const saveFileToDisk = async (file: File): Promise<FileInfo> => {
   const bytes = await file.arrayBuffer();
@@ -166,7 +176,6 @@ const extractAudioFeatures = async (filePath: string): Promise<AudioFeatures> =>
 };
 
 // Process audio with Hume AI API
-// Process audio with Hume AI API
 const processWithHumeAI = async (filePath: string): Promise<EmotionData> => {
   try {
     // Validate environment variables
@@ -214,17 +223,21 @@ const processWithHumeAI = async (filePath: string): Promise<EmotionData> => {
       fileType: fileExtension
     });
 
-    // Make API request - add type assertion to fix TypeScript error
-    const response = await axios.post('https://api.hume.ai/v0/batch/jobs', formData, {
-      headers: {
-        'x-api-key': process.env.HUME_AI_API_KEY,
-        'x-api-secret': process.env.HUME_AI_SECRET,
-        ...formData.getHeaders()
-      },
-      maxBodyLength: Infinity,
-      maxContentLength: Infinity,
-      timeout: 30000 // 30 seconds timeout
-    } as any); // Add this type assertion to fix the TypeScript error
+    // Make API request with proper type annotation
+    const response = await axios.post<HumeAIResponse>(
+      'https://api.hume.ai/v0/batch/jobs', 
+      formData, 
+      {
+        headers: {
+          'x-api-key': process.env.HUME_AI_API_KEY,
+          'x-api-secret': process.env.HUME_AI_SECRET,
+          ...formData.getHeaders()
+        },
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity,
+        timeout: 30000 // 30 seconds timeout
+      }
+    );
 
     // Process emotions
     const emotions: Record<string, number> = {};
@@ -339,7 +352,7 @@ const analyzeSpeechParameters = async (filePath: string): Promise<SpeechParamete
     
     // Calculate approximate speech rate
     // This is a very rough estimate - real speech rate detection is more complex
-    const totalSpeakingTime = duration - pauses.durations.reduce((sum, d) => sum + d, 0);
+    const totalSpeakingTime = duration - (pauses.durations?.reduce((sum, d) => sum + d, 0) || 0);
     const estimatedWordsPerMinute = Math.floor(150 * (totalSpeakingTime / duration));
     
     return {
@@ -467,7 +480,11 @@ export async function POST(request: Request): Promise<NextResponse> {
       linguistics: {
         transcript: deepgramData.transcript,
         confidence: deepgramData.confidence,
-        sentiment: deepgramData.sentiment,
+        sentiment: {
+          positive: deepgramData.sentiment.overall === 'positive' ? deepgramData.sentiment.score : 0,
+          negative: deepgramData.sentiment.overall === 'negative' ? deepgramData.sentiment.score : 0,
+          neutral: deepgramData.sentiment.overall === 'neutral' ? deepgramData.sentiment.score : 0
+        },
         topics: deepgramData.topics,
         keywords: deepgramData.keywords,
         summary: deepgramData.summary
