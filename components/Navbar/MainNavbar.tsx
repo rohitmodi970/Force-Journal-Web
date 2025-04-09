@@ -21,17 +21,24 @@ const MainNavbar: React.FC = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Common menu items shared between components
-  const menuItems = [
+  // Common menu items for all users (logged in or not)
+  const publicMenuItems = [
     { name: "Home", href: "/", icon: "HiHome" },
     { name: "About", href: "/about", icon: "HiUser" },
     { name: "Contact", href: "/contact", icon: "HiMail" },
+  ];
+
+  // Additional menu items only for logged-in users
+  const privateMenuItems = [
     { name: "Journal", href: "/journal-entry", icon: "HiDocumentText" },
     { name: "Analysis", href: "/analysis", icon: "HiOutlineChip" },
   ];
 
+  // Determine which menu items to show based on session status
+  const menuItems = session ? [...publicMenuItems, ...privateMenuItems] : publicMenuItems;
+
   return isJournalPage ? (
-    <SideNavbar 
+    <SideNavbar
       currentTheme={currentTheme}
       isDarkMode={isDarkMode}
       toggleDarkMode={toggleDarkMode}
@@ -40,7 +47,7 @@ const MainNavbar: React.FC = () => {
       menuItems={menuItems}
     />
   ) : (
-    <RegularNavbar 
+    <RegularNavbar
       currentTheme={currentTheme}
       isDarkMode={isDarkMode}
       toggleDarkMode={toggleDarkMode}
