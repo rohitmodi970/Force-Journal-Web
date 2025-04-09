@@ -10,20 +10,7 @@ import TextTab from "@/components/voiceAnalysis/TextTab";
 import CorrelationsTab from "@/components/voiceAnalysis/CorrelationsTab";
 import EnergyTab from "@/components/voiceAnalysis/EnergyTab";
 import { useTheme } from "@/utilities/context/ThemeContext";
-
-// Define types for our analysis results
-interface AnalysisResults {
-    // Define the structure based on what your API returns
-    // This is a placeholder - update with actual structure
-    emotions?: any;
-    speechPatterns?: any;
-    textAnalysis?: any;
-    energyLevels?: any;
-    overviewData?: any;
-    correlations?: any;
-    linguistics?: any; 
-
-}
+import { AnalysisResults } from "@/components/voiceAnalysis/types/voiceAnalysis"; // Import the correct type
 
 // Tab options type
 type TabOption = "overview" | "emotions" | "speech" | "text" | "energy" | "correlations";
@@ -76,7 +63,6 @@ const VoiceAnalysisDashboard: React.FC = () => {
         }
     };
 
-    // File upload handler
     // File upload handler
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>): void => {
         const files = e.target.files;
@@ -258,11 +244,26 @@ const VoiceAnalysisDashboard: React.FC = () => {
 
                     <div className="p-6">
                         {activeTab === "overview" && <OverviewTab analysisResults={analysisResults} />}
-                        {activeTab === "emotions" && <EmotionsTab analysisResults={analysisResults} />}
-                        {activeTab === "speech" && <SpeechTab analysisResults={analysisResults} />}
-                        {activeTab === "text" && <TextTab analysisResults={analysisResults} />}
-                        {activeTab === "energy" && <EnergyTab analysisResults={analysisResults} />}
-                        {activeTab === "correlations" && <CorrelationsTab analysisResults={analysisResults} />}
+                        {activeTab === "emotions" && <EmotionsTab analysisResults={{
+                            ...analysisResults,
+                            emotions: analysisResults.emotions || {} // Ensure emotions is never undefined
+                        } as any} />}
+                        {activeTab === "speech" && <SpeechTab analysisResults={{
+                            ...analysisResults,
+                            metadata: (analysisResults as any).metadata || { duration: 0 } // Ensure metadata is never undefined
+                        } as any} />}
+                        {activeTab === "text" && <TextTab analysisResults={{
+                            ...analysisResults,
+                            linguistics: analysisResults.linguistics || {} // Ensure linguistics is never undefined
+                        } as any} />}
+                        {activeTab === "energy" && <EnergyTab analysisResults={{
+                            ...analysisResults,
+                            energyData: (analysisResults as any).energyData || {} // Ensure energyData is never undefined
+                        } as any} />}
+                        {activeTab === "correlations" && <CorrelationsTab analysisResults={{
+                            ...analysisResults,
+                            metadata: (analysisResults as any).metadata || { duration: 0 } // Ensure metadata is never undefined
+                        } as any} />}
                     </div>
                 </div>
             )}

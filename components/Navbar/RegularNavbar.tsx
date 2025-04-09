@@ -1,10 +1,11 @@
 "use client"
 import React, { useState } from "react";
 import { IoMenu, IoClose } from "react-icons/io5";
-import { HiHome, HiUser, HiMail, HiDocumentText, HiSun, HiMoon } from "react-icons/hi";
+import { HiHome, HiUser, HiMail, HiDocumentText, HiSun, HiMoon,HiOutlineChip } from "react-icons/hi";
 import { signIn, signOut } from "next-auth/react";
 import { JSX } from "react/jsx-runtime";
 import { Palette } from "lucide-react";
+import { useSession } from "next-auth/react";
 // Define props interface for regular navbar
 interface RegularNavbarProps {
   currentTheme: {
@@ -47,7 +48,6 @@ const RegularNavbar: React.FC<RegularNavbarProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [showThemeSelector, setShowThemeSelector] = useState<boolean>(false);
-
   function handleAuth() {
     if (session) {
       signOut();
@@ -55,14 +55,16 @@ const RegularNavbar: React.FC<RegularNavbarProps> = ({
       signIn();
     }
   }
-
+  
+  console.log(session)
   // Get the appropriate icon component
   const getIcon = (iconName: string, size = 5) => {
     const icons: { [key: string]: JSX.Element } = {
       HiHome: <HiHome className={`w-${size} h-${size}`} />,
       HiUser: <HiUser className={`w-${size} h-${size}`} />,
       HiMail: <HiMail className={`w-${size} h-${size}`} />,
-      HiDocumentText: <HiDocumentText className={`w-${size} h-${size}`} />
+      HiDocumentText: <HiDocumentText className={`w-${size} h-${size}`} />,
+      HiOutlineChip : <HiOutlineChip className={`w-${size} h-${size}`} />
     };
     return icons[iconName] || <HiHome className={`w-${size} h-${size}`} />;
   };
@@ -213,7 +215,11 @@ const RegularNavbar: React.FC<RegularNavbarProps> = ({
             >
               {isDarkMode ? <HiSun className="w-5 h-5" /> : <HiMoon className="w-5 h-5" />}
             </button>
-            
+            {session?.user?.name && (
+              <span className="px-2 py-1 rounded-md text-sm font-medium" style={{ color: currentTheme.primary }}>
+              {session.user.name}
+              </span>
+            )}
             {/* Auth Button */}
             <button
               onClick={handleAuth}
@@ -240,6 +246,7 @@ const RegularNavbar: React.FC<RegularNavbarProps> = ({
           >
             {isOpen ? <IoClose className="w-6 h-6" /> : <IoMenu className="w-6 h-6" />}
           </button>
+          
         </div>
         
         {/* Mobile Menu */}

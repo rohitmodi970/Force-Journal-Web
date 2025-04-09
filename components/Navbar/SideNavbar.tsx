@@ -1,7 +1,7 @@
 "use client"
 import React, { useState, useEffect, useRef } from "react";
 import { IoMenu, IoClose } from "react-icons/io5";
-import { HiHome, HiUser, HiMail, HiDocumentText, HiSun, HiMoon, HiLogin, HiLogout, HiArchive } from "react-icons/hi";
+import { HiHome, HiUser, HiMail, HiDocumentText, HiSun, HiMoon, HiLogin, HiLogout, HiArchive,HiOutlineChip } from "react-icons/hi";
 import { useRouter } from "next/navigation";
 import { signIn, signOut } from "next-auth/react";
 import { JSX } from "react/jsx-runtime";
@@ -150,7 +150,8 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
       HiUser: <HiUser size={size} />,
       HiMail: <HiMail size={size} />,
       HiDocumentText: <HiDocumentText size={size} />,
-      HiArchive: <HiArchive size={size} />
+      HiArchive: <HiArchive size={size} />,
+      HiOutlineChip : <HiOutlineChip size={size} />
     };
     return icons[iconName] || <HiHome size={size} />;
   };

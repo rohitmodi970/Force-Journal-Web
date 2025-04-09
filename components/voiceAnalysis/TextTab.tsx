@@ -115,6 +115,14 @@ const TextTab: React.FC<TextTabProps> = ({ analysisResults }) => {
             <p className={`${textColor} leading-relaxed`}>{analysisResults.linguistics.summary}</p>
           </div>
         </div>
+        
+        {/* Transcript Section */}
+        <div className="mb-6">
+          <h3 className={`text-lg font-semibold mb-3 ${textColor}`}>Full Transcript</h3>
+          <div className={`p-4 ${panelBgColor} rounded-lg border ${borderColor} max-h-48 overflow-y-auto shadow-inner`}>
+            <p className={`${textColor} leading-relaxed`}>{analysisResults.linguistics.transcript}</p>
+          </div>
+        </div>
 
         {/* Metrics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

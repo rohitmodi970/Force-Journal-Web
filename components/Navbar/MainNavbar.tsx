@@ -27,6 +27,7 @@ const MainNavbar: React.FC = () => {
     { name: "About", href: "/about", icon: "HiUser" },
     { name: "Contact", href: "/contact", icon: "HiMail" },
     { name: "Journal", href: "/journal-entry", icon: "HiDocumentText" },
+    { name: "Analysis", href: "/analysis", icon: "HiOutlineChip" },
   ];
 
   return isJournalPage ? (

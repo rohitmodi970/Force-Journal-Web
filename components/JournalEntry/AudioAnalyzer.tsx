@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import TextTab from "@/components/voiceAnalysis/TextTab";
 import { useTheme } from "@/utilities/context/ThemeContext";
 import { Loader, AlertCircle, Mic, FileText } from "lucide-react";
-
+import axios from "axios";
 interface AudioAnalyzerProps {
   audioFile: File | Blob | null;
   onAnalysisComplete?: (results: AnalysisResults) => void;
@@ -48,31 +48,35 @@ const AudioAnalyzer: React.FC<AudioAnalyzerProps> = ({ audioFile, onAnalysisComp
       setError(null);
 
       try {
-        // In a real implementation, you would send the audio file to your backend
-        // For now, we'll simulate a response with mock data
-        
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Mock analysis results
-        const mockResults: AnalysisResults = {
-          linguistics: {
-            transcript: "This is a sample transcript of what was detected in the audio recording. The journal entry discusses personal reflections and goals for the upcoming week.",
-            summary: "A reflective journal entry discussing personal experiences, challenges, and future plans. The tone is generally positive with occasional moments of uncertainty about upcoming decisions.",
-            sentiment: {
-              overall: "positive",
-              score: 0.72
-            },
-            confidence: 0.85,
-            topics: ["personal growth", "reflection", "goals", "planning", "experiences"]
-          }
-        };
+        // Create form data to send the audio file
+        const formData = new FormData();
+        formData.append("audioFile", audioFile);
 
-        setAnalysisResults(mockResults);
+        // Send the audio to the backend for analysis
+        const response = await axios.post<AnalysisResults>(
+          "/api/voice-analysis", 
+          formData, 
+          {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+          }
+        );
+        
+        // Set the results from the API response
+        const analysisData = response.data;
+        setAnalysisResults(analysisData);
         
         // Call the callback if provided
         if (onAnalysisComplete) {
-          onAnalysisComplete(mockResults);
+          onAnalysisComplete(analysisData);
+        }
+
+        setAnalysisResults(analysisData);
+        
+        // Call the callback if provided
+        if (onAnalysisComplete) {
+          onAnalysisComplete(analysisData);
         }
       } catch (err: any) {
         setError(`Failed to analyze audio: ${err.response?.data?.message || err.message}`);

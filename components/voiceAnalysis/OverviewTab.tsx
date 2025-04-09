@@ -3,44 +3,10 @@
 import React from "react";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 import { useTheme } from "@/utilities/context/ThemeContext";
-
-// Define interfaces for props and data
-interface EmotionData {
-  name: string;
-  value: number;
-}
-
-interface SpeechData {
-  pitch?: {
-    average?: number;
-  };
-  rate?: {
-    wordsPerMinute?: number;
-  };
-  pauses?: {
-    count?: number;
-  };
-}
-
-interface LinguisticsData {
-  transcript?: string;
-  confidence?: number;
-}
-
-interface SentimentData {
-  overall?: string;
-}
-
-interface AnalysisResults {
-  emotions?: Record<string, number>;
-  speech?: SpeechData;
-  linguistics: LinguisticsData;
-  sentiment?: SentimentData;
-  topics?: string[];
-}
+import { AnalysisResults, EmotionData } from "./types/voiceAnalysis";
 
 interface OverviewTabProps {
-  analysisResults: AnalysisResults | null;
+  analysisResults: AnalysisResults;
 }
 
 const OverviewTab: React.FC<OverviewTabProps> = ({ analysisResults }) => {
@@ -91,7 +57,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ analysisResults }) => {
       <div className={`${bgColor} p-4 rounded-lg shadow-md`}>
         <h3 className={`text-lg font-medium mb-4 ${textColor}`}>Transcript</h3>
         <div className={`p-3 ${panelBgColor} rounded border ${borderColor} max-h-60 overflow-y-auto`}>
-          <p className={textColor}>{analysisResults.linguistics.transcript || "No transcript available"}</p>
+          <p className={textColor}>{analysisResults.linguistics?.transcript || "No transcript available"}</p>
           <p className="text-sm text-gray-500 mt-2">
             Confidence:{" "}
             {analysisResults.linguistics?.confidence
