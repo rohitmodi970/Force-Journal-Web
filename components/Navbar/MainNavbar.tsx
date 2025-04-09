@@ -1,0 +1,56 @@
+"use client"
+import React, { useState, useEffect } from "react";
+import { useTheme } from "@/utilities/context/ThemeContext";
+import { useSession } from "next-auth/react";
+import { usePathname } from "next/navigation";
+import SideNavbar from "./SideNavbar";
+import RegularNavbar from "./RegularNavbar";
+
+const MainNavbar: React.FC = () => {
+  const { colorOptions, currentTheme, isDarkMode, toggleDarkMode, setCurrentTheme } = useTheme();
+  const [isScrolled, setIsScrolled] = useState<boolean>(false);
+  const { data: session } = useSession();
+  const pathname = usePathname();
+  
+  // Check if current page is a journal page
+  const isJournalPage = pathname?.includes('/journal-entry');
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 50);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Common menu items shared between components
+  const menuItems = [
+    { name: "Home", href: "/", icon: "HiHome" },
+    { name: "About", href: "/about", icon: "HiUser" },
+    { name: "Contact", href: "/contact", icon: "HiMail" },
+    { name: "Journal", href: "/journal-entry", icon: "HiDocumentText" },
+  ];
+
+  return isJournalPage ? (
+    <SideNavbar 
+      currentTheme={currentTheme}
+      isDarkMode={isDarkMode}
+      toggleDarkMode={toggleDarkMode}
+      session={session}
+      pathname={pathname}
+      menuItems={menuItems}
+    />
+  ) : (
+    <RegularNavbar 
+      currentTheme={currentTheme}
+      isDarkMode={isDarkMode}
+      toggleDarkMode={toggleDarkMode}
+      session={session}
+      pathname={pathname}
+      menuItems={menuItems}
+      isScrolled={isScrolled}
+      colorOptions={colorOptions}
+      setCurrentTheme={setCurrentTheme}
+    />
+  );
+};
+
+export default MainNavbar;
