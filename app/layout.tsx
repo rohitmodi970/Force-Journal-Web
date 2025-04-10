@@ -4,6 +4,8 @@ import "./globals.css";
 import SessionWrapper from "@/utilities/SessionWrapper";
 import { ThemeProvider } from "@/utilities/context/ThemeContext";
 import MainNavbar from "@/components/Navbar/MainNavbar";
+import AuthCheck from "@/components/AuthCheck";
+import LoginForm from "@/components/LoginForm";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,14 +29,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <SessionWrapper>
           <ThemeProvider>
-            {/* <Navbar /> */}
-            <MainNavbar/>
-            {children}
+            <AuthCheck 
+              fallback={<LoginForm />}
+            >
+              <MainNavbar />
+              {children}
+            </AuthCheck>
           </ThemeProvider>
         </SessionWrapper>
       </body>

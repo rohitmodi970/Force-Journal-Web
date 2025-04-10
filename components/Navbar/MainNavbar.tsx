@@ -14,6 +14,9 @@ const MainNavbar: React.FC = () => {
   
   // Check if current page is a journal page
   const isJournalPage = pathname?.includes('/journal-entry');
+  
+  // Check if current page is homepage
+  const isHomePage = pathname === '/';
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
@@ -36,6 +39,11 @@ const MainNavbar: React.FC = () => {
 
   // Determine which menu items to show based on session status
   const menuItems = session ? [...publicMenuItems, ...privateMenuItems] : publicMenuItems;
+
+  // Don't render navbar on homepage
+  if (isHomePage) {
+    return null;
+  }
 
   return isJournalPage ? (
     <SideNavbar
