@@ -51,9 +51,9 @@ export default function Home() {
   const { data: session } = useSession();
 
   // Use conditional rendering for the session check
-  if (!session) {
-    return <LoginForm />;
-  }
+  // This authentication check is redundant since AuthCheck in RootLayout handles this
+  // You can remove it completely since LoginForm is already shown as fallback in AuthCheck
+  // Or keep it if you need page-specific behavior
 
   // No need for ThemeProvider here since it's in RootLayout
   return <MainContent2 />;

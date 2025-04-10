@@ -34,6 +34,7 @@ export default function RootLayout({
           <ThemeProvider>
             <AuthCheck 
               fallback={<LoginForm />}
+              allowedRoutes={['/login', '/register']}
             >
               <MainNavbar />
               {children}
