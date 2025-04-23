@@ -58,7 +58,7 @@ const TextTab: React.FC<TextTabProps> = ({ analysisResults }) => {
 
   // Get sentiment color based on score
   const getSentimentColor = (sentiment: string) => {
-    switch(sentiment.toLowerCase()) {
+    switch(sentiment?.toLowerCase()) {
       case 'positive':
         return isDarkMode ? 'text-green-400' : 'text-green-600';
       case 'negative':
@@ -131,7 +131,7 @@ const TextTab: React.FC<TextTabProps> = ({ analysisResults }) => {
             <div className="flex items-center justify-between mb-3">
               <h3 className={`text-lg font-medium ${textColor}`}>Sentiment Analysis</h3>
               <span className={`text-xs px-2 py-1 rounded-full ${getSentimentColor(analysisResults.linguistics.sentiment.overall)} bg-opacity-20 bg-current`}>
-                {analysisResults.linguistics.sentiment.overall.toUpperCase()}
+                {analysisResults.linguistics.sentiment.overall?.toUpperCase()}
               </span>
             </div>
             

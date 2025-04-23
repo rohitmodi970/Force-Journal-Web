@@ -41,7 +41,7 @@ const MainContent2 = () => {
 
   return (
     <>
-  <SnapStart/>
+  <MainContent/>
     
     </>
   );

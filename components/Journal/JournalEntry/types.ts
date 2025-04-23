@@ -1,8 +1,9 @@
 export interface FileData {
-    image: File | null;
-    audio: File | null;
-    other: File | null;
-  }
+  image?: File[];
+  audio?: File[];
+  video?: File[];
+  other?: File[];
+}
   
   export interface JournalType {
     id: string;

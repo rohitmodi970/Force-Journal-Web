@@ -1,5 +1,5 @@
 
-import JournalEntry from '@/components/JournalEntry/JournalEntry'
+import JournalEntry from '@/components/Journal/JournalEntry/JournalEntry'
 import React from 'react'
 
 const page = () => {

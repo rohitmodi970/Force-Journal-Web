@@ -41,9 +41,9 @@ const MainNavbar: React.FC = () => {
   const menuItems = session ? [...publicMenuItems, ...privateMenuItems] : publicMenuItems;
 
   // Don't render navbar on homepage
-  if (isHomePage) {
-    return null;
-  }
+  // if (isHomePage) {
+  //   return null;
+  // }
 
   return isJournalPage ? (
     <SideNavbar
