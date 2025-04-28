@@ -51,6 +51,7 @@ export async function uploadToCloudinary(
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      // @ts-ignore
       onUploadProgress: (progressEvent) => {
         if (onProgress && progressEvent.total) {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
@@ -58,7 +59,7 @@ export async function uploadToCloudinary(
         }
       }
     });
-
+// @ts-ignore
     return response.data;
   } catch (error) {
     console.error('Upload error:', error);

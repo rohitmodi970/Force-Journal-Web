@@ -1,6 +1,6 @@
 // hooks/useMedia.ts
 import { useState } from 'react';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from './use-toast';
 
 interface UseMediaOptions {
   journalId: string;
