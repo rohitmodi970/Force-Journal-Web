@@ -149,7 +149,7 @@ const LoginForm = () => {
       </div>
       <div className="fixed bottom-8 right-8 z-50 ">
         <Link
-          href="/"
+          href="/register"
           className="flex items-center gap-2 bg-red-600 hover:bg-primary/90 text-white px-4 py-2 rounded-full shadow-lg transition-colors"
         >
           <UserPlus  className="w-5 h-5" />
