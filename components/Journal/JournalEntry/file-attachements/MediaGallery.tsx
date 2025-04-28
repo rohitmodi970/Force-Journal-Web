@@ -1,9 +1,10 @@
 // components/MediaGallery.tsx
 import React, { useEffect, useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/journal/ui/tabs';
 import { Camera, Mic, Video, FileText, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/toast';
+import { Button } from '@/components/ui/button2';
+import { useToast } from '@/hooks/use-toast';
+// import { useToast } from '@/components/ui/toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,7 +14,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from '@/components/ui/about/ui/alert-dialog';
 
 interface MediaItem {
   mediaId: string;
