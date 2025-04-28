@@ -6,19 +6,7 @@ import Image from "next/image";
 import { JournalEntry } from "./types";
 import { Button } from "@/components/ui/button2";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Grid3X3, 
-  Book, 
-  FileAudio, 
-  Film, 
-  FileText, 
-  Image as ImageIcon, 
-  View, 
-  Filter, 
-  Tag,
-  Search,
-  CalendarClock,
-  Sparkles 
+import { Grid3X3, Book, FileAudio, Film, FileText, Image as ImageIcon, View, Filter, Tag,Search,CalendarClock,Sparkles 
 } from "lucide-react";
 import JournalModal from "./JournalModal";
 import { motion, AnimatePresence } from "framer-motion";
@@ -77,12 +65,12 @@ const moodEmoji: Record<string, string> = {
 };
 
 const JournalGallery = ({ entries = [] }: JournalGalleryProps) => {
-  const { theme, setTheme } = useContext(ThemeContext);
+  const { isDarkMode } = useContext(ThemeContext);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEntryIndex, setSelectedEntryIndex] = useState<number | null>(null);
   const [selectedImageIndices, setSelectedImageIndices] = useState<Record<string, number>>({});
   const [gridColumns, setGridColumns] = useState(4);
-  const { colorOptions, currentTheme, isDarkMode, toggleDarkMode, setCurrentTheme } = useTheme();
+  const { colorOptions, currentTheme, toggleDarkMode, setCurrentTheme } = useTheme();
   // Filter states
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -247,7 +235,7 @@ const JournalGallery = ({ entries = [] }: JournalGalleryProps) => {
   };
 
   return (
-    <div className={`w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ${theme === 'dark' ? 'dark' : ''}`}>
+    <div className={`w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ${isDarkMode ? 'dark' : ''}`}>
       <div className="mb-8">
         <h2 className="text-3xl font-bold font-journal text-gray-800 dark:text-gray-100 mb-6">
           Design Journal Gallery
@@ -271,7 +259,7 @@ const JournalGallery = ({ entries = [] }: JournalGalleryProps) => {
             <div className="flex gap-2 flex-wrap">
               {/* Tags Filter */}
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
+                <DropdownMenuTrigger >
                   <Button variant="outline" size="sm" className="flex items-center gap-1">
                     <Tag className="h-4 w-4" />
                     <span>Tags</span>
@@ -303,7 +291,7 @@ const JournalGallery = ({ entries = [] }: JournalGalleryProps) => {
               
               {/* Types Filter */}
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
+                <DropdownMenuTrigger >
                   <Button variant="outline" size="sm" className="flex items-center gap-1">
                     <FileText className="h-4 w-4" />
                     <span>Types</span>
@@ -335,7 +323,7 @@ const JournalGallery = ({ entries = [] }: JournalGalleryProps) => {
               
               {/* Moods Filter */}
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
+                <DropdownMenuTrigger >
                   <Button variant="outline" size="sm" className="flex items-center gap-1">
                     <Sparkles className="h-4 w-4" />
                     <span>Moods</span>
@@ -756,9 +744,11 @@ const JournalGallery = ({ entries = [] }: JournalGalleryProps) => {
             {/* Pass filtered entries and the click handler */}
             <Journal3DView 
               entries={filteredEntries} 
-              onSelectEntry={(entry) => {
-                const index = filteredEntries.findIndex(e => e.journalId === entry.journalId);
-                if (index !== -1) handleEntryClick(index);
+              
+              onSelectEntry={(index: number) => {
+                if (index >= 0 && index < filteredEntries.length) {
+                  handleEntryClick(index);
+                }
               }} 
             />
           </Suspense>
