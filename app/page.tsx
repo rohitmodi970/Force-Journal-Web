@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "@/utilities/context/ThemeContext";
-import SnapStart from "@/components/snapStart";
 import PreAuthLanding from "@/components/PreAuthLanding";
 import ThemeSelector from "@/components/ThemeSelector";
 
@@ -12,7 +11,6 @@ export default function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [showingPreAuth, setShowingPreAuth] = useState(true);
-  const [showingSnapStart, setShowingSnapStart] = useState(false);
   const [showingThemeSelector, setShowingThemeSelector] = useState(false);
   const { currentTheme, isDarkMode } = useTheme();
 
@@ -33,49 +31,15 @@ export default function Home() {
     if (session) {
       // User is authenticated, hide PreAuthLanding
       setShowingPreAuth(false);
-
-      if (session.user.new_user) {
-        // New user flow: SnapStart then ThemeSelector
-        setShowingSnapStart(true);
-      } else {
-        // Existing user flow: directly to ThemeSelector
-        setShowingThemeSelector(true);
-      }
+      
+      // All users go directly to ThemeSelector
+      setShowingThemeSelector(true);
     }
   }, [session, status, router, showingPreAuth]);
-
-  // Handle completion of SnapStart
-  const handleSnapStartComplete = () => {
-    setShowingSnapStart(false);
-    setShowingThemeSelector(true);
-  };
 
   // Render logic
   if (showingPreAuth) {
     return <PreAuthLanding onComplete={() => setShowingPreAuth(false)} />;
-  }
-
-  if (showingSnapStart && session?.user?.new_user) {
-    return (
-      <div
-        // className="flex flex-col min-h-screen transition-colors duration-300"
-        // style={{
-        //   backgroundColor: currentTheme.light,
-        //   color: isDarkMode ? 'white' : 'var(--text-primary)',
-        // }}
-      >
-        <div 
-        // className="h-[10vh] mb-5"
-        >
-          {/* Space for fixed navbar */}
-        </div>
-        <div 
-        // className="container mx-auto p-6"
-        >
-          <SnapStart onComplete={handleSnapStartComplete} />
-        </div>
-      </div>
-    );
   }
 
   if (showingThemeSelector) {
