@@ -4,7 +4,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/journa
 import { Camera, Mic, Video, FileText, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button2';
 import { useToast } from '@/hooks/use-toast';
-// import { useToast } from '@/components/ui/toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,7 +13,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/about/ui/alert-dialog';
+} from '@/components/ui/quilted-gallery/ui/alert-dialog';
 
 interface MediaItem {
   mediaId: string;
