@@ -261,11 +261,11 @@ const FileAttachments: React.FC<FileAttachmentsProps> = ({
                             Close
                           </button>
                         </div>
-                        <ImageAnalyzer 
+                        {/* <ImageAnalyzer  
                           // Pass necessary props
                           // imageFile={file}
                           // onAnalysisComplete={(results) => handleAnalysisComplete(results, 'image', index)}
-                        />
+                        />*/}
                       </div>
                     )}
                   </div>
@@ -430,11 +430,11 @@ const FileAttachments: React.FC<FileAttachmentsProps> = ({
                             Close
                           </button>
                         </div>
-                        <VideoAnalyzer 
+                        {/* <VideoAnalyzer  
                           // Pass necessary props
                           // videoFile={file}
                           // onAnalysisComplete={(results) => handleAnalysisComplete(results, 'video', index)}
-                        />
+                        />*/}
                       </div>
                     )}
                   </div>
