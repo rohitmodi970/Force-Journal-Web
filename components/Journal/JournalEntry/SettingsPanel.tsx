@@ -1,7 +1,7 @@
 import React from 'react';
 import { Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { JournalType, ViewMode } from './types';
+import { JournalType, ViewMode } from '../types';
 
 interface SettingsPanelProps {
   showSettings: boolean;

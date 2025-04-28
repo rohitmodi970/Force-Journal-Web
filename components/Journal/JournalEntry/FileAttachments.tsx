@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Image, Mic, FileText, Film, RefreshCw, BarChart, Plus, X } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { FileData } from './types';
+import { FileData } from '../types';
 import AudioAnalyzer from './AudioAnalyzer';
 import VideoAnalyzer from './VideoAnalyzer';
 import ImageAnalyzer from './ImageAnalyzer';

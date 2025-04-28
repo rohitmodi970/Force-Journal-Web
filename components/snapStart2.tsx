@@ -156,6 +156,7 @@ const SnapStart = () => {
                 </motion.div>
               </motion.div>
             )}
+            
           </motion.div>
         )}
 

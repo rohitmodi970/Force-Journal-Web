@@ -1,60 +1,91 @@
-"use client"
+"use client";
+
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import LoginForm from "@/components/LoginForm";
-import ThemeSelector from '../components/ThemeSelector';
+import { useRouter } from "next/navigation";
 import { useTheme } from "@/utilities/context/ThemeContext";
 import SnapStart from "@/components/snapStart";
-
-const MainContent = () => {
-  const { currentTheme, isDarkMode } = useTheme();
-
-  return (
-    <>
-
-      <div
-        className="flex flex-col h-[300vh] transition-colors duration-300"
-        style={{
-          backgroundColor: currentTheme.light,
-          color: isDarkMode ? 'white' : 'var(--text-primary)',
-        }}
-      >
-        {/* Navbar is already rendered in RootLayout, so we don't need it here */}
-        <div className="h-[10vh] mb-5">
-          {/* Space for fixed navbar */}
-        </div>
-        <div className="container mx-auto p-6">
-          <ThemeSelector />
-        </div>
-        <div className="flex-1 transition-colors duration-300"
-          style={{
-            backgroundColor: isDarkMode ? 'var(--theme-primary)' : 'var(--bg-secondary)',
-          }}
-        >
-          {/* Main content */}
-        </div>
-      </div>
-    </>
-  );
-};
-const MainContent2 = () => {
-  const { currentTheme, isDarkMode } = useTheme();
-
-  return (
-    <>
-  <MainContent/>
-    
-    </>
-  );
-};
+import PreAuthLanding from "@/components/PreAuthLanding";
+import ThemeSelector from "@/components/ThemeSelector";
 
 export default function Home() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [showingPreAuth, setShowingPreAuth] = useState(true);
+  const [showingSnapStart, setShowingSnapStart] = useState(false);
+  const [showingThemeSelector, setShowingThemeSelector] = useState(false);
+  const { currentTheme, isDarkMode } = useTheme();
 
-  // Use conditional rendering for the session check
-  // This authentication check is redundant since AuthCheck in RootLayout handles this
-  // You can remove it completely since LoginForm is already shown as fallback in AuthCheck
-  // Or keep it if you need page-specific behavior
+  // Handle the authentication and user flow
+  useEffect(() => {
+    // Wait for the session to be loaded
+    if (status === "loading") return;
 
-  // No need for ThemeProvider here since it's in RootLayout
-  return <MainContent2 />;
+    if (status === "unauthenticated") {
+      // If no session, redirect to login after showing PreAuthLanding
+      if (!showingPreAuth) {
+        router.push("/login");
+      }
+      return;
+    }
+
+    // If we reach here, user is authenticated
+    if (session) {
+      // User is authenticated, hide PreAuthLanding
+      setShowingPreAuth(false);
+
+      if (session.user.new_user) {
+        // New user flow: SnapStart then ThemeSelector
+        setShowingSnapStart(true);
+      } else {
+        // Existing user flow: directly to ThemeSelector
+        setShowingThemeSelector(true);
+      }
+    }
+  }, [session, status, router, showingPreAuth]);
+
+  // Handle completion of SnapStart
+  const handleSnapStartComplete = () => {
+    setShowingSnapStart(false);
+    setShowingThemeSelector(true);
+  };
+
+  // Render logic
+  if (showingPreAuth) {
+    return <PreAuthLanding onComplete={() => setShowingPreAuth(false)} />;
+  }
+
+  if (showingSnapStart && session?.user?.new_user) {
+    return (
+      <div
+        // className="flex flex-col min-h-screen transition-colors duration-300"
+        // style={{
+        //   backgroundColor: currentTheme.light,
+        //   color: isDarkMode ? 'white' : 'var(--text-primary)',
+        // }}
+      >
+        <div 
+        // className="h-[10vh] mb-5"
+        >
+          {/* Space for fixed navbar */}
+        </div>
+        <div 
+        // className="container mx-auto p-6"
+        >
+          <SnapStart onComplete={handleSnapStartComplete} />
+        </div>
+      </div>
+    );
+  }
+
+  if (showingThemeSelector) {
+    return <ThemeSelector />;
+  }
+
+  // Fallback while transitions happen
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+    </div>
+  );
 }

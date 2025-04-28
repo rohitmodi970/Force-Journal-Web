@@ -1,8 +1,9 @@
 "use client"
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
-
+import Link from 'next/link';
+import { SkipBack } from 'lucide-react';
 
 interface RegistrationData {
   email: string;
@@ -10,6 +11,7 @@ interface RegistrationData {
   name: string;
   phone: string;
   confirmPassword: string;
+  ip_address: string;
 }
 
 const RegisterForm = () => {
@@ -22,10 +24,29 @@ const RegisterForm = () => {
     name: '',
     phone: '+91 ',
     confirmPassword: '',
+    ip_address: '',
   };
 
   const [formData, setFormData] = useState<RegistrationData>(initialFormState);
   const [error, setError] = useState<string>('');
+
+  // Fetch IP address on component mount
+  useEffect(() => {
+    const getIpAddress = async () => {
+      try {
+        const response = await fetch('https://api.ipify.org?format=json');
+        const data = await response.json();
+        setFormData(prev => ({
+          ...prev,
+          ip_address: data.ip
+        }));
+      } catch (error) {
+        console.error('Failed to fetch IP address:', error);
+      }
+    };
+
+    getIpAddress();
+  }, [isSubmitting]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -46,8 +67,6 @@ const RegisterForm = () => {
     setIsSubmitting(true);
 
     // Validate form
-    
-
     if (!formData.email || !formData.password) {
       setError('Email and password are required');
       setIsSubmitting(false);
@@ -71,6 +90,7 @@ const RegisterForm = () => {
           password: formData.password,
           name: formData.name,
           phone: formData.phone.trim(),
+          ip_address: formData.ip_address || '0.0.0.0', // Send IP address and provide fallback
         }),
       });
 
@@ -85,6 +105,7 @@ const RegisterForm = () => {
         redirect: false,
         email: formData.email,
         password: formData.password,
+        ipAddress: formData.ip_address || '0.0.0.0'
       });
 
       if (signInResult?.error) {
@@ -259,6 +280,15 @@ const RegisterForm = () => {
           </p>
         </form>
       </div>
+      <div className="fixed bottom-8 right-8 z-50 ">
+              <Link
+                href="/"
+                className="flex items-center gap-2 bg-red-600 hover:bg-primary/90 text-white px-4 py-2 rounded-full shadow-lg transition-colors"
+              >
+                <SkipBack className="w-5 h-5" />
+                <span>Back</span>
+              </Link>
+            </div>
     </div>
   );
 };

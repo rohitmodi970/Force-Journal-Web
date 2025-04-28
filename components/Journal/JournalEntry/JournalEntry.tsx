@@ -1,14 +1,29 @@
 "use client"
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Bookmark, PenLine, Sparkles, FileText, Save, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/utilities/context/ThemeContext';
 import JournalHeader from './JournalHeader';
 import SettingsPanel from './SettingsPanel';
 import TagsInput from './TagsInput';
-import FileAttachments from './FileAttachments';
-import { FileData, JournalType, ViewMode, Mood } from './types';
+import { uploadToCloudinary } from '@/utilities/cloudinaryUpload';
+import { v4 as uuidv4 } from 'uuid';
+import axios from 'axios';
+import MediaSelector from './file-attachements/MediaSelector';
+import MediaPreview from './file-attachements/MediaPreview';
 
+import Toast from '@/components/ui/toast';
+
+interface MediaFile {
+  id: string;
+  file: File;
+  type: 'image' | 'audio' | 'video' | 'document';
+  progress: number;
+  status: 'idle' | 'uploading' | 'success' | 'error';
+  url?: string;
+  cloudinaryPublicId?: string;
+  cloudinaryResourceType?: string;
+}
 const JournalEntry: React.FC = () => {
   const { currentTheme, isDarkMode, colorOptions, setCurrentTheme } = useTheme();
   const currentDate = new Date().toISOString().split('T')[0];
@@ -17,13 +32,6 @@ const JournalEntry: React.FC = () => {
   const [date, setDate] = useState<string>(currentDate);
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState<string>('');
-  const [files, setFiles] = useState<FileData>({
-    image: [],
-    audio: [],
-    video: [],
-    other: []
-  });
-
   const [journalType, setJournalType] = useState<string>('personal');
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<string>('writing'); // 'writing', 'preview', 'focus'
@@ -45,12 +53,27 @@ const JournalEntry: React.FC = () => {
   const [pendingBackendSync, setPendingBackendSync] = useState<boolean>(false);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const backendSyncTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [mediaUploadState, setMediaUploadState] = useState(false);
+  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  // New state to track uploaded media
+  const [journalMedia, setJournalMedia] = useState<{
+    image: any[];
+    audio: any[];
+    video: any[];
+    document: any[];
+  }>({
+    image: [],
+    audio: [],
+    video: [],
+    document: []
+  });
 
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
 
   // Journal types
-  const journalTypes: JournalType[] = [
+  const journalTypes = [
     { id: 'personal', name: 'Personal', icon: '📔', description: 'Record your thoughts and daily experiences' },
     { id: 'gratitude', name: 'Gratitude', icon: '🙏', description: "Focus on what you're thankful for" },
     { id: 'goals', name: 'Goals', icon: '🎯', description: 'Track your progress toward objectives' },
@@ -58,12 +81,18 @@ const JournalEntry: React.FC = () => {
   ];
 
   // View modes
-  const viewModes: ViewMode[] = [
+  const viewModes = [
     { id: 'writing', name: 'Writing Mode', description: 'Standard editor with all tools' },
     { id: 'focus', name: 'Focus Mode', description: 'Distraction-free writing environment' },
     { id: 'preview', name: 'Preview Mode', description: 'See how your entry looks formatted' }
   ];
-
+  // Define media limits
+  const MEDIA_LIMITS = {
+    image: { count: 6, size: 25 * 1024 * 1024 }, // 25MB
+    audio: { count: 11, size: 5 * 1024 * 1024 }, // 5MB
+    video: { count: 2, size: 200 * 1024 * 1024 }, // 200MB
+    document: { count: 5, size: 5 * 1024 * 1024 }, // 5MB
+  };
   const [savedEntries, setSavedEntries] = useState<any[]>([]);
 
   useEffect(() => {
@@ -114,7 +143,7 @@ const JournalEntry: React.FC = () => {
   }, []);
 
   // Moods
-  const moods: Mood[] = [
+  const moods = [
     { id: 'happy', emoji: '😊', label: 'Happy' },
     { id: 'sad', emoji: '😢', label: 'Sad' },
     { id: 'anxious', emoji: '😰', label: 'Anxious' },
@@ -127,7 +156,7 @@ const JournalEntry: React.FC = () => {
   ];
 
   // Accent colors (using the theme's color options)
-  const accentColors: string[] = [
+  const accentColors = [
     '#F43F5E', // Red
     '#F97316', // Orange
     '#FACC15', // Yellow
@@ -194,11 +223,222 @@ const JournalEntry: React.FC = () => {
       }, 3000);
     }
   }, [content, title, tags, date, selectedMood, journalType]);
+  const handleFileSelect = useCallback(
+    (files: FileList | null, type: 'image' | 'audio' | 'video' | 'document') => {
+      // Implementation from MediaUploader component
+      if (!files || files.length === 0) return;
 
+      // Filter existing files of this type
+      const existingFilesOfType = mediaFiles.filter((m) => m.type === type);
+
+      // Check if adding these files would exceed limit
+      if (existingFilesOfType.length + files.length > MEDIA_LIMITS[type].count) {
+        alert(
+          `You can only upload up to ${MEDIA_LIMITS[type].count} ${type} files. You already have ${existingFilesOfType.length}.`
+        );
+        return;
+      }
+
+      // Process each file
+      const newMediaFiles: MediaFile[] = [];
+
+      Array.from(files).forEach((file) => {
+        // Check file size
+        if (file.size > MEDIA_LIMITS[type].size) {
+          alert(`File ${file.name} exceeds the maximum size for ${type} uploads (${MEDIA_LIMITS[type].size / (1024 * 1024)}MB)`);
+          return;
+        }
+
+        newMediaFiles.push({
+          file,
+          type,
+          progress: 0,
+          id: uuidv4(),
+          status: 'idle'
+        });
+      });
+
+      setMediaFiles((prev) => [...prev, ...newMediaFiles]);
+    },
+    [mediaFiles]
+  );
+
+  const handleUpload = async () => {
+    if (mediaFiles.length === 0 || isUploading) return;
+
+    setIsUploading(true);
+
+    // Get or create journalId if needed
+    let journalId = currentJournalId;
+
+    if (!journalId) {
+      // Create new journal entry first with minimal data
+      try {
+        const newEntryData = {
+          title: title || '',
+          content: content || '',
+          date: date || new Date().toISOString(),
+          tags: tags || [],
+          mood: selectedMood || null,
+          journalType: journalType || 'general',
+          timestamp: new Date().toISOString(),
+          media: { image: [], audio: [], video: [], document: [] }
+        };
+
+        const response = await fetch('/api/journal-entry', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(newEntryData),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to create journal entry');
+        }
+
+        const result = await response.json();
+        journalId = result.entry.journalId;
+        setCurrentJournalId(journalId);
+
+      } catch (error) {
+        console.error('Error creating entry before upload:', error);
+        setIsUploading(false);
+        showMessage('Failed to create journal before upload', true);
+        return;
+      }
+    }
+
+    const uploadPromises = mediaFiles
+      .filter((media) => media.status === 'idle')
+      .map(async (media) => {
+        try {
+          // Update status to uploading
+          setMediaFiles((prev) =>
+            prev.map((m) =>
+              m.id === media.id ? { ...m, status: 'uploading' } : m
+            )
+          );
+
+          // Upload to Cloudinary via our API
+          const response = await uploadToCloudinary(
+            media.file,
+            journalId as string, // Assert journalId is string since we've checked it's not null above
+            media.type,
+            (progress) => {
+              setMediaFiles((prev) =>
+                prev.map((m) =>
+                  m.id === media.id ? { ...m, progress } : m
+                )
+              );
+            }
+          );
+
+          // Update mediaFiles state with the Cloudinary response
+          const updatedMedia: MediaFile = {
+            ...media,
+            status: 'success' as const,
+            progress: 100,
+            url: response.url,
+            cloudinaryPublicId: response.publicId,
+            cloudinaryResourceType: response.resourceType
+          };
+
+          setMediaFiles((prev) =>
+            prev.map((m) => (m.id === media.id ? updatedMedia : m))
+          );
+
+          // Add media to journal in database using the PATCH endpoint
+          await fetch('/api/journal-entry', {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              journalId,
+              operation: 'add',
+              mediaType: media.type,
+              mediaData: {
+                url: response.url,
+                cloudinaryPublicId: response.publicId,
+                cloudinaryResourceType: response.resourceType,
+                fileName: media.file.name,
+                fileSize: media.file.size
+              }
+            }),
+          });
+
+          return updatedMedia;
+        } catch (error) {
+          console.error('Upload error:', error);
+
+          // Update status to error
+          setMediaFiles((prev) =>
+            prev.map((m) =>
+              m.id === media.id ? { ...m, status: 'error' } : m
+            )
+          );
+
+          return null;
+        }
+      });
+
+    const results = await Promise.all(uploadPromises);
+    setIsUploading(false);
+
+    // Update journalMedia state with successful uploads
+    const successfulUploads = results.filter(Boolean) as MediaFile[];
+    if (successfulUploads.length > 0) {
+      handleMediaUploadComplete(successfulUploads);
+
+      // Update any text content if needed
+      if (content || title) {
+        saveEntry();
+      }
+    }
+  };
+
+
+  const handleRemoveFile = async (mediaId: string) => {
+    // Implementation from MediaUploader component
+    // Find the file to be removed
+    const fileToRemove = mediaFiles.find(m => m.id === mediaId);
+
+    if (fileToRemove && fileToRemove.status === 'success' && fileToRemove.cloudinaryPublicId) {
+      try {
+        // Only call the API if this is a saved journal (not a temp journal)
+        if (currentJournalId && !currentJournalId.startsWith('temp_')) {
+          // Remove the file from the database
+          await axios.delete(`/api/journal-entry?action=remove-media`, {
+            // @ts-ignore
+            data: {
+              journalId: currentJournalId,
+              mediaType: fileToRemove.type,
+              cloudinaryPublicId: fileToRemove.cloudinaryPublicId
+            },
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          });
+          
+        }
+      } catch (error) {
+        console.error('Error removing file:', error);
+        alert('Failed to remove file. Please try again.');
+        return;
+      }
+    }
+
+    // Remove from state regardless of database operation
+    setMediaFiles((prev) => prev.filter((m) => m.id !== mediaId));
+  };
   // Auto-save to localStorage
   const autoSaveToLocalStorage = () => {
-    // Skip if there's nothing meaningful to save
-    if (!title.trim() || !content.trim()) {
+    // Only save if there's something to save (either content or uploaded media)
+    const hasContent = title.trim() || content.trim();
+    const hasMedia = mediaFiles.some(m => m.status === 'success');
+
+    if (!hasContent && !hasMedia) {
       return;
     }
 
@@ -217,7 +457,8 @@ const JournalEntry: React.FC = () => {
       mood: selectedMood,
       journalType,
       timestamp: new Date().toISOString(),
-      pendingSync: true
+      pendingSync: true,
+      media: journalMedia
     };
 
     // Save to localStorage
@@ -241,8 +482,9 @@ const JournalEntry: React.FC = () => {
     }
     backendSyncTimerRef.current = setTimeout(() => {
       syncToBackend(entryId);
-    }, 120000); // 2 minutes
+    }, 120000); // 2 min
   };
+
 
   // Sync entry to backend
   const syncToBackend = async (journalId: string) => {
@@ -301,6 +543,8 @@ const JournalEntry: React.FC = () => {
         setSavedEntries(updatedEntries);
 
         showMessage('Entry saved to server', false);
+        // Enable media upload state after successful sync to backend
+        setMediaUploadState(true);
       } else {
         // Update an existing entry
         const response = await fetch('/api/journal-entry', {
@@ -330,6 +574,8 @@ const JournalEntry: React.FC = () => {
         setSavedEntries(updatedEntries);
 
         showMessage('Changes synced to server', false);
+        // Enable media upload state after successful sync to backend
+        setMediaUploadState(true);
       }
 
       setPendingBackendSync(false);
@@ -344,23 +590,36 @@ const JournalEntry: React.FC = () => {
     }
   };
 
-  // Handle file uploads
-  const handleFileChange = (type: keyof FileData, e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const newFiles = Array.from(e.target.files);
-      setFiles((prev: FileData) => ({
-        ...prev,
-        [type]: [...(prev[type] || []), ...newFiles]
-      }));
-    }
-  };
+  // Define valid media types
+  type MediaType = 'image' | 'audio' | 'video' | 'document';
 
-  // Add this function to handle removing files
-  const removeFile = (type: keyof FileData, index: number) => {
-    setFiles((prev: FileData) => ({
-      ...prev,
-      [type]: prev[type] ? prev[type].filter((_: File, i: number) => i !== index) : []
-    }));
+  // Handle when media uploads are completed
+  const handleMediaUploadComplete = (mediaFiles: any[]) => {
+    // Group media files by type and update journal media state
+    const newMediaState = { ...journalMedia };
+
+    mediaFiles.forEach(file => {
+      if (file.url && file.cloudinaryPublicId && file.type) {
+        // Convert MediaFile to format matching our schema
+        const mediaFileRecord = {
+          url: file.url,
+          cloudinaryPublicId: file.cloudinaryPublicId,
+          cloudinaryResourceType: file.cloudinaryResourceType || 'image',
+          fileName: file.file.name,
+          fileSize: file.file.size,
+          uploadedAt: new Date()
+        };
+
+        // Add to appropriate media type array if it's a valid media type
+        const mediaType = file.type as MediaType;
+        if (mediaType === 'image' || mediaType === 'audio' || mediaType === 'video' || mediaType === 'document') {
+          newMediaState[mediaType] = [...newMediaState[mediaType], mediaFileRecord];
+        }
+      }
+    });
+
+    setJournalMedia(newMediaState);
+    setIsUnsaved(true); // Mark as unsaved so it will be saved next auto-save cycle
   };
 
   // Show message with auto-dismiss
@@ -379,15 +638,13 @@ const JournalEntry: React.FC = () => {
     try {
       setIsSaving(true);
 
-      // Basic validation
-      if (!title.trim()) {
-        showMessage("Please enter a title for your journal entry", true);
-        setIsSaving(false);
-        return;
-      }
+      // Don't require title or content anymore - they're optional per your schema
+      // Only validate that we have something to save (either content or media)
+      const hasContent = title.trim() || content.trim();
+      const hasMedia = mediaFiles.some(m => m.status === 'success');
 
-      if (!content.trim()) {
-        showMessage("Please enter some content for your journal entry", true);
+      if (!hasContent && !hasMedia) {
+        showMessage("Please add either content or media to your journal", true);
         setIsSaving(false);
         return;
       }
@@ -401,19 +658,20 @@ const JournalEntry: React.FC = () => {
       // First save to localStorage
       const entry = {
         journalId: entryId,
-        title,
-        content,
+        title, // Can be empty
+        content, // Can be empty
         date,
         tags,
         mood: selectedMood,
         journalType,
         timestamp: new Date().toISOString(),
-        pendingSync: false  // We're going to sync immediately
+        pendingSync: false,
+        media: journalMedia
       };
 
       localStorage.setItem(`journal_entry_${entryId}`, JSON.stringify(entry));
 
-      // Then immediately sync to backend
+      // Sync to backend
       await syncToBackend(entryId);
 
       // Cancel any pending auto-sync
@@ -434,6 +692,7 @@ const JournalEntry: React.FC = () => {
     }
   };
 
+
   // Get formatted time for display
   const getFormattedTime = (date: Date | null): string => {
     if (!date) return '';
@@ -448,133 +707,6 @@ const JournalEntry: React.FC = () => {
     const foundTheme = colorOptions.find((c) => c.primary === color);
     if (foundTheme) {
       setCurrentTheme(foundTheme);
-    }
-  };
-
-  // Load a journal entry
-  const loadJournalEntry = async (journalId: string) => {
-    try {
-      // First check if there are unsaved changes
-      if (isUnsaved && (title || content)) {
-        const confirmLoad = window.confirm('You have unsaved changes. Do you want to continue without saving?');
-        if (!confirmLoad) return;
-      }
-
-      // Clear any pending auto-save and sync timers
-      if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
-      }
-
-      if (backendSyncTimerRef.current) {
-        clearTimeout(backendSyncTimerRef.current);
-      }
-
-      // First try to load from localStorage for the most up-to-date version
-      const localEntryStr = localStorage.getItem(`journal_entry_${journalId}`);
-      if (localEntryStr) {
-        try {
-          const entry = JSON.parse(localEntryStr);
-          setTitle(entry.title);
-          setContent(entry.content);
-          setDate(entry.date);
-          setTags(entry.tags || []);
-          setSelectedMood(entry.mood);
-          setJournalType(entry.journalType);
-          setCurrentJournalId(entry.journalId);
-          setPendingBackendSync(entry.pendingSync || false);
-
-          setIsUnsaved(false);
-          showMessage('Journal entry loaded from local storage');
-          return;
-        } catch (localError) {
-          console.error('Error loading from localStorage:', localError);
-          // Fall through to try loading from API
-        }
-      }
-
-      // If not found in localStorage or error occurred, try the API
-      const response = await fetch(`/api/journal-entry?journalId=${journalId}`);
-
-      if (!response.ok) {
-        throw new Error('Failed to load journal entry');
-      }
-
-      const entry = await response.json();
-
-      // Populate the form with the loaded entry
-      setTitle(entry.title);
-      setContent(entry.content);
-      setDate(entry.date);
-      setTags(entry.tags || []);
-      setSelectedMood(entry.mood);
-      setJournalType(entry.journalType);
-      setCurrentJournalId(entry.journalId);
-      setPendingBackendSync(false);
-
-      // Also save to localStorage
-      localStorage.setItem(`journal_entry_${entry.journalId}`, JSON.stringify({
-        ...entry,
-        pendingSync: false
-      }));
-
-      setIsUnsaved(false);
-      showMessage('Journal entry loaded successfully');
-    } catch (error) {
-      console.error('Error loading journal entry:', error);
-      showMessage('Failed to load journal entry', true);
-    }
-  };
-
-  // Delete a journal entry
-  const deleteJournalEntry = async (journalId: string) => {
-    try {
-      const confirmDelete = window.confirm('Are you sure you want to delete this journal entry?');
-      if (!confirmDelete) return;
-
-      // Clear any pending timers related to this entry
-      if (currentJournalId === journalId) {
-        if (autoSaveTimerRef.current) {
-          clearTimeout(autoSaveTimerRef.current);
-        }
-
-        if (backendSyncTimerRef.current) {
-          clearTimeout(backendSyncTimerRef.current);
-        }
-      }
-
-      // Remove from localStorage first
-      localStorage.removeItem(`journal_entry_${journalId}`);
-
-      // Only try to delete from backend if it's not a temporary ID
-      if (!journalId.startsWith('temp_')) {
-        const response = await fetch(`/api/journal-entry?journalId=${journalId}`, {
-          method: 'DELETE',
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to delete journal entry from backend');
-        }
-      }
-
-      // Update the savedEntries state
-      setSavedEntries(savedEntries.filter(entry => entry.journalId !== journalId));
-
-      // Clear the form if we were editing this entry
-      if (currentJournalId === journalId) {
-        setTitle('');
-        setContent('');
-        setDate(currentDate);
-        setTags([]);
-        setSelectedMood(null);
-        setJournalType('personal');
-        setCurrentJournalId(null);
-        setPendingBackendSync(false);
-      }
-
-      showMessage('Journal entry deleted successfully');
-    } catch (error) {
-      console.error('Error deleting journal entry:', error);
-      showMessage('Failed to delete journal entry from server, but removed locally', true);
     }
   };
 
@@ -595,24 +727,93 @@ const JournalEntry: React.FC = () => {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 }
   };
+  // Add this useEffect to load journal media
+  useEffect(() => {
+    const fetchJournalMedia = async () => {
+      if (currentJournalId && !currentJournalId.startsWith('temp_')) {
+        try {
+          interface MediaResponse {
+            success: boolean;
+            media: Record<string, Array<{
+              url: string;
+              fileName?: string;
+              cloudinaryPublicId: string;
+              cloudinaryResourceType: string;
+            }>>;
+          }
 
+          const response = await axios.get<MediaResponse>(`/api/journal-entry?action=get-media&journalId=${currentJournalId}`);
+
+          if (response.data.success) {
+            const existingMediaFiles: MediaFile[] = [];
+
+            // Process each media type from the response
+            Object.entries(response.data.media).forEach(([type, files]) => {
+              files.forEach((file, index) => {
+                if (file.url) {
+                  existingMediaFiles.push({
+                    id: `existing-${type}-${index}`,
+                    // Creating a placeholder file object since we don't have the actual file
+                    file: new File([], file.fileName || `${type}-file-${index}`, { type: `${type}/*` }),
+                    type: type as 'image' | 'audio' | 'video' | 'document',
+                    progress: 100,
+                    status: 'success',
+                    url: file.url,
+                    cloudinaryPublicId: file.cloudinaryPublicId,
+                    cloudinaryResourceType: file.cloudinaryResourceType
+                  });
+                }
+              });
+            });
+
+            if (existingMediaFiles.length > 0) {
+              setMediaFiles(existingMediaFiles);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching journal media:', error);
+        }
+      } else if (journalMedia) {
+        // Fall back to journalMedia if provided and journalId is temporary
+        const existingMediaFiles: MediaFile[] = [];
+
+        // Process each media type
+        Object.entries(journalMedia).forEach(([type, files]) => {
+          if (Array.isArray(files)) {
+            files.forEach((file, index) => {
+              if (file && file.url) {
+                existingMediaFiles.push({
+                  id: `existing-${type}-${index}`,
+                  file: new File([], file.fileName || `${type}-file-${index}`, { type: `${type}/*` }),
+                  type: type as 'image' | 'audio' | 'video' | 'document',
+                  progress: 100,
+                  status: 'success',
+                  url: file.url,
+                  cloudinaryPublicId: file.cloudinaryPublicId || '',
+                  cloudinaryResourceType: file.cloudinaryResourceType || ''
+                });
+              }
+            });
+          }
+        });
+
+        if (existingMediaFiles.length > 0) {
+          setMediaFiles(existingMediaFiles);
+        }
+      }
+    };
+
+    fetchJournalMedia();
+  }, [currentJournalId, journalMedia]);
   return (
     <div
       className="flex flex-col h-screen transition-all duration-300"
       style={{ backgroundColor: styles.bgPage }}
     >
+
       {/* Success Message Toast */}
       {successMessage && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          className="fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded shadow-lg z-50 flex items-center"
-          style={{ maxWidth: "calc(100% - 2rem)" }}
-        >
-          <div className="mr-2">✓</div>
-          <p>{successMessage}</p>
-        </motion.div>
+        <Toast message={successMessage} type="success" visible={true} duration={3000} />
       )}
 
       {/* Error Message Toast */}
@@ -628,12 +829,53 @@ const JournalEntry: React.FC = () => {
           <p>{errorMessage}</p>
         </motion.div>
       )}
+      {/* Error Message Toast */}
+      {errorMessage && (
+        <Toast message={errorMessage} type="error" visible={true} duration={2000} />
+      )}
       {/* Journal Header */}
-      <JournalHeader title={title} date={date} setDate={setDate} viewMode={viewMode} setViewMode={setViewMode} isHeaderCollapsed={isHeaderCollapsed} setIsHeaderCollapsed={setIsHeaderCollapsed} showSettings={showSettings} setShowSettings={setShowSettings} showMood={showMood} setShowMood={setShowMood} selectedMood={selectedMood} setSelectedMood={setSelectedMood} moods={moods} journalType={journalType} journalTypes={journalTypes} showColorPalette={showColorPalette} setShowColorPalette={setShowColorPalette} accentColors={accentColors} selectedAccent={selectedAccent} changeAccentColor={changeAccentColor} revealAnimation={revealAnimation} wordCount={wordCount} lastSaved={lastSaved} isUnsaved={isUnsaved} viewModes={viewModes} styles={styles} getFormattedTime={getFormattedTime}
+      <JournalHeader
+        title={title}
+        date={date}
+        setDate={setDate}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        isHeaderCollapsed={isHeaderCollapsed}
+        setIsHeaderCollapsed={setIsHeaderCollapsed}
+        showSettings={showSettings}
+        setShowSettings={setShowSettings}
+        showMood={showMood}
+        setShowMood={setShowMood}
+        selectedMood={selectedMood}
+        setSelectedMood={setSelectedMood}
+        moods={moods}
+        journalType={journalType}
+        journalTypes={journalTypes}
+        showColorPalette={showColorPalette}
+        setShowColorPalette={setShowColorPalette}
+        accentColors={accentColors}
+        selectedAccent={selectedAccent}
+        changeAccentColor={changeAccentColor}
+        revealAnimation={revealAnimation}
+        wordCount={wordCount}
+        lastSaved={lastSaved}
+        isUnsaved={isUnsaved}
+        viewModes={viewModes}
+        styles={styles}
+        getFormattedTime={getFormattedTime}
       />
 
       {/* Settings Panel */}
-      <SettingsPanel showSettings={showSettings} viewMode={viewMode} journalType={journalType} setJournalType={setJournalType} setViewMode={setViewMode} journalTypes={journalTypes} viewModes={viewModes} styles={styles} isDarkMode={isDarkMode}
+      <SettingsPanel
+        showSettings={showSettings}
+        viewMode={viewMode}
+        journalType={journalType}
+        setJournalType={setJournalType}
+        setViewMode={setViewMode}
+        journalTypes={journalTypes}
+        viewModes={viewModes}
+        styles={styles}
+        isDarkMode={isDarkMode}
       />
 
       {/* Main content area */}
@@ -726,12 +968,40 @@ const JournalEntry: React.FC = () => {
                   styles={styles}
                 />
 
-                <FileAttachments
-                  files={files}
-                  handleFileChange={handleFileChange}
-                  styles={styles}
-                  removeFile={removeFile}
-                />
+                {/* Media uploader component - updated to handle the new media schema */}
+                <div className="flex flex-col gap-4">
+                  <MediaSelector
+                    onFileSelect={handleFileSelect}
+                    mediaLimits={MEDIA_LIMITS}
+                    disabled={isUploading}
+                    currentFiles={mediaFiles}
+                  />
+
+                  <MediaPreview
+                    mediaFiles={mediaFiles}
+                    onRemove={handleRemoveFile}
+                    isUploading={isUploading}
+                  />
+
+                  {mediaFiles.length > 0 && mediaFiles.some(m => m.status === 'idle') && (
+                    <motion.button
+                      onClick={handleUpload}
+                      disabled={isUploading || !mediaUploadState}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium shadow-md hover:shadow-lg transition-all"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      style={{
+                        backgroundColor: isUploading || !mediaUploadState ? '#9CA3AF' : styles.primaryColor,
+                        color: '#FFFFFF',
+                        opacity: isUploading || !mediaUploadState ? 0.7 : 1,
+                        cursor: isUploading || !mediaUploadState ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      <Save size={18} />
+                      <span>{isUploading ? 'Uploading...' : 'Upload Files'}</span>
+                    </motion.button>
+                  )}
+                </div>
               </motion.div>
             )}
 

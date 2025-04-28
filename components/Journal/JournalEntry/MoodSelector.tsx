@@ -1,7 +1,7 @@
 import React from 'react';
 import { MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mood } from './types';
+import { Mood } from '../types';
 
 interface MoodSelectorProps {
   showMood: boolean;

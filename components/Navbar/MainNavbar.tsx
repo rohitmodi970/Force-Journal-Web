@@ -13,10 +13,13 @@ const MainNavbar: React.FC = () => {
   const pathname = usePathname();
   
   // Check if current page is a journal page
-  const isJournalPage = pathname?.includes('/journal-entry');
+  const isJournalPage = pathname?.includes('/journal');
+  const isJournalEntry = pathname?.includes('/journal-entry');
   
   // Check if current page is homepage
   const isHomePage = pathname === '/';
+  const isLoginPage = pathname === '/login';
+  const isRegisterPage = pathname === '/register';
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
@@ -29,23 +32,25 @@ const MainNavbar: React.FC = () => {
     { name: "Home", href: "/", icon: "HiHome" },
     { name: "About", href: "/about", icon: "HiUser" },
     { name: "Contact", href: "/contact", icon: "HiMail" },
-  ];
+  ]; 
 
   // Additional menu items only for logged-in users
   const privateMenuItems = [
-    { name: "Journal", href: "/journal-entry", icon: "HiDocumentText" },
+    { name: "Home", href: "/", icon: "HiHome" },
+    {name:"New Entry",href: "/journal-entry", icon: "GiNotebook"},
+    { name: "Journal", href: "/journal", icon: "HiDocumentText" },
     { name: "Analysis", href: "/analysis", icon: "HiOutlineChip" },
   ];
 
   // Determine which menu items to show based on session status
-  const menuItems = session ? [...publicMenuItems, ...privateMenuItems] : publicMenuItems;
+  const menuItems = session ? [...privateMenuItems] : [...publicMenuItems];
 
   // Don't render navbar on homepage
-  // if (isHomePage) {
-  //   return null;
-  // }
+  if ((isHomePage ||isLoginPage ||isRegisterPage) && !session) {
+    return null;
+  }
 
-  return isJournalPage ? (
+  return (isJournalPage || isJournalEntry) ? (
     <SideNavbar
       currentTheme={currentTheme}
       isDarkMode={isDarkMode}
@@ -59,7 +64,6 @@ const MainNavbar: React.FC = () => {
       currentTheme={currentTheme}
       isDarkMode={isDarkMode}
       toggleDarkMode={toggleDarkMode}
-      session={session}
       pathname={pathname}
       menuItems={menuItems}
       isScrolled={isScrolled}

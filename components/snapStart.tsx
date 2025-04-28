@@ -7,14 +7,20 @@ import {
     Loader2
 } from 'lucide-react';
 import TypingText from './ui/TypingText';
+import { useSession } from "next-auth/react";
 
-const SnapStart = () => {
+interface SnapStartProps {
+  onComplete?: () => void;
+}
+
+const SnapStart = ({ onComplete }: SnapStartProps) => {
     const [currentSection, setCurrentSection] = useState(0);
     const [loading, setLoading] = useState(false);
     const totalSections = 10; // Landing + 8 questions + final welcome
     const [answers, setAnswers] = useState({});
     const [formData, setFormData] = useState<Record<string, any>>({});
     const [submitStatus, setSubmitStatus] = useState<'loading' | 'success' | 'error' | null>(null);
+     const { data: session } = useSession();
     // Handle section navigation
     const goToNextSection = () => {
         if (currentSection === 0) {
@@ -25,6 +31,9 @@ const SnapStart = () => {
             setTimeout(() => {
                 setLoading(false);
             }, 3000);
+        } else if (currentSection >= totalSections - 1) {
+            // If we're at the last section, call onComplete
+            if (onComplete) onComplete();
         } else {
             // Add smooth transition with scroll to top
             window.scrollTo(0, 0);
@@ -140,9 +149,9 @@ const SnapStart = () => {
                         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-blue-200 to-purple-200 opacity-20 blur-xl rounded-full -z-10"></div>
                     </div>
                     <div className="leading-relaxed mt-2">
-                        <span className="font-medium text-2xl">meet your next </span>
+                        <span className="font-medium text-2xl">meet your  </span>
                         <TypingText
-                            texts={["best friend", "coach", "confidant", "life changer", "wingman", "motivator", "growth catalyst"]}
+                            texts={[ "like minded community", "soul", "motivator", "growth catalyst"]}
                             typingSpeed={100}
                             pauseDuration={1500}
                             showCursor={true}

@@ -12,12 +12,18 @@ declare module "next-auth" {
       id?: string;
       name?: string | null;
       email?: string | null;
-      image?: string | null;
+      new_user?: boolean;
     }
   }
   
   interface JWT {
     id?: string;
+    new_user?: boolean;
+  }
+
+  interface User {
+    id?: string;
+    new_user?: boolean;
   }
 }
 
@@ -28,6 +34,7 @@ export const authOptions: NextAuthOptions = {
         credentials: {
           email: { label: "Email", type: "email" },
           password: { label: "Password", type: "password" },
+          ipAddress: { label: "IP Address", type: "text" },
         },
         async authorize(credentials) {
           if (!credentials?.email || !credentials?.password) {
@@ -53,11 +60,20 @@ export const authOptions: NextAuthOptions = {
           if (!isPasswordCorrect) {
             throw new Error("Invalid credentials");
           }
+          
+          // Update IP address and check if new_user
+          const isNewUser = user.new_user;
+          
+          // Update IP address and set new_user to false
+          await User.findByIdAndUpdate(user._id, {
+            ip_address: credentials.ipAddress || user.ip_address || '0.0.0.0',
+          });
   
           return {
             id: user._id.toString(),
             email: user.email,
-            name: user.name, 
+            name: user.name,
+            new_user: isNewUser
           };
         }
       })
@@ -80,6 +96,7 @@ export const authOptions: NextAuthOptions = {
       async jwt({ token, user }) {
         if (user) {
           token.id = user.id;
+          token.new_user = user.new_user;
         }
         return token;
       },
@@ -88,6 +105,7 @@ export const authOptions: NextAuthOptions = {
   
         if (session.user && token.id) {
           session.user.id = token.id as string;
+          session.user.new_user = token.new_user as boolean | undefined;
         }
   
         return session;

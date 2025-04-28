@@ -10,7 +10,7 @@ import {
   Clock
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { ViewMode } from './types';
+import { ViewMode } from '../types';
 import MoodSelector from './MoodSelector';
 import ColorPalette from '../../ui/ColorPalette';
 import { useTheme } from '@/utilities/context/ThemeContext';

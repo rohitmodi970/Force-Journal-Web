@@ -16,15 +16,15 @@ const Counter = mongoose.models.Counter || mongoose.model(
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password, name, phone } = body;
+    const { email, password, name, phone,ip_address } = body;
 
-    if (!email || !password || !name || !phone) {
+    if (!email || !password || !name || !phone|| !ip_address) {
       return NextResponse.json(
         { error: 'Required details are missing' },
         { status: 400 }
       );
     }
-
+    const userIpAddress = ip_address || '0.0.0.0';
     await connectDB();
 
     const existingUserEmail = await User.findOne({ email });
@@ -52,16 +52,25 @@ export async function POST(request: Request) {
       phone,
       email,
       username: email.split('@')[0],
-      password: hashedPassword
+      password: hashedPassword,
+      new_user: true,
+      ip_address: userIpAddress
     });
-
+    console.log('Creating user with IP:', userIpAddress);
+    console.log('User created:', {
+      id: newUser._id,
+      email: newUser.email,
+      ip: newUser.ip_address,
+      new_user: newUser.new_user
+    });
     return NextResponse.json(
       {
         success: true,
         user: {
           userId: newUser.userId, 
           _id: newUser._id.toString(),
-          email: newUser.email
+          email: newUser.email,
+          new_user: true
         }
       },
       { status: 201 }

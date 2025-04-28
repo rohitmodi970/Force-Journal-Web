@@ -32,7 +32,7 @@ const Navbar: React.FC = () => {
 
   const menuItems: MenuItem[] = [
     { name: "Home", href: "/", icon: <HiHome className="w-5 h-5" /> },
-    { name: "About", href: "/about", icon: <HiUser className="w-5 h-5" /> },
+    { name: "About", href: "https://force-about-page.vercel.app/", icon: <HiUser className="w-5 h-5" /> },
     { name: "Contact", href: "/contact", icon: <HiMail className="w-5 h-5" /> },
     { name: "Journal", href: "/journal-entry", icon: <HiDocumentText className="w-5 h-5" /> },
   ];

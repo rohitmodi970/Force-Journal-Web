@@ -7,6 +7,8 @@ export interface IUser extends Document {
   password: string;
   phone: string;
   username: string;
+  new_user:boolean;
+  ip_address: string;
   isActive?: boolean;
 }
 
@@ -17,6 +19,8 @@ const userSchema = new Schema<IUser>(
       required: true,
       unique: true,
     },
+    ip_address : { type: String, required: true },
+    new_user:{ type: Boolean, default: true },
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true, lowercase: true },
     password: { type: String, required: true },
@@ -24,7 +28,7 @@ const userSchema = new Schema<IUser>(
     username: { type: String, required: true, unique: true },
     isActive: { type: Boolean, default: true },
   },
-  { timestamps: true }
+  { timestamps: true } 
 );
 
 export default mongoose.models.User || mongoose.model<IUser>("User", userSchema);

@@ -26,15 +26,16 @@ interface ThemeContextType {
 }
 
 // Define color options
-export const colorOptions: ColorOption[] = [
-  { name: 'Red', primary: '#F43F5E', hover: '#E11D48', active: '#BE123C', light: 'rgba(244, 63, 94, 0.1)', medium: 'rgba(244, 63, 94, 0.3)' },
-  { name: 'Orange', primary: '#F97316', hover: '#EA580C', active: '#C2410C', light: 'rgba(249, 115, 22, 0.1)', medium: 'rgba(249, 115, 22, 0.3)' },
-  { name: 'Yellow', primary: '#FACC15', hover: '#EAB308', active: '#CA8A04', light: 'rgba(250, 204, 21, 0.1)', medium: 'rgba(250, 204, 21, 0.3)' },
-  { name: 'Green', primary: '#10B981', hover: '#059669', active: '#047857', light: 'rgba(16, 185, 129, 0.1)', medium: 'rgba(16, 185, 129, 0.3)' },
-  { name: 'Blue', primary: '#3B82F6', hover: '#2563EB', active: '#1D4ED8', light: 'rgba(59, 130, 246, 0.1)', medium: 'rgba(59, 130, 246, 0.3)' },
-  { name: 'Indigo', primary: '#6366F1', hover: '#4F46E5', active: '#4338CA', light: 'rgba(99, 102, 241, 0.1)', medium: 'rgba(99, 102, 241, 0.3)' },
-  { name: 'Violet', primary: '#8B5CF6', hover: '#7C3AED', active: '#6D28D9', light: 'rgba(139, 92, 246, 0.1)', medium: 'rgba(139, 92, 246, 0.3)' },
+const colorOptions: ColorOption[] = [
+  { name: 'Red', primary: '#E53E3E', hover: '#C53030', active: '#9B2C2C', light: 'rgba(229, 62, 62, 0.1)', medium: 'rgba(229, 62, 62, 0.3)' },
+  { name: 'Orange', primary: '#ED8936', hover: '#DD6B20', active: '#C05621', light: 'rgba(237, 137, 54, 0.1)', medium: 'rgba(237, 137, 54, 0.3)' },
+  { name: 'Yellow', primary: '#ECC94B', hover: '#D69E2E', active: '#B7791F', light: 'rgba(236, 201, 75, 0.1)', medium: 'rgba(236, 201, 75, 0.3)' },
+  { name: 'Green', primary: '#48BB78', hover: '#38A169', active: '#2F855A', light: 'rgba(72, 187, 120, 0.1)', medium: 'rgba(72, 187, 120, 0.3)' },
+  { name: 'Blue', primary: '#4299E1', hover: '#3182CE', active: '#2B6CB0', light: 'rgba(66, 153, 225, 0.1)', medium: 'rgba(66, 153, 225, 0.3)' },
+  { name: 'Indigo', primary: '#667EEA', hover: '#5A67D8', active: '#4C51BF', light: 'rgba(102, 126, 234, 0.1)', medium: 'rgba(102, 126, 234, 0.3)' },
+  { name: 'Purple', primary: '#9F7AEA', hover: '#805AD5', active: '#6B46C1', light: 'rgba(159, 122, 234, 0.1)', medium: 'rgba(159, 122, 234, 0.3)' },
 ];
+export { colorOptions };
 
 // Default values
 const defaultTheme = colorOptions[4]; // Blue

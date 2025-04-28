@@ -1,67 +1,83 @@
-"use client"    
-import React, { useState } from 'react';
+"use client"
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
-
+import { UserPlus  } from 'lucide-react';
 const LoginForm = () => {
-const router = useRouter();
+  const router = useRouter();
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [ipAddress, setIpAddress] = useState<string>('');
 
+  // Fetch IP address on component mount
+  useEffect(() => {
+    const getIpAddress = async () => {
+      try {
+        const response = await fetch('https://api.ipify.org?format=json');
+        const data = await response.json();
+        setIpAddress(data.ip);
+      } catch (error) {
+        console.error('Failed to fetch IP address:', error);
+      }
+    };
+
+    getIpAddress();
+  }, [email]);
 
 
 
   const handleLogin = async (e: React.FormEvent) => {
-      e.preventDefault();
-      
-      if (!email || !password) {
-        setError('Email and password are required');
+    e.preventDefault();
+
+    if (!email || !password) {
+      setError('Email and password are required');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setError('');
+
+      const result = await signIn('credentials', {
+        redirect: false,
+        email,
+        password,
+        ipAddress
+      });
+
+      if (result?.error) {
+        setError('Invalid email or password');
+        setIsLoading(false);
         return;
       }
-  
-      try {
-        setIsLoading(true);
-        setError('');
-        
-        const result = await signIn('credentials', {
-          redirect: false,
-          email,
-          password,
-        });
-  
-        if (result?.error) {
-          setError('Invalid email or password');
-          setIsLoading(false);
-          return;
-        }
-  
-        // Redirect to dashboard on successful login
-        router.push('/');
-      } catch (err) {
-        setError('An error occurred during login');
-        setIsLoading(false);
-        console.error(err);
-      }
-    };
-  
-    const handleOAuthSignIn = (provider: string) => {
-      setIsLoading(true);
-      signIn(provider, { callbackUrl: '/dashboard' });
-    };
+
+      // Redirect to dashboard on successful login
+      router.push('/');
+    } catch (err) {
+      setError('An error occurred during login');
+      setIsLoading(false);
+      console.error(err);
+    }
+  };
+
+  // const handleOAuthSignIn = (provider: string) => {
+  //   setIsLoading(true);
+  //   signIn(provider, { callbackUrl: '/dashboard' });
+  // };
   return (
     <div className='min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white py-8 flex flex-col items-center justify-center'>
       <div className='container mx-auto max-w-md px-6 py-8 bg-gray-800 rounded-xl shadow-2xl'>
         <h1 className='font-bold text-3xl text-center mb-8'>Login to Your Account</h1>
-        
+
         {error && (
           <div className="bg-red-500 bg-opacity-20 border border-red-500 text-red-100 px-4 py-3 rounded mb-6">
             {error}
           </div>
         )}
-        
+
         <form onSubmit={handleLogin} className="flex flex-col gap-5">
           <div className="w-full space-y-4">
             <div>
@@ -78,7 +94,7 @@ const router = useRouter();
                 required
               />
             </div>
-            
+
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">
                 Password
@@ -93,13 +109,13 @@ const router = useRouter();
                 required
               />
             </div>
-            
+
             <div className="flex justify-end">
               <Link href="/forgot-password" className="text-sm text-blue-400 hover:text-blue-300">
                 Forgot your password?
               </Link>
             </div>
-            
+
             <button
               type="submit"
               disabled={isLoading}
@@ -108,7 +124,7 @@ const router = useRouter();
               {isLoading ? 'Logging in...' : 'Sign In'}
             </button>
           </div>
-          
+
           <div className="relative w-full py-2">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-600"></div>
@@ -119,9 +135,9 @@ const router = useRouter();
               </span>
             </div>
           </div>
-          
-          
-          
+
+
+
           {/* Link to register page */}
           <p className="text-sm text-gray-400 mt-2 text-center">
             Don't have an account yet?{' '}
@@ -130,6 +146,15 @@ const router = useRouter();
             </Link>
           </p>
         </form>
+      </div>
+      <div className="fixed bottom-8 right-8 z-50 ">
+        <Link
+          href="/"
+          className="flex items-center gap-2 bg-red-600 hover:bg-primary/90 text-white px-4 py-2 rounded-full shadow-lg transition-colors"
+        >
+          <UserPlus  className="w-5 h-5" />
+          <span>Register</span>
+        </Link>
       </div>
     </div>
   )

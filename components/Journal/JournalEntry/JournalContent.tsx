@@ -1,7 +1,7 @@
 // src/components/JournalEntry/JournalContent.tsx
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ViewMode } from './types';
+import { ViewMode } from '../types';
 
 interface JournalContentProps {
   viewMode: ViewMode;

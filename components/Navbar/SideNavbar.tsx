@@ -1,12 +1,12 @@
 "use client"
 import React, { useState, useEffect, useRef } from "react";
 import { IoMenu, IoClose } from "react-icons/io5";
-import { HiHome, HiUser, HiMail, HiDocumentText, HiSun, HiMoon, HiLogin, HiLogout, HiArchive,HiOutlineChip } from "react-icons/hi";
+import { HiHome, HiUser, HiMail, HiDocumentText, HiSun, HiMoon, HiLogin, HiLogout, HiArchive,HiOutlineChip,HiNewspaper } from "react-icons/hi";
 import { useRouter } from "next/navigation";
 import { signIn, signOut } from "next-auth/react";
 import { JSX } from "react/jsx-runtime";
 import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from "framer-motion";
-
+import { GiNotebook } from "react-icons/gi";
 // Define props interface for side navbar
 interface SideNavbarProps {
   currentTheme: {
@@ -151,7 +151,8 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
       HiMail: <HiMail size={size} />,
       HiDocumentText: <HiDocumentText size={size} />,
       HiArchive: <HiArchive size={size} />,
-      HiOutlineChip : <HiOutlineChip size={size} />
+      HiOutlineChip : <HiOutlineChip size={size} />,
+      GiNotebook : <GiNotebook size={size} />
     };
     return icons[iconName] || <HiHome size={size} />;
   };
@@ -212,7 +213,7 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
     }
     timeoutRef.current = setTimeout(() => {
       setShowAllIcons(false);
-    }, 2000);
+    }, 1000);
   };
 
   // Handle mouse move to update mouseY value for dock effect
