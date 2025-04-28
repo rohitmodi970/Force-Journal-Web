@@ -353,14 +353,15 @@ const JournalModal: React.FC<JournalModalProps> = ({
             <div className="w-full md:w-1/2 lg:w-2/5 p-5 sm:p-6 overflow-y-auto order-2 md:order-1 flex flex-col">
                <div> {/* Header info */}
                   <h2 id="journal-title" className="text-2xl font-bold mb-1 text-gray-900 dark:text-gray-100">{entry.title || "Untitled Entry"}</h2>
-                  <p className="text-sm text-muted-foreground dark:text-gray-400 mb-4">
-                    {entryDate
+                   {/*<p className="text-sm text-muted-foreground dark:text-gray-400 mb-4">
+                   {entryDate
                       ? entryDate.toLocaleDateString(undefined, { // Use user's locale
                           weekday: "long", year: "numeric", month: "long", day: "numeric",
                         })
                       : "No Date"}
                      {entry.location && ` - ${entry.location}`}
                   </p>
+                  */}
                    {/* Mood & Tags */}
                   <div className="flex flex-wrap gap-1.5 mb-4">
                      {entry.mood && <span className="text-xs font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-200">Mood: {entry.mood}</span>}
