@@ -4,8 +4,8 @@ import React, { useState, useRef, useEffect } from "react";
 interface DropdownContextType {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  triggerRef: React.RefObject<HTMLDivElement>;
-  menuRef: React.RefObject<HTMLDivElement>;
+  triggerRef: React.RefObject<HTMLDivElement | null>;
+  menuRef: React.RefObject<HTMLDivElement | null>;
 }
 
 const DropdownContext = React.createContext<DropdownContextType | undefined>(undefined);
