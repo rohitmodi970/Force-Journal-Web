@@ -10,7 +10,7 @@ cloudinary.config({
 
 interface UploadOptions {
   folder: string;
-  resource_type: string;
+  resource_type: 'video' | 'image' | 'auto' | 'raw';
   public_id?: string;
 }
 
