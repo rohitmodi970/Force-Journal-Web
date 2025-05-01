@@ -1,16 +1,16 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import TypingText from './ui/TypingText';
-import { useRouter } from 'next/navigation';
-interface LandingProps {
-  goToNextSection: () => void;
+
+interface PreAuthLandingProps {
+  onComplete: () => void;
 }
 
-const Landing: React.FC<LandingProps> = () => {
-  const router = useRouter();
+const PreAuthLanding: React.FC<PreAuthLandingProps> = ({ onComplete }) => {
   const handleNext = () => {
-    router.push('/login');
+    onComplete();
   }
+  
   return (
     <motion.div 
       className="flex justify-center items-center min-h-screen flex-col gap-3 bg-gradient-to-r from-purple-400 via-pink-500 to-red-500"
@@ -70,4 +70,4 @@ const Landing: React.FC<LandingProps> = () => {
   );
 };
 
-export default Landing;
+export default PreAuthLanding;
