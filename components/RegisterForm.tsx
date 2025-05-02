@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { SkipBack } from 'lucide-react';
+import { FcGoogle } from 'react-icons/fc';
 
 interface RegistrationData {
   email: string;
@@ -125,6 +126,12 @@ const RegisterForm = () => {
       console.error(err);
       setIsSubmitting(false);
     }
+  };
+
+  // Handle Google Sign In
+  const handleGoogleSignIn = () => {
+    setIsSubmitting(true);
+    signIn('google', { callbackUrl: '/' });
   };
 
   // Handle phone input with country code
@@ -272,6 +279,29 @@ const RegisterForm = () => {
             </button>
           </div>
 
+          <div className="relative w-full py-2">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-600"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 text-gray-400 bg-gray-800">
+                Or register with
+              </span>
+            </div>
+          </div>
+
+          <div className="w-full">
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              className="w-full flex items-center justify-center gap-3 bg-white text-gray-800 hover:bg-gray-100 font-medium py-3 px-4 rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              disabled={isSubmitting}
+            >
+              <FcGoogle className="text-xl" />
+              <span>Sign up with Google</span>
+            </button>
+          </div>
+
           <p className="text-sm text-gray-400 mt-2 text-center">
             Already have an account?{' '}
             <a href="/login" className="text-blue-400 hover:text-blue-300 font-medium">
@@ -281,14 +311,14 @@ const RegisterForm = () => {
         </form>
       </div>
       <div className="fixed bottom-8 right-8 z-50 ">
-              <Link
-                href="/"
-                className="flex items-center gap-2 bg-red-600 hover:bg-primary/90 text-white px-4 py-2 rounded-full shadow-lg transition-colors"
-              >
-                <SkipBack className="w-5 h-5" />
-                <span>Back</span>
-              </Link>
-            </div>
+        <Link
+          href="/"
+          className="flex items-center gap-2 bg-red-600 hover:bg-primary/90 text-white px-4 py-2 rounded-full shadow-lg transition-colors"
+        >
+          <SkipBack className="w-5 h-5" />
+          <span>Back</span>
+        </Link>
+      </div>
     </div>
   );
 };

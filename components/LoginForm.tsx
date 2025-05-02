@@ -3,7 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
-import { UserPlus  } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
+import { FcGoogle } from 'react-icons/fc';
+
 const LoginForm = () => {
   const router = useRouter();
   const [email, setEmail] = useState<string>('');
@@ -26,8 +28,6 @@ const LoginForm = () => {
 
     getIpAddress();
   }, [email]);
-
-
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,10 +63,11 @@ const LoginForm = () => {
     }
   };
 
-  // const handleOAuthSignIn = (provider: string) => {
-  //   setIsLoading(true);
-  //   signIn(provider, { callbackUrl: '/dashboard' });
-  // };
+  const handleGoogleSignIn = () => {
+    setIsLoading(true);
+    signIn('google', { callbackUrl: '/' });
+  };
+  
   return (
     <div className='min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white py-8 flex flex-col items-center justify-center'>
       <div className='container mx-auto max-w-md px-6 py-8 bg-gray-800 rounded-xl shadow-2xl'>
@@ -136,7 +137,17 @@ const LoginForm = () => {
             </div>
           </div>
 
-
+          <div className="w-full">
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              className="w-full flex items-center justify-center gap-3 bg-white text-gray-800 hover:bg-gray-100 font-medium py-3 px-4 rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              disabled={isLoading}
+            >
+              <FcGoogle className="text-xl" />
+              <span>Sign in with Google</span>
+            </button>
+          </div>
 
           {/* Link to register page */}
           <p className="text-sm text-gray-400 mt-2 text-center">
@@ -152,12 +163,12 @@ const LoginForm = () => {
           href="/register"
           className="flex items-center gap-2 bg-red-600 hover:bg-primary/90 text-white px-4 py-2 rounded-full shadow-lg transition-colors"
         >
-          <UserPlus  className="w-5 h-5" />
+          <UserPlus className="w-5 h-5" />
           <span>Register</span>
         </Link>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default LoginForm
+export default LoginForm;
