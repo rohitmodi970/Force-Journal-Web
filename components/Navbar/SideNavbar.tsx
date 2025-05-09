@@ -7,6 +7,8 @@ import { signIn, signOut } from "next-auth/react";
 import { JSX } from "react/jsx-runtime";
 import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from "framer-motion";
 import { GiNotebook } from "react-icons/gi";
+import LogoutButton from "../LogoutButton";
+import { GrUserSettings } from "react-icons/gr";
 // Define props interface for side navbar
 interface SideNavbarProps {
   currentTheme: {
@@ -152,7 +154,8 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
       HiDocumentText: <HiDocumentText size={size} />,
       HiArchive: <HiArchive size={size} />,
       HiOutlineChip : <HiOutlineChip size={size} />,
-      GiNotebook : <GiNotebook size={size} />
+      GiNotebook : <GiNotebook size={size} />,
+           GrUserSettings: <GrUserSettings className={`w-${size} h-${size}`} />
     };
     return icons[iconName] || <HiHome size={size} />;
   };
@@ -339,15 +342,25 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
                   <span>{isDarkMode ? "Light Mode" : "Dark Mode"}</span>
                 </motion.button>
                 
-                <motion.button
-                  onClick={() => session ? signOut() : signIn()}
+                {session ? (
+                  <LogoutButton 
+                  className="w-full mt-2 px-4 py-2 rounded-full text-white font-semibold shadow-md hover:shadow-lg transition-all duration-300"
+                  style={buttonGradientStyle}
+                  text="Logout"
+                  onMouseOver={() => {}}
+                  onMouseOut={() => {}}
+                  />
+                ) : (
+                  <motion.button
+                  onClick={() => signIn()}
                   className="w-full mt-2 px-4 py-2 rounded-full text-white font-semibold shadow-md hover:shadow-lg transition-all duration-300"
                   style={buttonGradientStyle}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                >
-                  {session ? "Logout" : "Login / Signup"}
-                </motion.button>
+                  >
+                  Login / Signup
+                  </motion.button>
+                )}
               </div>
             </div>
           ) : (

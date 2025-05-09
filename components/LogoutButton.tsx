@@ -29,14 +29,21 @@ const LogoutButton = ({
         });
       }
       
-      // Then sign out
-      await signOut({ redirect: true, callbackUrl: '/login' });
+      // Sign out with proper redirect configuration
+      await signOut({
+        callbackUrl: '/auth/login',
+        redirect: true
+      });
     } catch (error) {
       console.error('Error during logout:', error);
       // Still attempt to sign out even if the API call fails
-      await signOut({ redirect: true, callbackUrl: '/login' });
+      await signOut({
+        callbackUrl: '/auth/login',
+        redirect: true
+      });
     }
   };
+  
 
   return (
     <button 

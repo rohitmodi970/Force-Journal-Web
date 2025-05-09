@@ -1,35 +1,39 @@
+// app/api/media/delete/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/utilities/auth';
 import connectDB from '@/db/connectDB';
-import { deleteFromCloudinary } from '@/lib/cloudinary';
 import Journal from '@/models/JournalModel';
-import { validateJournalAccess } from '@/lib/media-utils';
+import { deleteFileFromDrive } from '@/utilities/googleDrive';
 
 export async function DELETE(req: NextRequest) {
   try {
-    // Check authentication
-    const token = await getToken({ req });
-    if (!token) {
-      return NextResponse.json(
-        { message: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    // 1. Database and authentication setup
+    await connectDB();
+    const session = await getServerSession(authOptions);
     
-    const userId = token.id;
-    if (!userId) {
+    if (!session?.user?.email) {
       return NextResponse.json(
-        { message: 'User ID not found in token' },
+        { error: 'Authentication required' }, 
         { status: 401 }
       );
     }
 
-    // Parse request body
-    const { cloudinaryPublicId, journalId, mediaType } = await req.json();
-    
-    if (!cloudinaryPublicId || !journalId || !mediaType) {
+    // Check for access token
+    if (!session.accessToken) {
       return NextResponse.json(
-        { message: 'Missing required fields (cloudinaryPublicId, journalId, or mediaType)' },
+        { error: 'Google Drive access token not available. Please reconnect your Google account.' }, 
+        { status: 401 }
+      );
+    }
+
+    // 2. Parse request body
+    const { driveFileId, journalId, mediaType } = await req.json();
+    
+    // 3. Input validation
+    if (!driveFileId || !journalId || !mediaType) {
+      return NextResponse.json(
+        { error: 'Missing required fields (driveFileId, journalId, or mediaType)' }, 
         { status: 400 }
       );
     }
@@ -37,62 +41,66 @@ export async function DELETE(req: NextRequest) {
     // Validate mediaType is one of the allowed types
     if (!['image', 'audio', 'video', 'document'].includes(mediaType)) {
       return NextResponse.json(
-        { message: 'Invalid media type' },
+        { error: 'Invalid media type' }, 
         { status: 400 }
       );
     }
 
-    // Connect to database
-    await connectDB();
-    
-    // Validate journal access
-    try {
-      await validateJournalAccess(journalId, Number(userId));
-    } catch (error: any) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: 403 }
-      );
-    }
-
-    // Find the journal
+    // 4. Find the journal
     const journal = await Journal.findOne({ journalId });
     
     if (!journal) {
       return NextResponse.json(
-        { message: 'Journal not found' },
+        { error: 'Journal not found' }, 
         { status: 404 }
       );
     }
 
-    // Find the media item in the appropriate array
-    const mediaArray = journal.media[mediaType as 'image' | 'audio' | 'video' | 'document'];
-    const mediaIndex = mediaArray.findIndex(item => item.cloudinaryPublicId === cloudinaryPublicId);
+    // 5. Verify user owns the journal
+    if (journal.userId !== session.user.userId) {
+      return NextResponse.json(
+        { error: 'Access denied to this journal' }, 
+        { status: 403 }
+      );
+    }
+
+    // 6. Find the media item in the appropriate array
+    const mediaArray = journal.media?.[mediaType as 'image' | 'audio' | 'video' | 'document'];
+    
+    if (!mediaArray) {
+      return NextResponse.json(
+        { error: `No ${mediaType} media found in journal` }, 
+        { status: 404 }
+      );
+    }
+
+    const mediaIndex = mediaArray.findIndex(item => item.driveFileId === driveFileId);
     
     if (mediaIndex === -1) {
       return NextResponse.json(
-        { message: 'Media not found in journal' },
+        { error: 'Media not found in journal' }, 
         { status: 404 }
       );
     }
 
-    // Get the media item
+    // 7. Get the media item
     const mediaItem = mediaArray[mediaIndex];
 
-    // Delete from Cloudinary
-    const deletionResult = await deleteFromCloudinary(
-      mediaItem.cloudinaryPublicId,
-      mediaItem.cloudinaryResourceType
-    );
-
-    if (!deletionResult) {
+    // 8. Delete from Google Drive
+    try {
+      await deleteFileFromDrive(session.accessToken, mediaItem.driveFileId);
+    } catch (deleteError: any) {
+      console.error('Google Drive deletion error:', deleteError);
       return NextResponse.json(
-        { message: 'Failed to delete media from storage' },
+        { 
+          error: 'Failed to delete media from Google Drive',
+          details: deleteError.message
+        }, 
         { status: 500 }
       );
     }
 
-    // Remove from journal's media array
+    // 9. Remove from journal's media array
     mediaArray.splice(mediaIndex, 1);
     await journal.save();
 
@@ -100,10 +108,11 @@ export async function DELETE(req: NextRequest) {
       success: true,
       message: 'Media deleted successfully'
     });
+    
   } catch (error: any) {
     console.error('Media deletion error:', error);
     return NextResponse.json(
-      { message: error.message || 'Internal server error' },
+      { error: error.message || 'Internal server error' }, 
       { status: 500 }
     );
   }

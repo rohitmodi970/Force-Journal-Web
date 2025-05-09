@@ -6,8 +6,6 @@ const page = () => {
   return (
     <div>
       <JournalEntry/>
-      {/* <JournalEntry2/> */}
-      {/* <DigitalJournal/> */}
     </div>
   )
 }

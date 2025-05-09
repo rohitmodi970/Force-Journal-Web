@@ -22,7 +22,7 @@ export default function Home() {
     if (status === "unauthenticated") {
       // If no session, redirect to login after showing PreAuthLanding
       if (!showingPreAuth) {
-        router.push("/login");
+        router.push("/auth/login");
       }
       return;
     }

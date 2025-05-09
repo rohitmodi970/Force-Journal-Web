@@ -3,39 +3,36 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 // Journal schema interface
 export interface IJournal extends Document {
   journalId: string;
-  title?: string;  // Optional
-  content?: string;  // Optional
-  date?: string;  // Optional
+  title?: string;
+  content?: string;
+  date?: string;
   tags: string[];
   mood: string | null;
-  journalType?: string;  // Optional
+  journalType?: string;
   timestamp: string;
   userId: number;
-// location: string; //optional
-  // Media properties - structured to handle multiple files of different types
+  googleDriveFolderId?: string; 
   media: {
     image: MediaFile[];
     audio: MediaFile[];
     video: MediaFile[];
     document: MediaFile[];
-  };
+  }; 
 }
 
-// Media file interface
 export interface MediaFile {
   url: string;
-  cloudinaryPublicId: string;
-  cloudinaryResourceType: string;
+  driveFileId: string; 
+  driveMimeType: string; 
   fileName: string;
   fileSize: number;
   uploadedAt: Date;
 }
 
-// Define the media file schema (for embedding)
 const mediaItemSchema = new Schema({
   url: { type: String, required: true },
-  cloudinaryPublicId: { type: String, required: true },
-  cloudinaryResourceType: { type: String, required: true },
+  driveFileId: { type: String, required: true }, 
+  driveMimeType: { type: String, required: true }, 
   fileName: { type: String },
   fileSize: { type: Number },
   uploadedAt: { type: Date, default: Date.now }

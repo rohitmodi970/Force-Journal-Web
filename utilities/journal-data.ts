@@ -3,6 +3,7 @@ import { JournalEntry } from "@/components/Journal/types";
 export const getAllJournalEntries = async (): Promise<JournalEntry[]> => {
   try {
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    console.log(baseUrl)
     const response = await fetch(`${baseUrl}/api/journal-entry`, {
       method: 'GET',
       headers: {
@@ -36,10 +37,10 @@ export const getAllJournalEntries = async (): Promise<JournalEntry[]> => {
         video: (entry.media?.video || []).map((video: any) => video.url || ''),
         document: (entry.media?.document || []).map((doc: any) => doc.url || ''),
       },
-      cloudinaryPublicId: entry.cloudinaryPublicId || '',
-      cloudinaryResourceType: entry.cloudinaryResourceType || '',
       fileName: entry.fileName || '',
       fileSize: entry.fileSize || 0,
+      createdAt: entry.createdAt || '',
+      updatedAt: entry.updatedAt || '',
     }));
   } catch (error) {
     console.error('Error fetching journal entries:', error);
@@ -83,10 +84,10 @@ export const getJournalEntryById = async (id: string): Promise<JournalEntry | un
         video: (entry.media?.video || []).map((video: any) => video.url || ''),
         document: (entry.media?.document || []).map((doc: any) => doc.url || ''),
       },
-      cloudinaryPublicId: entry.cloudinaryPublicId || '',
-      cloudinaryResourceType: entry.cloudinaryResourceType || '',
       fileName: entry.fileName || '',
       fileSize: entry.fileSize || 0,
+      createdAt: entry.createdAt || '',
+      updatedAt: entry.updatedAt || '',
     };
   } catch (error) {
     console.error('Error fetching journal entry:', error);

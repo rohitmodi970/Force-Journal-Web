@@ -7,6 +7,7 @@ import { JSX } from "react/jsx-runtime";
 import { Palette } from "lucide-react";
 import { GiNotebook } from "react-icons/gi";
 import LogoutButton from "../LogoutButton";
+import { GrUserSettings } from "react-icons/gr";
 // Define props interface for regular navbar
 interface RegularNavbarProps {
   currentTheme: {
@@ -78,7 +79,8 @@ const RegularNavbar: React.FC<RegularNavbarProps> = ({
       HiMail: <HiMail className={`w-${size} h-${size}`} />,
       HiDocumentText: <HiDocumentText className={`w-${size} h-${size}`} />,
       HiOutlineChip: <HiOutlineChip className={`w-${size} h-${size}`} />,
-      GiNotebook: <GiNotebook className={`w-${size} h-${size}`} />
+      GiNotebook: <GiNotebook className={`w-${size} h-${size}`} />,
+     GrUserSettings: <GrUserSettings className={`w-${size} h-${size}`} />
     };
     return icons[iconName] || <HiHome className={`w-${size} h-${size}`} />;
   };

@@ -4,8 +4,6 @@ import "./globals.css";
 import SessionWrapper from "@/utilities/SessionWrapper";
 import { ThemeProvider } from "@/utilities/context/ThemeContext";
 import MainNavbar from "@/components/Navbar/MainNavbar";
-import AuthCheck from "@/components/AuthCheck";
-import LoginForm from "@/components/LoginForm";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,13 +30,8 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <SessionWrapper>
           <ThemeProvider>
-            <AuthCheck 
-              fallback={<LoginForm />}
-              allowedRoutes={['/login', '/register','/']}
-            >
               <MainNavbar />
               {children}
-            </AuthCheck>
           </ThemeProvider>
         </SessionWrapper>
       </body>

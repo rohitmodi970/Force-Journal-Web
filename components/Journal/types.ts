@@ -115,14 +115,15 @@ export interface FileAnalysisResult {
     timestamp: string;
     userId: number;
     mediaType: string[];
+    googleDriveFolderId?: string; 
     mediaUrl: {
       image: string[];
       audio: string[];
       video: string[];
       document: string[];
     };
-    cloudinaryPublicId: string;
-    cloudinaryResourceType: string;
+    // cloudinaryPublicId: string;
+    // cloudinaryResourceType: string;
     fileName: string;
     fileSize: number;
     createdAt?: Date;

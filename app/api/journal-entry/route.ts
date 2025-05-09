@@ -1,4 +1,3 @@
-
 // app/api/journal-entry/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
@@ -6,424 +5,450 @@ import { authOptions } from '@/utilities/auth';
 import User from '@/models/User';
 import Journal from '@/models/JournalModel';
 import connectDB from '@/db/connectDB';
-import { deleteFromCloudinary } from '@/lib/cloudinary';
+import { 
+  uploadFileToDrive, 
+  createUserFolder, 
+  getMimeType,
+  deleteFileFromDrive
+} from '@/utilities/googleDrive';
 
-// Helper function to validate user ownership of a journal entry
+// Add debugging for authentication issues
+const getAuthenticatedUser = async () => {
+  const session = await getServerSession(authOptions);
+  console.log('Session data:', JSON.stringify({
+    exists: !!session,
+    hasUser: !!session?.user,
+    email: session?.user?.email || 'missing',
+    hasAccessToken: !!session?.accessToken
+  }));
+  
+  if (!session?.user?.email) {
+    return { error: 'Authentication required', status: 401 };
+  }
+
+  const user = await User.findOne({ email: session.user.email });
+  if (!user) {
+    return { error: 'User account not found', status: 404 };
+  }
+
+  return { user, session };
+};
+
+// Media type configuration
+const MEDIA_LIMITS = {
+  image: { count: 6, size: 25 * 1024 * 1024 }, // 25MB
+  audio: { count: 11, size: 5 * 1024 * 1024 }, // 5MB
+  video: { count: 2, size: 200 * 1024 * 1024 }, // 200MB
+  document: { count: 5, size: 5 * 1024 * 1024 }, // 5MB
+};
+
+// Helper function to validate user ownership
 async function validateOwnership(journalId: string, userId: number) {
   const journal = await Journal.findOne({ journalId });
-  if (!journal) return false;
-  return journal.userId === userId;
+  return journal?.userId === userId;
 }
 
-// Helper function to check media limits
-async function checkMediaLimits(
-  journalId: string, 
-  mediaType: 'image' | 'audio' | 'video' | 'document', 
-  fileSize: number
+// Helper to ensure user has a Drive folder
+async function ensureUserDriveFolder(user: InstanceType<typeof User>) {
+  if (!user.googleDriveFolderId && user.googleAccessToken) {
+    user.googleDriveFolderId = await createUserFolder(
+      user.googleAccessToken,
+      `JournalApp_${user.userId}`
+    );
+    await user.save();
+  }
+  return user.googleDriveFolderId;
+}
+
+// Helper to ensure journal has a Drive folder
+async function ensureJournalFolder(
+  accessToken: string,
+  userFolderId: string,
+  journalId: string
 ) {
-  // Define limits for each media type
-  const MEDIA_LIMITS = {
-    image: { count: 6, size: 25 * 1024 * 1024 }, // 25MB
-    audio: { count: 11, size: 5 * 1024 * 1024 }, // 5MB
-    video: { count: 2, size: 200 * 1024 * 1024 }, // 200MB
-    document: { count: 5, size: 5 * 1024 * 1024 }, // 5MB
-  };
-  
-  // Check file size
-  if (fileSize > MEDIA_LIMITS[mediaType].size) {
-    throw new Error(`File exceeds the maximum size for ${mediaType} uploads (${MEDIA_LIMITS[mediaType].size / (1024 * 1024)}MB)`);
-  }
-  
-  // Get existing media count
   const journal = await Journal.findOne({ journalId });
-  if (!journal) throw new Error('Journal entry not found');
-  
-  // Count media of this type using the new schema structure
-  const existingCount = journal.media[mediaType]?.length || 0;
-  
-  // Check if adding one more would exceed the limit
-  if (existingCount >= MEDIA_LIMITS[mediaType].count) {
-    throw new Error(`You can only upload up to ${MEDIA_LIMITS[mediaType].count} ${mediaType} files`);
+  if (!journal?.googleDriveFolderId) {
+    const folderId = await createUserFolder(
+      accessToken,
+      `Journal_${journalId}`,
+      userFolderId
+    );
+    if (journal && folderId) {
+      journal.googleDriveFolderId = folderId;
+      await journal.save();
+    }
+    return folderId;
   }
+  return journal.googleDriveFolderId;
 }
 
-
-// Create a new journal entry
+// Create journal entry
 export async function POST(req: NextRequest) {
   try {
-    // Connect to database
     await connectDB();
+    console.log('POST request received, checking authentication...');
     
-    // Get the authenticated user from session
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const authResult = await getAuthenticatedUser();
+    if ('error' in authResult) {
+      return NextResponse.json(
+        { error: authResult.error },
+        { status: authResult.status }
+      );
     }
     
-    // Find user by email from session
-    const user = await User.findOne({ email: session.user.email });
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-    
-    // Parse request body with defaults for required fields
+    const { user } = authResult;
+    console.log('User authenticated successfully, processing journal creation');
+
     const requestBody = await req.json();
+    const journalId = await Journal.generateJournalId(user.userId);
     
-    const entryData = {
+    const newEntry = new Journal({
       title: requestBody.title || '',
       content: requestBody.content || '',
-      // Ensure date is always provided as a string (since your schema expects a string)
       date: requestBody.date || new Date().toISOString(),
       tags: requestBody.tags || [],
       mood: requestBody.mood || null,
       journalType: requestBody.journalType || 'general',
-      // Ensure timestamp is always provided
       timestamp: requestBody.timestamp || new Date().toISOString(),
-      media: requestBody.media || { image: [], audio: [], video: [], document: [] }
-    };
-    
-    // Generate the unique journalId using the static method
-    const journalId = await Journal.generateJournalId(user.userId);
-    
-    // Create new journal entry
-    const newEntry = new Journal({
-      ...entryData,
+      media: { image: [], audio: [], video: [], document: [] },
       journalId,
       userId: user.userId
     });
-    
-    // Save the journal entry
+
     const savedEntry = await newEntry.save();
-    
-    return NextResponse.json({
-      message: 'Journal entry created successfully',
-      entry: savedEntry
-    }, { status: 201 });
+    console.log('Journal entry created successfully');
+    return NextResponse.json(
+      { message: 'Journal entry created', entry: savedEntry },
+      { status: 201 }
+    );
   } catch (error: any) {
-    console.error('Error creating journal entry:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('Error creating journal:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to create entry' },
+      { status: 500 }
+    );
   }
 }
 
-// Update an existing journal entry
+// Update journal entry
 export async function PUT(req: NextRequest) {
   try {
-    // Connect to database
     await connectDB();
-    
-    // Get the authenticated user from session
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const authResult = await getAuthenticatedUser();
+    if ('error' in authResult) {
+      return NextResponse.json(
+        { error: authResult.error },
+        { status: authResult.status }
+      );
     }
     
-    // Find user by email from session
-    const user = await User.findOne({ email: session.user.email });
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-    
-    // Parse request body
-    const { journalId, title, content, date, tags, mood, journalType, media } = await req.json();
-    
+    const { user } = authResult;
+
+    const { journalId, ...updateData } = await req.json();
     if (!journalId) {
-      return NextResponse.json({ error: 'Journal ID is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Journal ID required' },
+        { status: 400 }
+      );
     }
-    
-    // Verify ownership - user can only update their own entries
-    const isOwner = await validateOwnership(journalId, user.userId);
-    if (!isOwner) {
-      return NextResponse.json({ error: 'You do not have permission to update this entry' }, { status: 403 });
+
+    if (!await validateOwnership(journalId, user.userId)) {
+      return NextResponse.json(
+        { error: 'Unauthorized to update this entry' },
+        { status: 403 }
+      );
     }
-    
-    // Find and update the journal entry including the media fields with the new structure
+
     const updatedEntry = await Journal.findOneAndUpdate(
       { journalId },
       {
-        title,
-        content,
-        date,
-        tags: tags || [],
-        mood: mood || null,
-        journalType,
-        // Update timestamp for edit
-        timestamp: new Date().toISOString(),
-        // Update media fields with the new structure if provided
-        ...(media && {
-          media: {
-            image: media.image || [],
-            audio: media.audio || [],
-            video: media.video || [],
-            document: media.document || []
-          }
-        })
+        ...updateData,
+        timestamp: new Date().toISOString()
       },
-      { new: true } // Return the updated document
+      { new: true }
     );
-    
+
     if (!updatedEntry) {
-      return NextResponse.json({ error: 'Journal entry not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Journal not found' },
+        { status: 404 }
+      );
     }
-    
+
     return NextResponse.json({
-      message: 'Journal entry updated successfully',
+      message: 'Journal updated',
       entry: updatedEntry
     });
   } catch (error: any) {
-    console.error('Error updating journal entry:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('Error updating journal:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to update entry' },
+      { status: 500 }
+    );
   }
 }
 
-// Get all journal entries for the authenticated user
+// Get journal entries
 export async function GET(req: NextRequest) {
   try {
-    // Connect to database
     await connectDB();
-    
-    // Get the authenticated user from session
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const authResult = await getAuthenticatedUser();
+    if ('error' in authResult) {
+      return NextResponse.json(
+        { error: authResult.error },
+        { status: authResult.status }
+      );
     }
     
-    // Find user by email from session
-    const user = await User.findOne({ email: session.user.email });
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-    
-    // Get URL parameters - safely handle URL parsing
-    let journalId = null;
-    let action = null;
+    const { user } = authResult;
 
-    try {
-      // Make sure the URL is properly formatted with origin
-      const url = new URL(req.url);
-      journalId = url.searchParams.get('journalId');
-      action = url.searchParams.get('action');
-    } catch (error) {
-      console.error('Error parsing URL:', error);
-      // Try an alternative approach if URL parsing fails
-      const rawUrl = req.url || '';
-      const queryString = rawUrl.split('?')[1] || '';
-      const params = new URLSearchParams(queryString);
-      journalId = params.get('journalId');
-      action = params.get('action');
-    }
-    
-    // Get media for a specific journal entry
+    const { searchParams } = new URL(req.url);
+    const journalId = searchParams.get('journalId');
+    const action = searchParams.get('action');
+
     if (action === 'get-media' && journalId) {
-      try {
-        const journal = await Journal.findOne({ journalId });
-        
-        if (!journal) {
-          return NextResponse.json({ error: 'Journal not found' }, { status: 404 });
-        }
-        
-        // Check if user owns this journal entry
-        if (journal.userId !== user.userId) {
-          return NextResponse.json({ error: 'Unauthorized to access this entry' }, { status: 403 });
-        }
-        
-        // Return the media structure
-        return NextResponse.json({ 
-          success: true, 
-          media: journal.media || { image: [], audio: [], video: [], document: [] }
-        });
-      } catch (error: any) {
-        console.error('Error fetching journal media:', error);
-        return NextResponse.json({ error: error.message || 'Failed to fetch media' }, { status: 500 });
+      const journal = await Journal.findOne({ journalId, userId: user.userId });
+      if (!journal) {
+        return NextResponse.json(
+          { error: 'Journal not found' },
+          { status: 404 }
+        );
       }
+      return NextResponse.json({ 
+        media: journal.media || { image: [], audio: [], video: [], document: [] }
+      });
     }
-    
-    // If journalId is provided, return only that specific entry
+
     if (journalId) {
       const entry = await Journal.findOne({ journalId, userId: user.userId });
-      if (!entry) {
-        return NextResponse.json({ error: 'Journal entry not found' }, { status: 404 });
-      }
-      return NextResponse.json(entry);
+      return entry 
+        ? NextResponse.json(entry)
+        : NextResponse.json(
+            { error: 'Journal not found' },
+            { status: 404 }
+          );
     }
-    
-    // Return all entries for the user
+
     const entries = await Journal.find({ userId: user.userId }).sort({ date: -1 });
-    
+    console.log(entries)
     return NextResponse.json(entries);
   } catch (error: any) {
-    console.error('Error fetching journal entries:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('Error fetching journals:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to fetch entries' },
+      { status: 500 }
+    );
   }
 }
-// Add a new route for media operations
+
+// Media operations
 export async function PATCH(req: NextRequest) {
   try {
-    // Connect to database
     await connectDB();
-    
-    // Get the authenticated user from session
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const authResult = await getAuthenticatedUser();
+    if ('error' in authResult) {
+      return NextResponse.json(
+        { error: authResult.error },
+        { status: authResult.status }
+      );
     }
     
-    // Find user by email from session
-    const user = await User.findOne({ email: session.user.email });
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    const { user, session } = authResult;
     
-    // Parse request body
+    if (!session.accessToken) {
+      return NextResponse.json(
+        { error: 'Google Drive access token required' },
+        { status: 401 }
+      );
+    }
+
     const { journalId, operation, mediaType, mediaData } = await req.json();
-    
     if (!journalId || !operation || !mediaType) {
-      return NextResponse.json({ 
-        error: 'Missing required fields: journalId, operation, and mediaType are required' 
-      }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      );
     }
-    
-    // Verify ownership
-    const isOwner = await validateOwnership(journalId, user.userId);
-    if (!isOwner) {
-      return NextResponse.json({ 
-        error: 'You do not have permission to modify this entry' 
-      }, { status: 403 });
-    }
-    
-    const journal = await Journal.findOne({ journalId });
+
+    const journal = await Journal.findOne({ journalId, userId: user.userId });
     if (!journal) {
-      return NextResponse.json({ error: 'Journal entry not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Journal not found or unauthorized' },
+        { status: 404 }
+      );
     }
-    
-    // Type assertion for mediaType to ensure it's a valid key
-    const validMediaType = mediaType as 'image' | 'audio' | 'video' | 'document';
-    
-    // Handle different operations
+
+    const validMediaType = mediaType as keyof typeof MEDIA_LIMITS;
+
     if (operation === 'add') {
-      // Check if media data is provided
-      if (!mediaData) {
-        return NextResponse.json({ error: 'Media data is required for add operation' }, { status: 400 });
+      if (!mediaData?.file?.size) {
+        return NextResponse.json(
+          { error: 'Media file data required' },
+          { status: 400 }
+        );
+      }
+
+      if (mediaData.file.size > MEDIA_LIMITS[validMediaType].size) {
+        return NextResponse.json(
+          { error: `File exceeds ${MEDIA_LIMITS[validMediaType].size / (1024 * 1024)}MB limit` },
+          { status: 400 }
+        );
+      }
+
+      const mediaCount = journal.media[validMediaType]?.length || 0;
+      if (mediaCount >= MEDIA_LIMITS[validMediaType].count) {
+        return NextResponse.json(
+          { error: `Maximum ${validMediaType} limit reached` },
+          { status: 400 }
+        );
+      }
+
+      const userFolderId = await ensureUserDriveFolder(user);
+      if (!userFolderId) {
+        return NextResponse.json(
+          { error: 'Failed to create or find user folder' },
+          { status: 500 }
+        );
       }
       
-      // Check media limits before adding
-      await checkMediaLimits(journalId, validMediaType, mediaData.fileSize);
+      const journalFolderId = await ensureJournalFolder(
+        session.accessToken,
+        userFolderId,
+        journalId
+      );
       
-      // Add media to the appropriate array in the journal's media object
-      journal.media[validMediaType].push(mediaData);
-      
+      if (!journalFolderId) {
+        return NextResponse.json(
+          { error: 'Failed to create or find journal folder' },
+          { status: 500 }
+        );
+      }
+
+      const buffer = Buffer.from(await mediaData.file.arrayBuffer());
+      const mimeType = getMimeType(mediaData.file.name);
+
+      const uploadResult = await uploadFileToDrive(
+        session.accessToken,
+        buffer,
+        mediaData.file.name,
+        mimeType,
+        journalFolderId
+      );
+
+      const newMedia = {
+        url: uploadResult.webViewLink || uploadResult.webContentLink || '',
+        driveFileId: uploadResult.id as string,
+        driveMimeType: uploadResult.mimeType as string,
+        fileName: mediaData.file.name,
+        fileSize: mediaData.file.size,
+        uploadedAt: new Date()
+      };
+
+      journal.media[validMediaType].push(newMedia);
       await journal.save();
-      
+
       return NextResponse.json({
-        message: `${validMediaType} added successfully to journal entry`,
-        entry: journal
+        message: 'Media added successfully',
+        media: newMedia
       });
     } 
     else if (operation === 'remove') {
-      // Check if mediaData.cloudinaryPublicId is provided for removal
-      if (!mediaData || !mediaData.cloudinaryPublicId) {
-        return NextResponse.json({ 
-          error: 'cloudinaryPublicId is required for remove operation' 
-        }, { status: 400 });
+      if (!mediaData?.driveFileId) {
+        return NextResponse.json(
+          { error: 'Drive file ID required' },
+          { status: 400 }
+        );
       }
-      
-      // Remove media from the appropriate array in the journal's media object
+
+      await deleteFileFromDrive(session.accessToken, mediaData.driveFileId);
+
       journal.media[validMediaType] = journal.media[validMediaType].filter(
-        (item: { cloudinaryPublicId: string }) => item.cloudinaryPublicId !== mediaData.cloudinaryPublicId
+        (item: any) => item.driveFileId !== mediaData.driveFileId
       );
-      
       await journal.save();
-      
+
       return NextResponse.json({
-        message: `${mediaType} removed successfully from journal entry`,
-        entry: journal
+        message: 'Media removed successfully'
       });
     }
-    else {
-      return NextResponse.json({ error: 'Invalid operation. Use "add" or "remove"' }, { status: 400 });
-    }
+
+    return NextResponse.json(
+      { error: 'Invalid operation' },
+      { status: 400 }
+    );
   } catch (error: any) {
-    console.error('Error updating journal media:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('Error in media operation:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to process media' },
+      { status: 500 }
+    );
   }
 }
 
+// Delete operations
 export async function DELETE(req: NextRequest) {
   try {
     await connectDB();
-    
-    // Get the authenticated user from session
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const authResult = await getAuthenticatedUser();
+    if ('error' in authResult) {
+      return NextResponse.json(
+        { error: authResult.error },
+        { status: authResult.status }
+      );
     }
     
-    // Find user by email from session
-    const user = await User.findOne({ email: session.user.email });
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-    
-    // Get query parameters
+    const { user, session } = authResult;
+
     const { searchParams } = new URL(req.url);
     const action = searchParams.get('action');
-    
-    // Handle media removal
+
     if (action === 'remove-media') {
-      const data = await req.json();
-      const { journalId, mediaType, cloudinaryPublicId } = data;
+      const { journalId, mediaType, driveFileId } = await req.json();
       
-      if (!journalId || !mediaType || !cloudinaryPublicId) {
-        return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      if (!journalId || !mediaType || !driveFileId) {
+        return NextResponse.json(
+          { error: 'Missing required fields' },
+          { status: 400 }
+        );
       }
-      
-      // Type assertion for mediaType
-      const validMediaType = mediaType as 'image' | 'audio' | 'video' | 'document';
-      
-      // Verify ownership
-      const journal = await Journal.findOne({ journalId });
+
+      const journal = await Journal.findOne({ journalId, userId: user.userId });
       if (!journal) {
-        return NextResponse.json({ error: 'Journal not found' }, { status: 404 });
+        return NextResponse.json(
+          { error: 'Journal not found or unauthorized' },
+          { status: 404 }
+        );
       }
-      
-      if (journal.userId !== user.userId) {
-        return NextResponse.json({ error: 'Unauthorized to modify this entry' }, { status: 403 });
+
+      if (session.accessToken) {
+        try {
+          await deleteFileFromDrive(session.accessToken, driveFileId);
+        } catch (driveError) {
+          console.error('Drive deletion error:', driveError);
+        }
       }
-      
-      // Find the media file to determine resource type
-      const mediaFile = journal.media[validMediaType]?.find(
-        (file: any) => file.cloudinaryPublicId === cloudinaryPublicId
+
+      const validMediaType = mediaType as keyof typeof MEDIA_LIMITS;
+      journal.media[validMediaType] = journal.media[validMediaType].filter(
+        (item: any) => item.driveFileId !== driveFileId
       );
-      
-      if (!mediaFile) {
-        return NextResponse.json({ error: 'Media file not found' }, { status: 404 });
-      }
-      
-      // Delete from Cloudinary
-      const deleted = await deleteFromCloudinary(
-        cloudinaryPublicId, 
-        mediaFile.cloudinaryResourceType
-      );
-      
-      if (!deleted) {
-        // Continue with deletion from database even if Cloudinary delete failed
-      }
-      
-      // Remove from database
-      await Journal.updateOne(
-        { journalId },
-        { $pull: { [`media.${validMediaType}`]: { cloudinaryPublicId } } }
-      );
-      
+      await journal.save();
+
       return NextResponse.json({ 
-        success: true, 
-        message: 'Media file removed successfully' 
+        success: true,
+        message: 'Media removed successfully' 
       });
     }
-    
-    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
-    
+
+    return NextResponse.json(
+      { error: 'Invalid action' },
+      { status: 400 }
+    );
   } catch (error: any) {
-    console.error('Error handling media removal:', error);
-    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
+    console.error('Error in delete operation:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to process deletion' },
+      { status: 500 }
+    );
   }
 }

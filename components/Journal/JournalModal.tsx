@@ -26,7 +26,7 @@ const JournalModal: React.FC<JournalModalProps> = ({
   const [isMediaPlaying, setIsMediaPlaying] = useState(false); // For audio/video players
   const audioRef = useRef<HTMLAudioElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-
+console.log("Journal",entry)
   // --- Effects ---
 
   // Reset states when entry changes
@@ -259,7 +259,7 @@ const JournalModal: React.FC<JournalModalProps> = ({
      const showDocs = documents.length > 0 && (images.length > 0 || videos.length > 0 || audios.length > 0); // Show docs if any other media was primary
 
      if (!showAudio && !showVideo && !showDocs) return null;
-
+console.log("Journal MOdal",entry.content)
      return (
          <div className="mt-6 pt-4 border-t border-gray-300 dark:border-gray-600 space-y-3">
              {showVideo && (

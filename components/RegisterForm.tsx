@@ -304,7 +304,7 @@ const RegisterForm = () => {
 
           <p className="text-sm text-gray-400 mt-2 text-center">
             Already have an account?{' '}
-            <a href="/login" className="text-blue-400 hover:text-blue-300 font-medium">
+            <a href="/auth/login" className="text-blue-400 hover:text-blue-300 font-medium">
               Log in
             </a>
           </p>

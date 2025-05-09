@@ -110,6 +110,7 @@ const JournalPage = () => {
       try {
         setIsLoading(true);
         const fetchedEntries = await getAllJournalEntries();
+        console.log(fetchedEntries)
         setEntries(fetchedEntries);
         
         // Extract all images from entries
@@ -126,7 +127,7 @@ const JournalPage = () => {
     }
     
     loadJournalEntries();
-    
+    console.log(entries)
     // Load saved background preference from localStorage
     const savedBackground = localStorage.getItem('journalBackground');
     if (savedBackground) {
