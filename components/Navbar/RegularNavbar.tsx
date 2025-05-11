@@ -1,12 +1,11 @@
 "use client"
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import { IoMenu, IoClose } from "react-icons/io5";
 import { HiHome, HiUser, HiMail, HiDocumentText, HiSun, HiMoon, HiOutlineChip, HiLogout } from "react-icons/hi";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { JSX } from "react/jsx-runtime";
 import { Palette } from "lucide-react";
 import { GiNotebook } from "react-icons/gi";
-import LogoutButton from "../LogoutButton";
 import { GrUserSettings } from "react-icons/gr";
 // Define props interface for regular navbar
 interface RegularNavbarProps {
@@ -47,9 +46,10 @@ const RegularNavbar: React.FC<RegularNavbarProps> = ({
   setCurrentTheme
 }) => {
   const { data: session } = useSession();
+  console.log("Session:", session);
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [showThemeSelector, setShowThemeSelector] = useState<boolean>(false);
-
+const [showUserMenu, setShowUserMenu] = useState<boolean>(false);
   // Click outside handler for theme selector
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -242,25 +242,84 @@ const RegularNavbar: React.FC<RegularNavbarProps> = ({
               {isDarkMode ? <HiSun className="w-5 h-5" /> : <HiMoon className="w-5 h-5" />}
             </button>
 
-            {/* User name display */}
-            {session?.user?.name && (
-              <span className={`hidden sm:inline-block px-2 py-1 rounded-md text-sm font-medium transition-all duration-300 ${isScrolled ? 'w-0 opacity-0 hidden' : 'w-auto opacity-100'
-                }`} style={{ color: currentTheme.primary }}>
-                {session.user.name}
-              </span>
-            )}
+            {/* User Profile Dropdown */}
+            {session?.user ? (
+              <div className="relative" data-user-dropdown>
+                <button 
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className={`flex items-center gap-2 transition-all duration-300 font-medium rounded-lg text-sm ${
+                    isScrolled ? 'p-2 rounded-full' : 'px-4 py-2 rounded-lg'
+                  }`}
+                  style={{
+                    backgroundColor: currentTheme.light,
+                    color: currentTheme.primary
+                  }}
+                  type="button"
+                >
+                  {isScrolled ? (
+                    <HiUser className="w-5 h-5" />
+                  ) : (
+                    <>
+                      <span>{session.user.name}</span>
+                      <svg className="w-2.5 h-2.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                        <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 4 4 4-4"/>
+                      </svg>
+                    </>
+                  )}
+                </button>
+
+                {/* Dropdown menu */}
+                {showUserMenu && (
+                  <div className={`absolute right-0 top-12 z-10 divide-y rounded-lg shadow-sm w-44 ${
+                    isDarkMode ? "bg-gray-700 divide-gray-600" : "bg-white divide-gray-100"
+                  }`}>
+                    <div className="px-4 py-3 text-sm" style={{ color: isDarkMode ? "#FFFFFF" : "#111827" }}>
+                      <div>{session.user.name}</div>
+                      <div className="font-medium truncate">{session.user.email}</div>
+                    </div>
+                    <ul className={`py-2 text-sm ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}>
+                        <li>
+                        <a href="/user/dashboard" className={` px-4 py-2 flex items-center gap-2 ${
+                          isDarkMode ? "hover:bg-gray-600 hover:text-white" : "hover:bg-gray-100"
+                        }`}>
+                          <HiDocumentText className="w-4 h-4" />
+                          <span>Dashboard</span>
+                        </a>
+                        </li>
+                        <li>
+                        <a href="/user/profile" className={` px-4 py-2 flex items-center gap-2 ${
+                          isDarkMode ? "hover:bg-gray-600 hover:text-white" : "hover:bg-gray-100"
+                        }`}>
+                          <HiUser className="w-4 h-4" />
+                          <span>Profile</span>
+                        </a>
+                        </li>
+                        <li>
+                        <a href="/user/settings" className={` px-4 py-2 flex items-center gap-2 ${
+                          isDarkMode ? "hover:bg-gray-600 hover:text-white" : "hover:bg-gray-100"
+                        }`}>
+                          <GrUserSettings className="w-4 h-4" />
+                          <span>Settings</span>
+                        </a>
+                        </li>
+                    </ul>
+                    <div className="py-2">
+                      <button 
+                        onClick={() => signOut()}
+                        className={`block w-full text-left px-4 py-2 text-sm ${
+                          isDarkMode ? "text-gray-200 hover:bg-gray-600 hover:text-white" : "text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        Sign out
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : null}
 
             {/* Auth Button */}
-            {session ? (
-              <LogoutButton 
-              className={`transition-all duration-300 text-white font-semibold shadow-md hover:shadow-lg ${
-                isScrolled ? 'p-2 rounded-full' : 'px-4 py-2 rounded-full'
-              }`}
-              style={buttonGradientStyle}
-              onMouseEnter={() => handleHoveredLinkText("Logout")}
-              text="Logout" // Optional, defaults to "Sign Out" if not provided
-            />
-            ) : (
+            {!session && (
               <button
               onMouseEnter={() => handleHoveredLinkText("Login")}
               onClick={handleAuth}
