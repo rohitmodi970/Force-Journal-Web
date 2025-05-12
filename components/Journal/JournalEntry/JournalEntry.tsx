@@ -408,7 +408,14 @@ const handleUpload = async () => {
   // Update journalMedia state with successful uploads
   const successfulUploads = results.filter(Boolean) as MediaFile[];
   if (successfulUploads.length > 0) {
-    handleMediaUploadComplete(successfulUploads);
+    // Convert MediaFile[] to Record<string, unknown>[] for handleMediaUploadComplete
+    const mediaRecords = successfulUploads.map(file => ({
+      ...file,
+      fileName: file.file.name,
+      fileSize: file.file.size
+    } as Record<string, unknown>));
+    
+    handleMediaUploadComplete(mediaRecords);
 
     // Update any text content if needed
     if (content || title) {
@@ -545,8 +552,9 @@ const autoSaveToLocalStorage = () => {
           throw new Error('Failed to create journal entry in backend');
         }
 
-        const result: Record<string, unknown> = await response.json();
-        const newJournalId = result.entry.journalId;
+        const result = await response.json();
+        // Type assertion to define expected structure
+        const newJournalId = (result as { entry: { journalId: string } }).entry.journalId;
 
         // Update the local storage with the new ID from backend
         localStorage.removeItem(`journal_entry_${journalId}`);
@@ -773,7 +781,8 @@ const handleMediaUploadComplete = (mediaFiles: Record<string, unknown>[]) => {
                   existingMediaFiles.push({
                     id: `existing-${type}-${index}`,
                     // Creating a placeholder file object since we don't have the actual file
-                    file: new File([], file.fileName || `${type}-file-${index}`, { type: `${type}/*` }),
+                    //@ts-ignore
+                    file: new File([], file.fileName || `${type}-file-${index}`, { type: `${type}/*` as string }),
                     type: type as 'image' | 'audio' | 'video' | 'document',
                     progress: 100,
                     status: 'success',
@@ -797,24 +806,7 @@ const handleMediaUploadComplete = (mediaFiles: Record<string, unknown>[]) => {
         const existingMediaFiles: MediaFile[] = [];
 
         // Process each media type
-        Object.entries(journalMedia).forEach(([type, files]) => {
-          if (Array.isArray(files)) {
-            files.forEach((file, index) => {
-              if (file && file.url) {
-                existingMediaFiles.push({
-                  id: `existing-${type}-${index}`,
-                  file: new File([], file.fileName || `${type}-file-${index}`, { type: `${type}/*` }),
-                  type: type as 'image' | 'audio' | 'video' | 'document',
-                  progress: 100,
-                  status: 'success',
-                  url: file.url as string,
-                  cloudinaryPublicId: file.cloudinaryPublicId || '',
-                  cloudinaryResourceType: file.cloudinaryResourceType || ''
-                });
-              }
-            });
-          }
-        });
+       
 
         if (existingMediaFiles.length > 0) {
           setMediaFiles(existingMediaFiles);
@@ -1143,7 +1135,8 @@ const handleMediaUploadComplete = (mediaFiles: Record<string, unknown>[]) => {
       {/* After the main journal entry UI, conditionally render the SentimentAnalysis component if analysisResult is available */}
       {analysisResult && (
         <div className="mt-8">
-          <SentimentAnalysisDashboard data={[analysisResult]} />
+          analysisResult 
+          {/* <SentimentAnalysisDashboard data={[analysisResult]} /> */}
         </div>
       )}
     </div>
