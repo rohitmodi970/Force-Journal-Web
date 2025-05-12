@@ -1,0 +1,27 @@
+{
+    "accuracy": 0.8,
+    "classification_report": "              precision    recall  f1-score   support\n\n           0       0.00      0.00      0.00         5\n           1       0.00      0.00      0.00         6\n           2       0.83      0.98      0.90        49\n\n    accuracy                           0.80        60\n   macro avg       0.28      0.33      0.30        60\nweighted avg       0.68      0.80      0.73        60\n",
+    "best_parameters": {
+        "xgb__subsample": 0.8,
+        "xgb__n_estimators": 200,
+        "xgb__max_depth": 3,
+        "xgb__learning_rate": 0.1,
+        "xgb__colsample_bytree": 1.0,
+        "svc__gamma": 0.1,
+        "svc__C": 0.1,
+        "rf__n_estimators": 300,
+        "rf__min_samples_split": 2,
+        "rf__min_samples_leaf": 1,
+        "rf__max_depth": 20,
+        "gb__subsample": 1.0,
+        "gb__n_estimators": 100,
+        "gb__max_depth": 7,
+        "gb__learning_rate": 0.1
+    },
+    "model_weights": {
+        "svc": 0.22105263157894733,
+        "rf": 0.25789473684210523,
+        "xgb": 0.2631578947368421,
+        "gb": 0.25789473684210523
+    }
+}

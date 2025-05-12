@@ -6,13 +6,13 @@ import { useTheme } from '@/utilities/context/ThemeContext';
 import JournalHeader from './JournalHeader';
 import SettingsPanel from './SettingsPanel';
 import TagsInput from './TagsInput';
-import { uploadToCloudinary } from '@/utilities/cloudinaryUpload';
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import MediaSelector from './file-attachements/MediaSelector';
 import MediaPreview from './file-attachements/MediaPreview';
 
 import Toast from '@/components/ui/toast';
+import SentimentAnalysisDashboard from '@/components/SentimentAnalysisDashboard';
 
 interface MediaFile {
   id: string;
@@ -59,12 +59,7 @@ const JournalEntry: React.FC = () => {
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   // New state to track uploaded media
-  const [journalMedia, setJournalMedia] = useState<{
-    image: any[];
-    audio: any[];
-    video: any[];
-    document: any[];
-  }>({
+  const [journalMedia, setJournalMedia] = useState<Record<string, Array<Record<string, unknown>>>>({
     image: [],
     audio: [],
     video: [],
@@ -95,7 +90,10 @@ const JournalEntry: React.FC = () => {
     video: { count: 2, size: 200 * 1024 * 1024 }, // 200MB
     document: { count: 5, size: 5 * 1024 * 1024 }, // 5MB
   };
-  const [savedEntries, setSavedEntries] = useState<any[]>([]);
+  const [savedEntries, setSavedEntries] = useState<Record<string, unknown>[]>([]);
+
+  // Add new state for analysis result
+  const [analysisResult, setAnalysisResult] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     // Load saved entries from localStorage on component mount
@@ -118,7 +116,7 @@ const JournalEntry: React.FC = () => {
       try {
         const response = await fetch('/api/journal-entry');
         if (response.ok) {
-          const data = await response.json();
+          const data: Record<string, unknown>[] = await response.json();
           setSavedEntries(data);
         } else {
           // If API fails, fall back to localStorage
@@ -340,7 +338,7 @@ const handleUpload = async () => {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
-          // @ts-ignore
+          // @ts-expect-error: onUploadProgress is not recognized by axios types
           onUploadProgress: (progressEvent) => {
             if (progressEvent.total && progressEvent.loaded) {
               const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
@@ -431,7 +429,7 @@ const handleRemoveFile = async (mediaId: string) => {
       if (currentJournalId && !currentJournalId.startsWith('temp_')) {
         // Remove the file from Google Drive and database
         await axios.delete(`/api/journal-entry?action=remove-media`, {
-          // @ts-ignore
+          // @ts-expect-error: onUploadProgress is not recognized by axios types
           data: {
             journalId: currentJournalId,
             mediaType: fileToRemove.type,
@@ -488,7 +486,6 @@ const autoSaveToLocalStorage = () => {
     mood: selectedMood,
     journalType,
     timestamp: new Date().toISOString(),
-    pendingSync: true,
     media: journalMedia
   };
 
@@ -529,9 +526,6 @@ const autoSaveToLocalStorage = () => {
 
       const localEntry = JSON.parse(localEntryStr);
 
-      // Remove the pendingSync flag before sending to backend
-      const { pendingSync, ...entryToSync } = localEntry;
-
       setIsSaving(true);
 
       // If the journalId starts with "temp_", it's a new entry that hasn't been saved to backend yet
@@ -544,23 +538,22 @@ const autoSaveToLocalStorage = () => {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(entryToSync),
+          body: JSON.stringify(localEntry),
         });
 
         if (!response.ok) {
           throw new Error('Failed to create journal entry in backend');
         }
 
-        const result = await response.json();
+        const result: Record<string, unknown> = await response.json();
         const newJournalId = result.entry.journalId;
 
         // Update the local storage with the new ID from backend
         localStorage.removeItem(`journal_entry_${journalId}`);
 
         const updatedEntry = {
-          ...entryToSync,
+          ...localEntry,
           journalId: newJournalId,
-          pendingSync: false
         };
 
         localStorage.setItem(`journal_entry_${newJournalId}`, JSON.stringify(updatedEntry));
@@ -584,7 +577,7 @@ const autoSaveToLocalStorage = () => {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(entryToSync),
+          body: JSON.stringify(localEntry),
         });
 
         if (!response.ok) {
@@ -593,8 +586,7 @@ const autoSaveToLocalStorage = () => {
 
         // Update the entry in localStorage to mark it as synced
         const updatedEntry = {
-          ...entryToSync,
-          pendingSync: false
+          ...localEntry,
         };
 
         localStorage.setItem(`journal_entry_${journalId}`, JSON.stringify(updatedEntry));
@@ -626,7 +618,7 @@ const autoSaveToLocalStorage = () => {
   type MediaType = 'image' | 'audio' | 'video' | 'document';
 
   // Handle when media uploads are completed
-const handleMediaUploadComplete = (mediaFiles: any[]) => {
+const handleMediaUploadComplete = (mediaFiles: Record<string, unknown>[]) => {
   // Group media files by type and update journal media state
   const newMediaState = { ...journalMedia };
 
@@ -634,11 +626,11 @@ const handleMediaUploadComplete = (mediaFiles: any[]) => {
     if (file.url && file.driveFileId && file.type) {
       // Convert MediaFile to format matching our schema
       const mediaFileRecord = {
-        url: file.url,
-        driveFileId: file.driveFileId,
-        driveMimeType: file.driveMimeType || 'application/octet-stream',
-        fileName: file.file.name,
-        fileSize: file.file.size,
+        url: file.url as string,
+        driveFileId: file.driveFileId as string,
+        driveMimeType: file.driveMimeType as string || 'application/octet-stream',
+        fileName: file.fileName as string,
+        fileSize: file.fileSize as number,
         uploadedAt: new Date()
       };
 
@@ -697,7 +689,6 @@ const handleMediaUploadComplete = (mediaFiles: any[]) => {
         mood: selectedMood,
         journalType,
         timestamp: new Date().toISOString(),
-        pendingSync: false,
         media: journalMedia
       };
 
@@ -716,9 +707,10 @@ const handleMediaUploadComplete = (mediaFiles: any[]) => {
       setIsUnsaved(false);
       setPendingBackendSync(false);
       showMessage('Journal entry saved successfully');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error saving journal entry:', error);
-      showMessage(`Error: ${error.message || 'Failed to save journal entry'}`, true);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save journal entry';
+      showMessage(`Error: ${errorMessage}`, true);
     } finally {
       setIsSaving(false);
     }
@@ -766,12 +758,7 @@ const handleMediaUploadComplete = (mediaFiles: any[]) => {
         try {
           interface MediaResponse {
             success: boolean;
-            media: Record<string, Array<{
-              url: string;
-              fileName?: string;
-              cloudinaryPublicId: string;
-              cloudinaryResourceType: string;
-            }>>;
+            media: Record<string, Array<Record<string, unknown>>>;
           }
 
           const response = await axios.get<MediaResponse>(`/api/journal-entry?action=get-media&journalId=${currentJournalId}`);
@@ -790,9 +777,9 @@ const handleMediaUploadComplete = (mediaFiles: any[]) => {
                     type: type as 'image' | 'audio' | 'video' | 'document',
                     progress: 100,
                     status: 'success',
-                    url: file.url,
-                    cloudinaryPublicId: file.cloudinaryPublicId,
-                    cloudinaryResourceType: file.cloudinaryResourceType
+                    url: file.url as string,
+                    cloudinaryPublicId: file.cloudinaryPublicId as string,
+                    cloudinaryResourceType: file.cloudinaryResourceType as string
                   });
                 }
               });
@@ -820,7 +807,7 @@ const handleMediaUploadComplete = (mediaFiles: any[]) => {
                   type: type as 'image' | 'audio' | 'video' | 'document',
                   progress: 100,
                   status: 'success',
-                  url: file.url,
+                  url: file.url as string,
                   cloudinaryPublicId: file.cloudinaryPublicId || '',
                   cloudinaryResourceType: file.cloudinaryResourceType || ''
                 });
@@ -837,6 +824,31 @@ const handleMediaUploadComplete = (mediaFiles: any[]) => {
 
     fetchJournalMedia();
   }, [currentJournalId, journalMedia]);
+
+  // Add function to call the sentiment analysis API
+  const handleAnalyzeSentiment = async () => {
+    try {
+      const formData = new FormData();
+      formData.append('text', content);
+      const imageFile = mediaFiles.find(m => m.type === 'image' && m.status === 'success');
+      if (imageFile && imageFile.file) {
+        formData.append('image', imageFile.file);
+      }
+      const response = await fetch('http://localhost:8000/analyze-entry', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!response.ok) {
+        throw new Error('Failed to analyze sentiment');
+      }
+      const result = await response.json();
+      setAnalysisResult(result);
+    } catch (error) {
+      console.error('Error analyzing sentiment:', error);
+      showMessage('Failed to analyze sentiment', true);
+    }
+  };
+
   return (
     <div
       className="flex flex-col h-screen transition-all duration-300"
@@ -1093,7 +1105,7 @@ const handleMediaUploadComplete = (mediaFiles: any[]) => {
 
                 <div className="flex gap-2">
                   <motion.button
-                    onClick={() => {/* AI analysis function will go here */}}
+                    onClick={handleAnalyzeSentiment}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium shadow-md hover:shadow-lg transition-all"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -1104,7 +1116,7 @@ const handleMediaUploadComplete = (mediaFiles: any[]) => {
                     disabled={!content.trim() || isSaving}
                   >
                     <Sparkles size={18} />
-                    <span>AI Analysis</span>
+                    <span>Analyze Sentiment</span>
                   </motion.button>
 
                   <motion.button
@@ -1127,6 +1139,13 @@ const handleMediaUploadComplete = (mediaFiles: any[]) => {
           </div>
         )}
       </motion.div>
+
+      {/* After the main journal entry UI, conditionally render the SentimentAnalysis component if analysisResult is available */}
+      {analysisResult && (
+        <div className="mt-8">
+          <SentimentAnalysisDashboard data={[analysisResult]} />
+        </div>
+      )}
     </div>
   );
 };
