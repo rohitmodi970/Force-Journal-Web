@@ -1,10 +1,10 @@
-import SentimentAnalysisDashboard from '@/components/Journal/JournalEntry/SentimentAnalysis'
+// import SentimentAnalysisDashboard from '@/components/Journal/JournalEntry/SentimentAnalysis'
 import React from 'react'
 
 const page = () => {
   return (
     <div>
-      <SentimentAnalysisDashboard />
+      {/* <SentimentAnalysisDashboard /> */}
     </div>
   )
 }

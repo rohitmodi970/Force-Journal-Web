@@ -12,7 +12,7 @@ import MediaSelector from './file-attachements/MediaSelector';
 import MediaPreview from './file-attachements/MediaPreview';
 
 import Toast from '@/components/ui/toast';
-import SentimentAnalysisDashboard from '@/components/SentimentAnalysisDashboard';
+import SentimentAnalysisDashboard from '@/components/Journal/JournalEntry/SentimentAnalysis';
 
 interface MediaFile {
   id: string;

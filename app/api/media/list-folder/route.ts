@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/utilities/auth';
 import connectDB from '@/db/connectDB';
 import Journal from '@/models/JournalModel';
+import User from '@/models/User';
 import { listFilesInFolder } from '@/utilities/googleDrive';
 
 export async function GET(req: NextRequest) {
@@ -31,7 +32,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const journalId = searchParams.get('journalId');
     const mediaType = searchParams.get('mediaType');
-    
+    console.log('journalId:', journalId);
     // 3. Input validation
     if (!journalId) {
       return NextResponse.json(
@@ -49,7 +50,7 @@ export async function GET(req: NextRequest) {
 
     // 4. Find the journal
     const journal = await Journal.findOne({ journalId });
-    
+    const user = await User.findOne({ email: session.user.email });
     if (!journal) {
       return NextResponse.json(
         { error: 'Journal not found' }, 
@@ -66,7 +67,7 @@ export async function GET(req: NextRequest) {
     }
 
     // 6. Check if journal has Google Drive folder ID
-    if (!journal.googleDriveFolderId) {
+    if (!user.googleDriveFolderId) {
       return NextResponse.json(
         { error: 'Journal has no associated Google Drive folder' }, 
         { status: 404 }
@@ -79,7 +80,8 @@ export async function GET(req: NextRequest) {
       
       if (mediaType) {
         // Find the media type folder ID
-        const mediaFolderResult = await listFilesInFolder(session.accessToken, journal.googleDriveFolderId);
+        const mediaFolderResult = await listFilesInFolder(session.accessToken, user.googleDriveFolderId);
+        console.log('Media folder result:', mediaFolderResult);
         const mediaTypeFolder = mediaFolderResult?.find(
           (file: any) => file.name === mediaType && file.mimeType === 'application/vnd.google-apps.folder'
         );
@@ -99,9 +101,11 @@ export async function GET(req: NextRequest) {
           });
         }
         files = await listFilesInFolder(session.accessToken, mediaTypeFolder.id);
+        console.log('Files in media type folder:', files);
       } else {
+        console.log('Files in media type folder:', files);
         // List all files in journal folder (including subfolders)
-        files = await listFilesInFolder(session.accessToken, journal.googleDriveFolderId);
+        files = await listFilesInFolder(session.accessToken, user.googleDriveFolderId);
       }
       
       return NextResponse.json({
