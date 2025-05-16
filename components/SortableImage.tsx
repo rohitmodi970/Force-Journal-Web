@@ -26,14 +26,36 @@ interface ImageItem {
   thumbnailLink?: string
 }
 
-// Utility function to convert Google Drive share link to direct image link
-const getGoogleDriveDirectLink = (url?: string): string => {
-  if (!url) return '/placeholder.svg'
+// Enhanced utility function for Google Drive images
+const getGoogleDriveImageUrl = (url?: string, fileId?: string): string => {
+  if (!url && !fileId) return '/placeholder.svg'
+  
   try {
-    const match = url.match(/(?:\/file\/d\/|id=)([^\/\?]+)/)
-    if (match?.[1]) return `https://drive.google.com/uc?id=${match[1]}&export=download`
-    return url
-  } catch {
+    // Direct Google Drive approach - requires specific access settings
+    // but works more reliably than other methods when properly configured
+    if (fileId) {
+      // Try one of these formats for Google Drive images
+      // Format 1: Direct thumbnail with no size limit
+      return `https://drive.google.com/thumbnail?authuser=0&sz=w2000&id=${fileId}`
+      
+      // Alternative formats if the above doesn't work:
+      // return `https://lh3.googleusercontent.com/d/${fileId}`
+      // return `https://drive.google.com/uc?id=${fileId}`
+    }
+    
+    // Extract file ID from URL if provided
+    if (url) {
+      const match = url.match(/(?:\/file\/d\/|id=)([a-zA-Z0-9_-]+)/)
+      
+      if (match && match[1]) {
+        const extractedId = match[1]
+        return `https://drive.google.com/thumbnail?authuser=0&sz=w2000&id=${extractedId}`
+      }
+    }
+    
+    return url || '/placeholder.svg'
+  } catch (error) {
+    console.error('Error converting Google Drive URL:', error)
     return '/placeholder.svg'
   }
 }
@@ -44,20 +66,24 @@ const SortableImage = ({ image, onSizeChange }: {
     onSizeChange: (id: string, size: "small" | "medium" | "large") => void 
 }) => {
     const [imageLoadError, setImageLoadError] = useState(false)
-    const [imageSrc, setImageSrc] = useState<string>('')
+    const [imageSrc, setImageSrc] = useState<string>('/placeholder.svg') // Default value
     
     useEffect(() => {
-        // Convert and set the image source with extensive logging
-        console.log('Original image object:', image)
-        console.log('Original src:', image.src)
-        console.log('Original thumbnailLink:', image.thumbnailLink)
+        // Log the image details for debugging
+        console.log('Processing image:', {
+            id: image.id,
+            src: image.src,
+            driveFileId: image.driveFileId,
+            thumbnailLink: image.thumbnailLink
+        })
         
-        // Try multiple ways to get the image source
-        const directLink = getGoogleDriveDirectLink(image.thumbnailLink || image.src)
-        console.log('Converted direct link:', directLink)
+        // Get the direct link prioritizing driveFileId if available
+        const directLink = getGoogleDriveImageUrl(image.src, image.driveFileId)
+        console.log('Generated image source URL:', directLink)
         
+        // Set the image source
         setImageSrc(directLink)
-    }, [image.thumbnailLink, image.src])
+    }, [image])
 
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: image.id })
 
@@ -77,6 +103,30 @@ const SortableImage = ({ image, onSizeChange }: {
     const canEnlarge = currentSize === "small" || currentSize === "medium"
     const canShrink = currentSize === "medium" || currentSize === "large"
 
+    // Render placeholder if there's no valid source
+    if (!imageSrc) {
+        return (
+            <div
+                ref={setNodeRef}
+                style={style}
+                className={cn(
+                    "relative overflow-hidden rounded-lg border border-border bg-gray-100",
+                    isDragging ? "opacity-70 shadow-xl ring-2 ring-primary" : "",
+                    "group cursor-grab",
+                )}
+                {...attributes}
+                {...listeners}
+            >
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <p className="text-gray-500">No image available</p>
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 p-3">
+                    <div className="font-medium text-base">{image.title}</div>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div
             ref={setNodeRef}
@@ -93,20 +143,21 @@ const SortableImage = ({ image, onSizeChange }: {
                 {imageLoadError ? (
                     <div className="text-red-500 text-center p-4">
                         <p>Failed to load image</p>
-                        <p className="text-xs">Source: {imageSrc}</p>
+                        <p className="text-xs break-all max-w-full overflow-hidden">Source: {imageSrc}</p>
                     </div>
                 ) : (
                     <Image
                         src={imageSrc}
-                        alt={image.title}
+                        alt={image.title || "Gallery image"}
                         fill
                         className="object-cover transition-transform group-hover:scale-105"
                         sizes={`(max-width: 640px) 100vw, (max-width: 1024px) 50vw, ${image.cols * 25}vw`}
+                        unoptimized={imageSrc.includes('drive.google.com')} // Skip Next.js image optimization for Google Drive images
                         onError={(e) => {
                             console.error('Image load error:', {
                                 src: imageSrc,
-                                imageObject: image,
-                                event: e
+                                imageId: image.id,
+                                driveFileId: image.driveFileId
                             });
                             setImageLoadError(true)
                         }}

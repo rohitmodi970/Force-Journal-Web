@@ -11,6 +11,7 @@ export interface IUser extends Document {
   new_user: boolean;
   ip_address: string[];  // Changed to array for storing IP history
   isActive?: boolean;
+   onboardingComplete: boolean; // Added onboardingComplete flag
   // Auth provider fields
   provider?: string;
   providerId?: string;
@@ -20,6 +21,7 @@ export interface IUser extends Document {
   googleRefreshToken?: string;
   googleTokenExpiry?: Date;
   googleDriveFolderId?: string;
+
   // Profile information
   profile?: {
     bio?: string;
@@ -51,6 +53,7 @@ const userSchema = new Schema<IUser>(
     username: { type: String, required: true, unique: true },
     isActive: { type: Boolean, default: true },
     // Auth provider fields
+      onboardingComplete: { type: Boolean, default: false }, // Added onboardingComplete flag boolean; // Added onboardingComplete flag
     provider: { type: String }, // e.g., 'google', 'github', etc.
     providerId: { type: String }, // ID from the provider
     profileImage: { type: String },

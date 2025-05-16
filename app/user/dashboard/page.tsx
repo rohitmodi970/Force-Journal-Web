@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import React, { useState, useEffect } from 'react';
 import { signIn, signOut, useSession } from "next-auth/react";
@@ -125,7 +125,7 @@ export default function Dashboard() {
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
           <div className="md:col-span-2 space-y-4 lg:space-y-6">
-            <JournalStats />
+            {/* <JournalStats /> */}
             
             <CollapsibleCard 
               title="Today's Writing Prompt" 
@@ -149,10 +149,10 @@ export default function Dashboard() {
               </div>
             </CollapsibleCard>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
+            {/* <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
               <MoodTracker />
               <EntryCategories />
-            </div>
+            </div> */}
             
             <RecentEntries />
           </div>
@@ -163,7 +163,7 @@ export default function Dashboard() {
                 <TabsTrigger value="customize">Customize</TabsTrigger>
                 <TabsTrigger value="insights">Insights</TabsTrigger>
               </TabsList>
-              <TabsContent value="customize" className="pt-4">
+              {/* <TabsContent value="customize" className="pt-4">
                 <Card className="w-full shadow-md">
                   <div className="p-4">
                     <h3 className="text-sm font-medium mb-4">Theme Color</h3>
@@ -226,7 +226,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                 </Card>
-              </TabsContent>
+              </TabsContent> */}
               <TabsContent value="insights" className="pt-4">
                 <Card className="border p-4 rounded-lg bg-gradient-to-br from-journal-purple/5 to-background">
                   <div className="flex items-start space-x-3">

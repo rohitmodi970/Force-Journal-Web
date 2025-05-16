@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Loader2 } from "lucide-react"
 import { Alert, AlertDescription } from "./ui/quilted-gallery/ui/alert"
-import SortableImage from "./SortableImage"
+import GridImage from "./GridImage"
 
 // Define the image item type with date and size
 interface ImageItem {
@@ -49,6 +49,21 @@ export default function QuiltedGallery({ journalId }: { journalId: string }) {
   // Images state with empty initial value
   const [images, setImages] = useState<ImageItem[]>([])
 
+  // Function to handle image size changes
+  const handleSizeChange = (id: string, size: "small" | "medium" | "large") => {
+    setImages(prevImages => 
+      prevImages.map(img => {
+        if (img.id !== id) return img;
+        
+        // Update cols and rows based on the requested size
+        const newCols = size === "small" ? 1 : size === "medium" ? 2 : 2;
+        const newRows = size === "small" ? 1 : size === "medium" ? 1 : 2;
+        
+        return { ...img, cols: newCols, rows: newRows };
+      })
+    );
+  };
+
   // Fetch images when component mounts
   useEffect(() => {
     const fetchImages = async () => {
@@ -60,7 +75,7 @@ export default function QuiltedGallery({ journalId }: { journalId: string }) {
         
         // Use the /api/media/get API route
         const response = await fetch(`/api/media/get?journalId=${journalId}&mediaType=image`)
-        console.log('Response:', response)
+        console.log('Response status:', response.status)
         
         const data: MediaApiResponse = await response.json()
         console.log('Full API Response:', data)
@@ -76,6 +91,11 @@ export default function QuiltedGallery({ journalId }: { journalId: string }) {
         if (data.media && data.media.length > 0) {
           data.media.forEach((item, index) => {
             console.log(`Processing image ${index + 1}:`, item)
+            
+            if (!item.driveFileId) {
+              console.warn(`Skipping item ${index} due to missing driveFileId:`, item)
+              return;
+            }
             
             const uploadDate = new Date(item.uploadedAt)
             
@@ -148,10 +168,9 @@ export default function QuiltedGallery({ journalId }: { journalId: string }) {
           className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-4 auto-rows-[150px]"
         >
           {images.map((image) => (
-            <SortableImage 
+            <GridImage 
               key={image.id} 
               image={image} 
-              onSizeChange={() => {}} // Placeholder function
             />
           ))}
         </div>
