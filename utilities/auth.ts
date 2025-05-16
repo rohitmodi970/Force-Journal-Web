@@ -50,21 +50,40 @@ declare module "next-auth" {
   }
 }
 
+// Check for required environment variables
+const requiredEnvVars = {
+  NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+  NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+};
+
+// Validate environment variables
+Object.entries(requiredEnvVars).forEach(([key, value]) => {
+  if (!value) {
+    console.warn(`Warning: ${key} is not set in environment variables`);
+  }
+});
+
 export const authOptions: NextAuthOptions = {
   providers: [
-    // Google Provider with Drive access
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID as string,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-      authorization: {
-        params: {
-          scope: "openid email profile https://www.googleapis.com/auth/drive.file",
-          prompt: "consent",
-          access_type: "offline",
-          response_type: "code"
-        },
-      },
-    }),
+    // Only add Google provider if credentials are available
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? [
+          GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            authorization: {
+              params: {
+                scope: "openid email profile https://www.googleapis.com/auth/drive.file",
+                prompt: "consent",
+                access_type: "offline",
+                response_type: "code"
+              },
+            },
+          })
+        ]
+      : []),
     // Credentials Provider
     CredentialsProvider({
       name: "credentials",
@@ -78,50 +97,57 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Email and password are required");
         }
 
-        await connectDB();
-        console.log("Connecting to DB...");
+        try {
+          await connectDB();
+          console.log("Connecting to DB...");
 
-        // Find user by email
-        const user = await User.findOne({ email: credentials.email });
+          // Find user by email
+          const user = await User.findOne({ email: credentials.email });
 
-        if (!user) {
-          throw new Error("User not found");
+          if (!user) {
+            throw new Error("User not found");
+          }
+
+          // Check if password is correct
+          const isPasswordCorrect = await bcrypt.compare(
+            credentials.password,
+            user.password
+          );
+
+          if (!isPasswordCorrect) {
+            throw new Error("Invalid credentials");
+          }
+
+          // Update IP address and check if new_user
+          const isNewUser = user.new_user;
+
+          // Update IP address and set new_user to false
+          await User.findByIdAndUpdate(user._id, {
+            ip_address: credentials.ipAddress || user.ip_address || '0.0.0.0',
+            new_user: false
+          });
+
+          return {
+            id: user._id.toString(),
+            email: user.email,
+            name: user.name,
+            new_user: isNewUser,
+            username: user.username,
+            userId: user.userId
+          };
+        } catch (error) {
+          console.error("Authentication error:", error);
+          throw new Error("Authentication failed");
         }
-
-        // Check if password is correct
-        const isPasswordCorrect = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
-
-        if (!isPasswordCorrect) {
-          throw new Error("Invalid credentials");
-        }
-
-        // Update IP address and check if new_user
-        const isNewUser = user.new_user;
-
-        // Update IP address and set new_user to false
-        await User.findByIdAndUpdate(user._id, {
-          ip_address: credentials.ipAddress || user.ip_address || '0.0.0.0',
-          new_user: false
-        });
-
-        return {
-          id: user._id.toString(),
-          email: user.email,
-          name: user.name,
-          new_user: isNewUser,
-          username: user.username,
-          userId: user.userId
-        };
       }
     })
   ],
   session: {
     strategy: "jwt",
-    maxAge: 7 * 24 * 60 * 60, // 7 days - extended from 30 days
+    maxAge: 7 * 24 * 60 * 60, // 7 days
   },
+  secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === 'development',
   callbacks: {
     async signIn({ user, account }) {
       await connectDB();
@@ -347,7 +373,6 @@ export const authOptions: NextAuthOptions = {
       console.error("Auth error:", message);
     }
   },
-  secret: process.env.NEXTAUTH_SECRET as string,
   pages: {
     signIn: '/auth/login',
     error: '/auth/error',

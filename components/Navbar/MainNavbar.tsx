@@ -55,6 +55,11 @@ const MainNavbar = () => {
           icon: 'HiChartBar',
         },
         {
+          name: 'Advanced Analysis',
+          href: '/user/journal/analysis/advanced',
+          icon: 'HiOutlineChip',
+        },
+        {
           name: 'Journal Gallery',
           href: '/user/journal/journal-gallery',
           icon: 'HiPhotograph',
@@ -102,6 +107,7 @@ const MainNavbar = () => {
     { name: "New Entry", href: "/user/journal-entry", icon: "GiNotebook" },
     { name: "Journal", href: "/user/journal", icon: "HiDocumentText" },
     { name: "Analysis", href: "/user/analysis", icon: "HiOutlineChip" },
+    { name: "Advanced Analysis", href: "/user/journal/analysis/advanced", icon: "HiOutlineChip" },
     { name: "Profile", href: "/user/profile", icon: "HiOutlineChip" },
   ], []);
 
