@@ -9,6 +9,18 @@ interface LLMResponse {
   error?: string;
 }
 
+// Interface for LLM options
+interface LLMOptions {
+  temperature?: number;
+  topP?: number;
+  topK?: number;
+  includeWordCloud?: boolean;
+  includeMoodDistribution?: boolean;
+  includeGoals?: boolean;
+  includeSocialInteractions?: boolean;
+  includeFlowData?: boolean;
+}
+
 // LLM provider types
 type LLMProvider = 'gemini' | 'openai' | 'claude';
 
@@ -63,7 +75,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 }
 
 // Gemini implementation using the latest GoogleGenAI client
-async function getGeminiResponse(prompt: string, options: any): Promise<LLMResponse> {
+async function getGeminiResponse(prompt: string, options: LLMOptions): Promise<LLMResponse> {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
     
@@ -79,7 +91,7 @@ async function getGeminiResponse(prompt: string, options: any): Promise<LLMRespo
     const response = await genAI.models.generateContent({
       model: LLM_CONFIG.gemini.modelName,
       contents: structuredPrompt,
-      //@ts-ignore
+      // @ts-expect-error - GoogleGenAI types are not fully up to date
       generationConfig: {
         maxOutputTokens: LLM_CONFIG.gemini.maxTokens,
         temperature: options.temperature || 0.7,
@@ -89,9 +101,8 @@ async function getGeminiResponse(prompt: string, options: any): Promise<LLMRespo
     });
     console.log(response)
     return {
-      //@ts-ignore
+      // @ts-expect-error - GoogleGenAI types are not fully up to date
       text: response.text,
-      
       model: LLM_CONFIG.gemini.modelName,
     };
   } catch (error) {
@@ -105,54 +116,65 @@ async function getGeminiResponse(prompt: string, options: any): Promise<LLMRespo
 }
 
 // Format prompt specifically for journal analysis with Gemini
-function formatJournalPromptForGemini(prompt: string, options: any): string {
+function formatJournalPromptForGemini(prompt: string, options: LLMOptions): string {
   // Base analysis instructions
-  let structuredPrompt = `
+  const structuredPrompt = `
 You are a professional journal analyzer. Analyze the following journal entries and provide insights:
 
 ${prompt}
 
 Please provide the following analysis:
-1. Overall sentiment analysis
-2. Key topics discussed
-3. Patterns and trends
-4. Personalized insights
-5. Actionable suggestions
+1. Extract keywords for a word cloud (array of strings, most important first)
+2. For each entry, estimate energy (1-10) and productivity (1-10)
+3. List top mood influencers (array of {influencer, impact})
+4. For each entry, estimate emotion distribution (object with keys: joy, sadness, anger, fear, surprise, disgust, values 0-1)
+5. List topic hierarchy (array of strings, most important first)
+6. Flow data showing relationships between emotions and factors:
+   - Extract positive and negative emotions
+   - Identify external and internal factors
+   - Create nodes for each emotion and factor
+   - Create edges showing relationships between factors and emotions
+7. For each entry, estimate health metrics: sentiment (0-100), physicalWellness (0-100), mentalResilience (0-100)
+8. Progress metrics (object: health, resilience, academic, research, 0-100)
+
+Format your response as JSON with the following structure:
+{
+  "keywords": string[],
+  "metrics": {"energy": number, "productivity": number}[],
+  "moodInfluencers": {"influencer": string, "impact": number}[],
+  "emotionDistribution": Record<string, number>[],
+  "topicHierarchy": string[],
+  "flowData": {
+    "nodes": [
+      {
+        "id": string,
+        "label": string,
+        "type": "emotion" | "factor",
+        "data": {
+          "category": "positive" | "negative" | "external" | "internal"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": string,
+        "source": string,
+        "target": string,
+        "label": string
+      }
+    ]
+  },
+  "healthMetrics": {"sentiment": number, "physicalWellness": number, "mentalResilience": number}[],
+  "progressMetrics": {"health": number, "resilience": number, "academic": number, "research": number}
+}
+Return ONLY valid JSON.
 `;
-
-  // Add specific analysis types based on options
-  if (options.includeWordCloud) {
-    structuredPrompt += "\n6. Most frequently used words and their context";
-  }
-  
-  if (options.includeMoodDistribution) {
-    structuredPrompt += "\n7. Mood distribution and emotional patterns";
-  }
-  
-  if (options.includeGoals) {
-    structuredPrompt += "\n8. Goals mentioned and progress tracking";
-  }
-  
-  if (options.includeSocialInteractions) {
-    structuredPrompt += "\n9. People mentioned and relationship dynamics";
-  }
-
-  // Format your response in structured JSON
-  structuredPrompt += `\n\nPlease format your response as JSON with the following structure:
-  {
-    "sentiment": { "overall": "string", "score": number },
-    "topics": [{ "name": "string", "frequency": number, "context": "string" }],
-    "patterns": [{ "pattern": "string", "significance": "string" }],
-    "insights": ["string"],
-    "suggestions": ["string"]
-  }`;
-  console.log(structuredPrompt)
   return structuredPrompt;
 }
 
 // OpenAI implementation (placeholder for future implementation)
 // OpenAI implementation
-async function getOpenAIResponse(prompt: string, options: any): Promise<LLMResponse> {
+async function getOpenAIResponse(prompt: string, options: LLMOptions): Promise<LLMResponse> {
     try {
         const apiKey = process.env.OPENAI_API_KEY;
         
@@ -206,7 +228,7 @@ async function getOpenAIResponse(prompt: string, options: any): Promise<LLMRespo
 }
 
 // Format prompt specifically for journal analysis with OpenAI
-function formatJournalPromptForOpenAI(prompt: string, options: any): string {
+function formatJournalPromptForOpenAI(prompt: string, options: LLMOptions): string {
     // Similar to Gemini but optimized for OpenAI
     let structuredPrompt = `
 Analyze the following journal entries and provide detailed insights:
@@ -252,7 +274,7 @@ Please provide the following analysis as a JSON object:
 }
 
 // Claude implementation using Anthropic API
-async function getClaudeResponse(prompt: string, options: any): Promise<LLMResponse> {
+async function getClaudeResponse(prompt: string, options: LLMOptions): Promise<LLMResponse> {
     try {
         const apiKey = process.env.ANTHROPIC_API_KEY;
         
@@ -302,7 +324,7 @@ async function getClaudeResponse(prompt: string, options: any): Promise<LLMRespo
 }
 
 // Format prompt specifically for journal analysis with Claude
-function formatJournalPromptForClaude(prompt: string, options: any): string {
+function formatJournalPromptForClaude(prompt: string, options: LLMOptions): string {
     let structuredPrompt = `
 Analyze the following journal entries and provide comprehensive insights:
 
