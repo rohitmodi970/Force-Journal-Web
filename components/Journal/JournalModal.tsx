@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
 import { JournalEntry } from "./types";
-import { ChevronLeft, ChevronRight, X, Download, FileAudio, Film, FileText, Image as ImageIcon, Volume2, PlayCircle, PauseCircle, Maximize2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Download, FileAudio, Film, FileText, Image as ImageIcon } from "lucide-react";
 
 interface JournalModalProps {
   isOpen: boolean;

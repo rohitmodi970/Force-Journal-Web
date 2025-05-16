@@ -1,19 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from 'next/font/google';
 import "./globals.css";
-import SessionWrapper from "@/utilities/SessionWrapper";
-import { ThemeProvider } from "@/utilities/context/ThemeContext";
-import MainNavbar from "@/components/Navbar/MainNavbar";
+import { SessionWrapper } from "@/components/auth/SessionWrapper";
+import MainNavbar from "@/components/layout/MainNavbar";
+import { Providers } from "@/components/providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: "Force Web App",
@@ -22,18 +14,23 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <SessionWrapper>
-          <ThemeProvider>
-              <MainNavbar />
-              {children}
-          </ThemeProvider>
-        </SessionWrapper>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta httpEquiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' http://localhost:8000 https://extensions.aitopia.ai; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';" />
+      </head>
+      <body className={inter.className} suppressHydrationWarning>
+        <Providers>
+          <SessionWrapper>
+            <MainNavbar />
+            {children}
+          </SessionWrapper>
+        </Providers>
       </body>
     </html>
   );

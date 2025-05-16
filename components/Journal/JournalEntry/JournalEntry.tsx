@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Bookmark, PenLine, Sparkles, FileText, Save, Clock } from 'lucide-react';
+import { Bookmark, PenLine, Sparkles, FileText, Save, Clock, Brain } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/utilities/context/ThemeContext';
 import JournalHeader from './JournalHeader';
@@ -94,6 +94,7 @@ const JournalEntry: React.FC = () => {
 
   // Add new state for analysis result
   const [analysisResult, setAnalysisResult] = useState<Record<string, unknown> | null>(null);
+  const [showAnalysis, setShowAnalysis] = useState<boolean>(false);
 
   useEffect(() => {
     // Load saved entries from localStorage on component mount
@@ -819,25 +820,64 @@ const handleMediaUploadComplete = (mediaFiles: Record<string, unknown>[]) => {
 
   // Add function to call the sentiment analysis API
   const handleAnalyzeSentiment = async () => {
+    if (!content) {
+      showMessage("Please write something before analyzing sentiment", true);
+      return;
+    }
+
     try {
       const formData = new FormData();
-      formData.append('text', content);
+      formData.append("text", content);
+      
+      // Find the first successful image upload
       const imageFile = mediaFiles.find(m => m.type === 'image' && m.status === 'success');
       if (imageFile && imageFile.file) {
-        formData.append('image', imageFile.file);
+        formData.append("image", imageFile.file);
       }
-      const response = await fetch('http://localhost:8000/analyze-entry', {
-        method: 'POST',
+
+      // First try the sentiment analysis API
+      const sentimentResponse = await fetch("/api/sentiment/analyze-entry", {
+        method: "POST",
         body: formData,
       });
-      if (!response.ok) {
-        throw new Error('Failed to analyze sentiment');
+
+      if (!sentimentResponse.ok) {
+        throw new Error("Failed to analyze sentiment");
       }
-      const result = await response.json();
+
+      const result = await sentimentResponse.json();
       setAnalysisResult(result);
+      setShowAnalysis(true);
+      showMessage("Sentiment analysis completed successfully");
+
+      // Then try to get AI insights through the proxy
+      try {
+        const aiResponse = await fetch("/api/aitopia/ai/prompts", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text: content,
+            type: "journal_analysis"
+          }),
+        });
+
+        if (aiResponse.ok) {
+          const aiResult = await aiResponse.json();
+          // Merge AI insights with sentiment analysis
+          setAnalysisResult(prev => ({
+            ...prev,
+            ai_insights: aiResult
+          }));
+        }
+      } catch (aiError) {
+        console.error("Error getting AI insights:", aiError);
+        // Don't show error to user since this is optional
+      }
     } catch (error) {
-      console.error('Error analyzing sentiment:', error);
-      showMessage('Failed to analyze sentiment', true);
+      console.error("Error analyzing sentiment:", error);
+      showMessage("Failed to analyze sentiment. Please try again.", true);
     }
   };
 
@@ -1107,7 +1147,7 @@ const handleMediaUploadComplete = (mediaFiles: Record<string, unknown>[]) => {
                     }}
                     disabled={!content.trim() || isSaving}
                   >
-                    <Sparkles size={18} />
+                    <Brain size={18} />
                     <span>Analyze Sentiment</span>
                   </motion.button>
 
@@ -1128,9 +1168,17 @@ const handleMediaUploadComplete = (mediaFiles: Record<string, unknown>[]) => {
                 </div>
               </motion.div>
             )}
+
+            {/* Show Analysis Results */}
+            {showAnalysis && analysisResult && (
+              <div className="mb-6">
+                <SentimentAnalysisDashboard analysisResult={analysisResult} />
+              </div>
+            )}
           </div>
         )}
       </motion.div>
+<<<<<<< Updated upstream
 
       {/* After the main journal entry UI, conditionally render the SentimentAnalysis component if analysisResult is available */}
       {analysisResult && (
@@ -1139,6 +1187,8 @@ const handleMediaUploadComplete = (mediaFiles: Record<string, unknown>[]) => {
           {/* <SentimentAnalysisDashboard data={[analysisResult]} /> */}
         </div>
       )}
+=======
+>>>>>>> Stashed changes
     </div>
   );
 };
