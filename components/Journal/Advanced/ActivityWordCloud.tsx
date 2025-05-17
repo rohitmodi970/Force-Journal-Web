@@ -1,6 +1,6 @@
 'use client';
 import React, { useMemo } from 'react';
-import WordCloud from 'react-d3-cloud';
+import WordCloud from 'react-wordcloud';
 
 interface ActivityWordCloudProps {
   words: string[]; // Array of words from Gemini API response, most important first
@@ -11,17 +11,15 @@ const colorPalette = [
   '#ff9896', '#c49c94', '#f7b6d2', '#dbdb8d', '#17becf', '#aec7e8', '#ffbb78', '#98df8a', '#ff7f0e', '#2ca02c'
 ];
 
-const fontSizeMapper = (word: { value: number }) => {
-  // Generate a random font size between 20 and 60
-  return Math.floor(Math.random() * 40) + 20;
+const options = {
+  rotations: 2,
+  rotationAngles: [-90, 0, 90], // Allows for horizontal and vertical words
+  fontSizes: [20, 60], // Min and max font sizes
+  fontFamily: 'sans-serif',
+  padding: 2,
+  deterministic: false, // For random placement
+  transitionDuration: 1000,
 };
-
-interface WordCloudWord {
-  text: string;
-  value: number;
-}
-
-const rotate = (word: WordCloudWord, i: number) => (i % 2 === 0 ? 0 : 90);
 
 const ActivityWordCloud: React.FC<ActivityWordCloudProps> = ({ words }) => {
   const wordCloudData = useMemo(
@@ -59,18 +57,15 @@ const ActivityWordCloud: React.FC<ActivityWordCloudProps> = ({ words }) => {
       }}
     >
       <WordCloud
-        data={wordCloudData}
-        width={550}
-        height={350}
-        font={'sans-serif'}
-        fontSize={fontSizeMapper}
-        rotate={rotate}
-        padding={2}
-        spiral="rectangular"
-        fill={(d, i) => colorPalette[i % colorPalette.length]}
+        words={wordCloudData}
+        options={{
+          ...options,
+          colors: colorPalette,
+        }}
+        size={[550, 350]}
       />
     </div>
   );
 };
 
-export default ActivityWordCloud; 
+export default ActivityWordCloud;
