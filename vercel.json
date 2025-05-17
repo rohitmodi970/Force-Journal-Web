@@ -1,6 +1,6 @@
 {
   "functions": {
-    "api/user/onboarding.js": {
+    "api/user/onboarding/route.ts": {
       "memory": 1024,
       "maxDuration": 60
     }
