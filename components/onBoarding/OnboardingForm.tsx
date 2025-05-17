@@ -10,27 +10,55 @@ import Question1 from '@/components/onBoarding/Question1';
 import Question2 from '@/components/onBoarding/Question2';
 import Question3 from '@/components/onBoarding/Question3';
 import { signOut } from 'next-auth/react';
+
 export interface FormData {
   goal: string;
   feelingAudio?: File;
   prettyPhoto?: File;
 }
 
-const OnboardingForm = () => {
+interface Theme {
+  primary: string;
+  medium: string;
+  light: string;
+}
+
+interface SessionData {
+  user?: {
+    [key: string]: any;
+  };
+  onboardingComplete?: boolean;
+  new_user?: boolean;
+  [key: string]: any;
+}
+
+const OnboardingForm: React.FC = () => {
   const router = useRouter();
-  const { currentTheme, isDarkMode } = useTheme();
-  const { data: session, status, update: updateSession } = useSession();
+  const { currentTheme, isDarkMode } = useTheme() as {
+    currentTheme: Theme;
+    isDarkMode: boolean;
+  };
+  
+  const { data: session, status, update: updateSession } = useSession() as {
+    data: SessionData | null;
+    status: 'loading' | 'authenticated' | 'unauthenticated';
+    update: (data: Partial<SessionData>) => Promise<SessionData | null>;
+  };
   
   const [formData, setFormData] = useState<FormData>({
     goal: ''
   });
   
-  const [currentSection, setCurrentSection] = useState(1);
+  const [currentSection, setCurrentSection] = useState<number>(1);
   const [audioURL, setAudioURL] = useState<string | null>(null);
   const [photoURL, setPhotoURL] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [submissionInProgress, setSubmissionInProgress] = useState(false);
+  const [submissionInProgress, setSubmissionInProgress] = useState<boolean>(false);
+
+  // File size limits
+  const MAX_AUDIO_SIZE: number = 10 * 1024 * 1024; // 10MB
+  const MAX_PHOTO_SIZE: number = 10 * 1024 * 1024; // 10MB
 
   // Check if user is authenticated
   useEffect(() => {
@@ -39,24 +67,118 @@ const OnboardingForm = () => {
     }
   }, [status, router]);
 
+  // Image compression function
+  const compressImage = async (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event: ProgressEvent<FileReader>) => {
+        if (event.target && event.target.result) {
+          const img = new Image();
+          img.src = event.target.result as string;
+          img.onload = () => {
+            // Create canvas for compression
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 1200;
+            const MAX_HEIGHT = 1200;
+            
+            // Calculate new dimensions
+            let width = img.width;
+            let height = img.height;
+            if (width > height) {
+              if (width > MAX_WIDTH) {
+                height *= MAX_WIDTH / width;
+                width = MAX_WIDTH;
+              }
+            } else {
+              if (height > MAX_HEIGHT) {
+                width *= MAX_HEIGHT / height;
+                height = MAX_HEIGHT;
+              }
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              reject(new Error('Failed to get canvas context'));
+              return;
+            }
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Convert to Blob with reduced quality
+            canvas.toBlob((blob) => {
+              if (!blob) {
+                reject(new Error('Failed to create blob from canvas'));
+                return;
+              }
+              // Create a new File from the compressed blob
+              const compressedFile = new File([blob], file.name, {
+                type: 'image/jpeg',
+                lastModified: Date.now()
+              });
+              resolve(compressedFile);
+            }, 'image/jpeg', 0.3); // Adjust quality (0.3 = 30%)
+          };
+        }
+      };
+      
+      reader.onerror = () => {
+        reject(new Error('Failed to read file'));
+      };
+    });
+  };
+
   // Handle text input changes
-  const handleInputChange = (field: keyof FormData, value: string) => {
+  const handleInputChange = (field: keyof FormData, value: string): void => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   // Handle audio recording
-  const handleAudioRecording = (file: File, url: string) => {
+  const handleAudioRecording = (file: File, url: string): void => {
+    // Validate audio file size
+    if (file.size > MAX_AUDIO_SIZE) {
+      setError(`Audio file is too large. Maximum size is ${MAX_AUDIO_SIZE / (1024 * 1024)}MB.`);
+      return;
+    }
+    
     setAudioURL(url);
     setFormData(prev => ({ ...prev, feelingAudio: file }));
   };
 
-  // Handle photo upload
-  const handlePhotoUpload = (file: File, url: string) => {
-    setPhotoURL(url);
-    setFormData(prev => ({ ...prev, prettyPhoto: file }));
+  // Handle photo upload with compression
+  const handlePhotoUpload = async (file: File, url: string): Promise<void> => {
+    try {
+      // Validate original file size first
+      if (file.size > MAX_PHOTO_SIZE * 2) { // Allow for files up to 2x the limit before compression
+        setError(`Photo file is too large. Maximum size is ${MAX_PHOTO_SIZE / (1024 * 1024) * 2}MB before compression.`);
+        return;
+      }
+      
+      // Compress the image
+      const compressedFile = await compressImage(file);
+      
+      // Check if compression was effective enough
+      if (compressedFile.size > MAX_PHOTO_SIZE) {
+        setError(`Photo is still too large after compression. Please choose a smaller image.`);
+        return;
+      }
+      
+      // Use the compressed file
+      const compressedURL = URL.createObjectURL(compressedFile);
+      setPhotoURL(compressedURL);
+      setFormData(prev => ({ ...prev, prettyPhoto: compressedFile }));
+    } catch (error) {
+      console.error('Error compressing image:', error);
+      // Show error to user
+      setError('Failed to process the image. Please try again with a different photo.');
+    }
   };
 
-  const goToNextSection = () => {
+  const goToNextSection = (): void => {
+    // Clear any previous errors
+    setError(null);
+    
     if (currentSection < 3) {
       setCurrentSection(prev => prev + 1);
     } else {
@@ -64,14 +186,15 @@ const OnboardingForm = () => {
     }
   };
 
-  const goToPrevSection = () => {
+  const goToPrevSection = (): void => {
+    setError(null);
     if (currentSection > 1) {
       setCurrentSection(prev => prev - 1);
     }
   };
 
   // Improved function to force session refresh and handle navigation
-  const handleSessionUpdateAndRedirect = async () => {
+  const handleSessionUpdateAndRedirect = async (): Promise<void> => {
     try {
       console.log('Updating session and preparing to redirect...');
       
@@ -95,10 +218,16 @@ const OnboardingForm = () => {
   };
 
   // Form submission with debounce protection
-  const handleSubmit = useCallback(async () => {
+  const handleSubmit = useCallback(async (): Promise<void> => {
     // Prevent multiple submissions
     if (submissionInProgress) {
       console.log('Submission already in progress, ignoring additional submit attempt');
+      return;
+    }
+    
+    // Validate form data before submission
+    if (!formData.goal || formData.goal.trim() === '') {
+      setError('Please enter your goal before continuing.');
       return;
     }
     
@@ -243,7 +372,7 @@ const OnboardingForm = () => {
             {currentSection === 1 && (
               <Question1 
                 value={formData.goal}
-                handleInputChange={handleInputChange}
+                handleInputChange={(value: string) => handleInputChange('goal', value)}
                 goToNextSection={goToNextSection}
               />
             )}

@@ -17,9 +17,14 @@ const nextConfig: NextConfig = {
       "letsenhance.io"
     ],
   },
+  api: {
+    bodyParser: {
+      sizeLimit: '20mb', // Increase from default 4mb
+    },
+  },
   experimental: {
     serverActions: {
-      bodySizeLimit: '10mb' // Increase the body size limit to 10MB
+      bodySizeLimit: '30mb' // Increase the body size limit to 30MB
     },
   },
 
