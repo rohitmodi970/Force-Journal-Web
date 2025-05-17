@@ -25,7 +25,7 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta 
           httpEquiv="Content-Security-Policy" 
-          content="default-src 'self'; connect-src 'self' http://localhost:8000 https://extensions.aitopia.ai; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';frame-src https://drive.google.com;" 
+          content={`default-src 'self'; connect-src 'self' ${process.env.SA_MODEL_LINK || 'http://localhost:8000'} https://extensions.aitopia.ai; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';frame-src https://drive.google.com;`}
         />
       </head>
       <body className={inter.className} suppressHydrationWarning>
