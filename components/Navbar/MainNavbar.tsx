@@ -91,6 +91,11 @@ const MainNavbar = () => {
           href: '/user/analysis/voiceAnalysis',
           icon: 'HiMicrophone',
         },
+        {
+          name: 'Audio Analysis',
+          href: '/user/analysis/audio-analysis',
+          icon: 'HiMusicNote',
+        },
       ],
     },
     {
