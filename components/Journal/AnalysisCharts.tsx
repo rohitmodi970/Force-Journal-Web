@@ -132,6 +132,7 @@ const AnalysisCharts: React.FC<AnalysisChartsProps> = ({ entries }) => {
 
   // Aggregate probabilities
   const avgProbabilities = ['positive', 'neutral', 'negative'].map(type => {
+    //@ts-ignore
     const total = entries.reduce((sum, entry) => sum + (entry.analysis.probabilities[type] || 0), 0);
     return total / entries.length;
   });
