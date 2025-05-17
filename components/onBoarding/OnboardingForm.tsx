@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
@@ -9,7 +9,7 @@ import { useSession } from 'next-auth/react';
 import Question1 from '@/components/onBoarding/Question1';
 import Question2 from '@/components/onBoarding/Question2';
 import Question3 from '@/components/onBoarding/Question3';
-
+import { signOut } from 'next-auth/react';
 export interface FormData {
   goal: string;
   feelingAudio?: File;
@@ -19,7 +19,7 @@ export interface FormData {
 const OnboardingForm = () => {
   const router = useRouter();
   const { currentTheme, isDarkMode } = useTheme();
-  const { data: session, status } = useSession();
+  const { data: session, status, update: updateSession } = useSession();
   
   const [formData, setFormData] = useState<FormData>({
     goal: ''
@@ -30,11 +30,12 @@ const OnboardingForm = () => {
   const [photoURL, setPhotoURL] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [submissionInProgress, setSubmissionInProgress] = useState(false);
 
   // Check if user is authenticated
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/auth/signin?callbackUrl=/onboarding');
+      router.push('/auth/register');
     }
   }, [status, router]);
 
@@ -68,50 +69,122 @@ const OnboardingForm = () => {
       setCurrentSection(prev => prev - 1);
     }
   };
-
-  // Form submission
-  const handleSubmit = async () => {
-    setIsSubmitting(true);
-    setError(null);
+const forceSessionRefresh = async () => {
+  try {
+    // This will force NextAuth to refresh the token
+    // Use the correct property name (lowercase 'b')
+await updateSession();
     
-    try {
-      // Make sure user is authenticated
-      if (!session || !session.user) {
-        throw new Error('You must be signed in to complete onboarding');
-      }
-      
-      const formDataToSubmit = new FormData();
-      formDataToSubmit.append('goal', formData.goal);
-      
-      if (formData.feelingAudio) {
-        formDataToSubmit.append('feelingAudio', formData.feelingAudio);
-      }
-      
-      if (formData.prettyPhoto) {
-        formDataToSubmit.append('prettyPhoto', formData.prettyPhoto);
-      }
-      
-      const response = await fetch('/api/user/onboarding', {
-        method: 'POST',
-        body: formDataToSubmit,
-      });
+    // Wait briefly to ensure the update propagates
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Redirect to dashboard
+    router.push('/user/dashboard');
+  } catch (error) {
+    console.error('Error refreshing session:', error);
+    await signOut({ redirect: false });
+    window.location.href = '/auth/login?error=session_refresh_failed';
+  }
+};
+  // Form submission with debounce protection
+// Modified handleSubmit function with proper session update
+const handleSubmit = useCallback(async () => {
+  // Prevent multiple submissions
+  if (submissionInProgress) {
+    console.log('Submission already in progress, ignoring additional submit attempt');
+    return;
+  }
+  
+  setIsSubmitting(true);
+  setError(null);
+  setSubmissionInProgress(true);
+  
+  try {
+    // Make sure user is authenticated
+    if (!session || !session.user) {
+      throw new Error('You must be signed in to complete onboarding');
+    }
+    
+    const formDataToSubmit = new FormData();
+    formDataToSubmit.append('goal', formData.goal);
+    
+    if (formData.feelingAudio) {
+      formDataToSubmit.append('feelingAudio', formData.feelingAudio);
+    }
+    
+    if (formData.prettyPhoto) {
+      formDataToSubmit.append('prettyPhoto', formData.prettyPhoto);
+    }
+    
+    console.log('Submitting form data...');
+    
+    const response = await fetch('/api/user/onboarding', {
+      method: 'POST',
+      body: formDataToSubmit,
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+    
+    console.log('Response status:', response.status);
+    
+    const contentType = response.headers.get('content-type');
+    console.log('Response content type:', contentType);
+    
+    if (contentType && contentType.includes('application/json')) {
+      const data = await response.json();
+      console.log('Response data:', data);
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to submit onboarding data');
+        const errorMessage = data.error || data.message || 'Failed to submit onboarding data';
+        throw new Error(errorMessage);
       }
       
-      const result = await response.json();
+      // Update the session client-side
+      console.log('Updating session...');
       
-      // Redirect to dashboard on success
+      // Use the next-auth's update method to update the session
+      // Use the correct property name (lowercase 'b')
+await updateSession({
+  onboardingComplete: true,
+  new_user: false // Also update new_user status if needed
+});
+      
+      // Wait briefly to ensure DB updates propagate
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Use the router to navigate (no page reload)
       router.push('/user/dashboard');
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      setError((error as Error).message || 'There was an error submitting your information.');
-    } finally {
-      setIsSubmitting(false);
+      
+    } else {
+      // For non-JSON responses
+      const textResponse = await response.text();
+      console.log('Received non-JSON response:', textResponse);
+      
+      if (response.ok) {
+        // Update the session here too
+        // Use the correct property name (lowercase 'b')
+await updateSession({
+  onboardingComplete: true,
+  new_user: false // Also update new_user status if needed
+});
+        
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        router.push('/user/dashboard');
+      } else {
+        throw new Error('Server returned an unexpected response format');
+      }
     }
-  };
+  } catch (error) {
+    console.error('Error submitting form:', error);
+    setError((error as Error).message || 'There was an error submitting your information.');
+    setSubmissionInProgress(false); // Reset submission lock on error
+  } finally {
+    setIsSubmitting(false);
+    // Reset submission lock after completion
+    setSubmissionInProgress(false);
+  }
+}, [formData, session, updateSession, router, submissionInProgress]);
 
   // Loading state while checking auth
   if (status === 'loading') {
@@ -158,7 +231,7 @@ const OnboardingForm = () => {
         </div>
         
         <motion.div
-          className={`shadow-xl rounded-2xl p-6 md:p-8 ${cardBgColor} transition-colors duration-300`}
+          className={`shadow-xl rounded-2xl p-6 md:p-8 ${cardBgColor} transition-colors duration-300 relative`}
           style={{
             boxShadow: `0 10px 25px -5px ${currentTheme.light}, 0 8px 10px -6px ${currentTheme.light}`
           }}

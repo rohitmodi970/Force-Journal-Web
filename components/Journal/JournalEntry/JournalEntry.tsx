@@ -1172,23 +1172,14 @@ const handleMediaUploadComplete = (mediaFiles: Record<string, unknown>[]) => {
             {/* Show Analysis Results */}
             {showAnalysis && analysisResult && (
               <div className="mb-6">
-                <SentimentAnalysisDashboard analysisResult={analysisResult} />
+                <SentimentAnalysisDashboard data={analysisResult as any} />
               </div>
             )}
           </div>
         )}
-      </motion.div>
-<<<<<<< Updated upstream
+</motion.div>
 
-      {/* After the main journal entry UI, conditionally render the SentimentAnalysis component if analysisResult is available */}
-      {analysisResult && (
-        <div className="mt-8">
-          analysisResult 
-          {/* <SentimentAnalysisDashboard data={[analysisResult]} /> */}
-        </div>
-      )}
-=======
->>>>>>> Stashed changes
+
     </div>
   );
 };

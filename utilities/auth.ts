@@ -14,6 +14,7 @@ declare module "next-auth" {
       name?: string | null;
       email?: string | null;
       new_user?: boolean;
+      onboardingComplete?: boolean;
       username?: string;
       userId?: number;
       googleAccessToken?: string;
@@ -27,6 +28,7 @@ declare module "next-auth" {
   interface JWT {
     id?: string;
     new_user?: boolean;
+    onboardingComplete?: boolean;
     username?: string;
     userId?: number;
     accessToken?: string;
@@ -42,6 +44,7 @@ declare module "next-auth" {
   interface User {
     id?: string;
     new_user?: boolean;
+    onboardingComplete?: boolean;
     username?: string;
     userId?: number;
     googleAccessToken?: string;
@@ -70,19 +73,19 @@ export const authOptions: NextAuthOptions = {
     // Only add Google provider if credentials are available
     ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
       ? [
-          GoogleProvider({
-            clientId: process.env.GOOGLE_CLIENT_ID,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-            authorization: {
-              params: {
-                scope: "openid email profile https://www.googleapis.com/auth/drive.file",
-                prompt: "consent",
-                access_type: "offline",
-                response_type: "code"
-              },
+        GoogleProvider({
+          clientId: process.env.GOOGLE_CLIENT_ID,
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          authorization: {
+            params: {
+              scope: "openid email profile https://www.googleapis.com/auth/drive.file",
+              prompt: "consent",
+              access_type: "offline",
+              response_type: "code"
             },
-          })
-        ]
+          },
+        })
+      ]
       : []),
     // Credentials Provider
     CredentialsProvider({
@@ -118,13 +121,14 @@ export const authOptions: NextAuthOptions = {
             throw new Error("Invalid credentials");
           }
 
-          // Update IP address and check if new_user
+          // Check if onboarding is complete
+          const onboardingComplete = user.onboardingComplete || false;
           const isNewUser = user.new_user;
 
-          // Update IP address and set new_user to false
+          // Update IP address
           await User.findByIdAndUpdate(user._id, {
-            ip_address: credentials.ipAddress || user.ip_address || '0.0.0.0',
-            new_user: false
+            ip_address: credentials.ipAddress || user.ip_address || '0.0.0.0'
+            // Don't update new_user status here - we'll only do this after onboarding
           });
 
           return {
@@ -132,6 +136,7 @@ export const authOptions: NextAuthOptions = {
             email: user.email,
             name: user.name,
             new_user: isNewUser,
+            onboardingComplete: onboardingComplete,
             username: user.username,
             userId: user.userId
           };
@@ -180,14 +185,15 @@ export const authOptions: NextAuthOptions = {
           // User exists with this provider, update tokens and IP address
           existingUser.googleAccessToken = account.access_token;
           existingUser.googleRefreshToken = account.refresh_token;
-          existingUser.googleTokenExpiry = new Date(Date.now() + (account.expires_at || 3600*24*7) * 1000); // 7 days
+          existingUser.googleTokenExpiry = new Date(Date.now() + (account.expires_at || 3600 * 24 * 7) * 1000); // 7 days
           existingUser.ip_address = await getIpAddress();
-          existingUser.new_user = false;
+          // Don't update new_user status here - we'll keep the onboarding flag
           await existingUser.save();
 
           // Update the user object to include additional info
           user.id = existingUser._id.toString();
           user.new_user = existingUser.new_user;
+          user.onboardingComplete = existingUser.onboardingComplete;
           user.username = existingUser.username;
           user.userId = existingUser.userId;
           user.googleAccessToken = account.access_token;
@@ -205,15 +211,15 @@ export const authOptions: NextAuthOptions = {
           existingUser.providerId = providerId;
           existingUser.profileImage = user.image;
           existingUser.ip_address = await getIpAddress();
-          existingUser.new_user = false;
           existingUser.googleAccessToken = account.access_token;
           existingUser.googleRefreshToken = account.refresh_token;
-          existingUser.googleTokenExpiry = new Date(Date.now() + (account.expires_at || 3600*24*7) * 1000); // 7 days
+          existingUser.googleTokenExpiry = new Date(Date.now() + (account.expires_at || 3600 * 24 * 7) * 1000); // 7 days
           await existingUser.save();
 
-          // Update the user object
+          // Update the user object with existing user's status
           user.id = existingUser._id.toString();
           user.new_user = existingUser.new_user;
+          user.onboardingComplete = existingUser.onboardingComplete;
           user.username = existingUser.username;
           user.userId = existingUser.userId;
           user.googleAccessToken = account.access_token;
@@ -237,14 +243,16 @@ export const authOptions: NextAuthOptions = {
           profileImage: user.image,
           ip_address: await getIpAddress(),
           new_user: true,
+          onboardingComplete: false,
           googleAccessToken: account.access_token,
           googleRefreshToken: account.refresh_token,
-          googleTokenExpiry: new Date(Date.now() + (account.expires_at || 3600*24*7) * 1000) // 7 days
+          googleTokenExpiry: new Date(Date.now() + (account.expires_at || 3600 * 24 * 7) * 1000) // 7 days
         });
 
         // Update user object
         user.id = newUser._id.toString();
         user.new_user = true;
+        user.onboardingComplete = false;
         user.username = username;
         user.userId = userId;
         user.googleAccessToken = account.access_token;
@@ -253,13 +261,22 @@ export const authOptions: NextAuthOptions = {
 
       return true;
     },
-    async jwt({ token, user, account, trigger }) {
+    async jwt({ token, user, account, trigger, session }) {
       // Initial sign in
+      // Handle session updates
+  if (trigger === "update" && session?.onboardingComplete !== undefined) {
+    return { 
+      ...token,
+      onboardingComplete: session.onboardingComplete,
+      new_user: session.new_user ?? token.new_user
+    };
+  }
       if (account && user) {
         return {
           ...token,
           id: user.id,
           new_user: user.new_user,
+          onboardingComplete: user.onboardingComplete,
           username: user.username,
           userId: user.userId,
           accessToken: account.access_token,
@@ -270,10 +287,18 @@ export const authOptions: NextAuthOptions = {
         };
       }
 
+      // Reissue token with updated user info on session update
+      if (trigger === "update" && user) {
+        return {
+          ...token,
+          ...user,
+        };
+      }
+
       // Return previous token if the access token has not expired yet
-      if (token.accessTokenExpires && 
-          typeof token.accessTokenExpires === 'number' && 
-          Date.now() < token.accessTokenExpires * 1000) {
+      if (token.accessTokenExpires &&
+        typeof token.accessTokenExpires === 'number' &&
+        Date.now() < token.accessTokenExpires * 1000) {
         return token;
       }
 
@@ -283,7 +308,7 @@ export const authOptions: NextAuthOptions = {
           // Attempt to refresh Google token
           if (token.googleRefreshToken && typeof token.googleRefreshToken === 'string') {
             const refreshedTokens = await refreshGoogleAccessToken(token.googleRefreshToken);
-            
+
             if (refreshedTokens) {
               // Update the User in the database with new tokens
               await connectDB();
@@ -293,23 +318,23 @@ export const authOptions: NextAuthOptions = {
                   googleTokenExpiry: new Date(Date.now() + refreshedTokens.expires_in * 1000)
                 });
               }
-              
+
               return {
                 ...token,
                 accessToken: refreshedTokens.access_token,
                 accessTokenExpires: Math.floor(Date.now() / 1000 + refreshedTokens.expires_in),
                 googleAccessToken: refreshedTokens.access_token,
                 // Don't update refresh token if we didn't get a new one
-                ...(refreshedTokens.refresh_token ? { 
+                ...(refreshedTokens.refresh_token ? {
                   refreshToken: refreshedTokens.refresh_token,
-                  googleRefreshToken: refreshedTokens.refresh_token 
+                  googleRefreshToken: refreshedTokens.refresh_token
                 } : {})
               };
             }
           }
         } catch (error) {
           console.error("Error refreshing access token", error);
-          
+
           // If refresh failed but token info exists, keep the session active
           // but mark that there was an error refreshing
           return {
@@ -329,6 +354,7 @@ export const authOptions: NextAuthOptions = {
           name: token.name,
           email: token.email,
           new_user: token.new_user as boolean | undefined,
+          onboardingComplete: token.onboardingComplete as boolean | undefined,
           username: token.username as string | undefined,
           userId: token.userId as number | undefined,
           googleAccessToken: token.googleAccessToken as string | undefined,
@@ -336,22 +362,28 @@ export const authOptions: NextAuthOptions = {
         };
         session.accessToken = token.accessToken as string | undefined;
         session.error = token.error as string | undefined;
+
+        // Additional debugging to check what's being included in the session
+        console.log("Session being constructed with token data:", {
+          new_user: token.new_user,
+          onboardingComplete: token.onboardingComplete
+        });
       }
       return session;
     },
-    
+
     async redirect({ url, baseUrl }) {
       // If the URL starts with the base URL, allow it
       if (url.startsWith(baseUrl)) {
         return url;
       }
-      
-      // Handle special redirects for new users
+
+      // Handle special redirects for OAuth callbacks
       if (url.includes('/api/auth/callback')) {
-        // We'll need to check if user is new in the session later
-        return `${baseUrl}/auth/onboarding`;
+        // We'll check onboarding status in middleware
+        return `${baseUrl}/user/onboarding`;
       }
-      
+
       // Default fallback
       return baseUrl;
     }
@@ -359,10 +391,11 @@ export const authOptions: NextAuthOptions = {
   events: {
     async signIn(message) {
       // Additional logging for debugging
-      console.log("Sign-in event:", { 
-        user: message.user.email, 
+      console.log("Sign-in event:", {
+        user: message.user.email,
         isNewUser: message.user.new_user,
-        account: message.account?.provider 
+        onboardingComplete: message.user.onboardingComplete,
+        account: message.account?.provider
       });
     },
     async signOut(message) {
@@ -376,7 +409,7 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: '/auth/login',
     error: '/auth/error',
-    newUser: '/auth/register', // Add redirection for new users
+    newUser: '/auth/register',
   }
 };
 

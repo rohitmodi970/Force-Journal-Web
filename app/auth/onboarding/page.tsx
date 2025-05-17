@@ -20,13 +20,13 @@ export default function OnboardingPage() {
     }
 
     // Check if user is new
-    if (session.user.new_user) {
-      // New user, stay on this page
-      setLoading(false);
-    } else {
-      // Existing user, redirect to dashboard
-      router.push('/user/dashboard');
-    }
+  //   if (session.user.new_user) {
+  //     // New user, stay on this page
+  //     setLoading(false);
+  //   } else {
+  //     // Existing user, redirect to dashboard
+  //     router.push('/user/dashboard');
+  //   }
   }, [session, status, router]);
 
   if (loading) {

@@ -23,7 +23,7 @@ export function SessionWrapper({ children }: SessionWrapperProps) {
   }
 
   if (!session) {
-    redirect("/auth/signin");
+    redirect("/auth/register");
   }
 
   return <>{children}</>;

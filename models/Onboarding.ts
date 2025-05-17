@@ -9,7 +9,6 @@ export interface IOnboarding extends Document {
     downloadUrl: string;
     viewUrl: string;
     path: string;
-    asciiData?: string;
   };
   prettyPhoto: {
     downloadUrl: string;
@@ -38,8 +37,7 @@ const onboardingSchema = new Schema<IOnboarding>(
     feelingAudio: {
       downloadUrl: String,
       viewUrl: String,
-      path: String,
-      asciiData: String,
+      path: String
     },
     prettyPhoto: {
       downloadUrl: String,

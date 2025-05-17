@@ -1,4 +1,4 @@
-// middleware.ts 
+// middleware.ts
 import { NextResponse } from 'next/server';
 import { withAuth } from 'next-auth/middleware';
 import { getToken } from 'next-auth/jwt';
@@ -9,21 +9,58 @@ export default withAuth(
     
     // Check if token exists and is valid
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-    
+    console.log("Token:", token);
     // Check for expired access tokens and redirect to login if needed
     if (token?.error === "RefreshAccessTokenError") {
       console.log("❌ Token refresh error, redirecting to login");
       return NextResponse.redirect(new URL('/auth/login', req.url));
     }
     
-    // For new users, redirect to registration/onboarding
-    // IMPORTANT FIX: Only redirect if we're not already on the onboarding page
-    // if (token?.new_user === true && 
-    //     !req.nextUrl.pathname.startsWith('/auth/register') && 
-    //     !req.nextUrl.pathname.startsWith('/user/onboarding')) {
-    //   console.log("🆕 New user detected, redirecting to registration");
-    //   return NextResponse.redirect(new URL('/user/onboarding', req.url));
-    // }
+    // Check Google token status for protected routes that require Google integration
+    if (token && 
+        token.onboardingComplete === true && 
+        (req.nextUrl.pathname.startsWith('/user/google') || 
+         req.nextUrl.pathname.startsWith('/user/drive'))) {
+      
+      try {
+        // Check token status via our API
+        const tokenCheckResponse = await fetch(`${process.env.NEXTAUTH_URL}/api/auth/refresh`, {
+          headers: {
+            'Cookie': req.headers.get('cookie') || '',
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        const tokenData = await tokenCheckResponse.json();
+        
+        // If token check fails or token is expired
+        if (!tokenData.success || 
+            (tokenData.tokenInfo.isExpired || tokenData.tokenInfo.expiresIn < 60)) {
+          console.log("🔄 Google token expired or missing, redirecting to token refresh page");
+          return NextResponse.redirect(new URL('/user/refresh-google-token', req.url));
+        }
+      } catch (error) {
+        console.error("Error checking token status:", error);
+        // On error, we'll just continue and let the specific API handle the error
+      }
+    }
+    
+    // For new users or users without completed onboarding, redirect to onboarding
+    if (token && 
+        (token.onboardingComplete === false) && 
+        !req.nextUrl.pathname.startsWith('/auth/register') && 
+        !req.nextUrl.pathname.startsWith('/user/onboarding')) {
+      console.log("🆕 User needs onboarding, redirecting to onboarding flow");
+      return NextResponse.redirect(new URL('/user/onboarding', req.url));
+    }
+    
+    // For authenticated users with completed onboarding trying to visit onboarding page
+    if (token && 
+        token.onboardingComplete === true && 
+        req.nextUrl.pathname.startsWith('/user/onboarding')) {
+      console.log("✅ User already completed onboarding, redirecting to dashboard");
+      return NextResponse.redirect(new URL('/user/dashboard', req.url));
+    }
     
     return NextResponse.next();
   },
@@ -39,9 +76,10 @@ export default withAuth(
           '/contact',
           '/api/public',
           '/api/auth',
+          '/user/refresh-google-token', // Add token refresh page to public paths
         ];
         
-        // Fix: Handle '/' separately to avoid false matches
+        // Handle '/' separately to avoid false matches
         const isPublicPath = 
           pathname === '/' || publicPaths.some(path => pathname.startsWith(path));
         
@@ -50,9 +88,10 @@ export default withAuth(
           return true;
         }
         
-        // IMPORTANT FIX: Make onboarding accessible for new users
-        if (pathname.startsWith('/user/onboarding') && token?.new_user === true) {
-          console.log("✅ New user accessing onboarding, allowed");
+        // Make onboarding accessible for new users and users who haven't completed onboarding
+        if (pathname.startsWith('/user/onboarding') && 
+            (token?.new_user === true || token?.onboardingComplete === false)) {
+          console.log("✅ User accessing onboarding, allowed");
           return true;
         }
         
@@ -75,10 +114,10 @@ export default withAuth(
   }
 );
 
-// ✅ Match both `/user/**` routes and any path for checking token validity
+// Update matcher to exclude ALL API routes, not just api/auth
 export const config = {
   matcher: [
     '/user/:path*',
-    '/((?!api/auth|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api/|_next/static|_next/image|favicon.ico).*)',
   ],
 };
