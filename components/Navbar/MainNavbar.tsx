@@ -72,6 +72,28 @@ const MainNavbar = () => {
       ],
     },
     {
+      name: 'Analysis',
+      href: '/user/analysis',
+      icon: 'HiChartPie',
+      subItems: [
+        {
+          name: 'General Analysis',
+          href: '/user/analysis',
+          icon: 'HiChartBar',
+        },
+        {
+          name: 'Sentiment Analysis',
+          href: '/user/analysis/sentiment-analysis',
+          icon: 'HiEmojiHappy',
+        },
+        {
+          name: 'Voice Analysis',
+          href: '/user/analysis/voiceAnalysis',
+          icon: 'HiMicrophone',
+        },
+      ],
+    },
+    {
       name: 'Profile',
       href: '/user/profile',
       icon: 'HiUser',
@@ -92,6 +114,18 @@ const MainNavbar = () => {
       name: 'AI Tools',
       href: '/user/ai-tools',
       icon: 'HiOutlineChip',
+      subItems: [
+        {
+          name: 'AI Tools Home',
+          href: '/user/ai-tools',
+          icon: 'HiOutlineChip',
+        },
+        {
+          name: 'OCR',
+          href: '/user/ocr',
+          icon: 'HiDocumentSearch',
+        },
+      ],
     },
   ], [session]);
 
