@@ -75,17 +75,18 @@ const nextConfig: NextConfig = {
       {
       source: '/(.*)',
       headers: [
-        {
-        key: 'Content-Security-Policy',
-        value: `
-          default-src 'self';
-          script-src 'self' 'unsafe-inline' 'unsafe-eval';
-          style-src 'self' 'unsafe-inline';
-          img-src 'self' data: blob:;
-          connect-src 'self' ${process.env.SA_MODEL_LINK || 'http://localhost:8000'} https://extensions.aitopia.ai;
-          frame-src https://drive.google.com;
-        `.replace(/\n/g, ' ').trim()
-        }
+       {
+  key: 'Content-Security-Policy',
+  value: `
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' 'unsafe-eval';
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' data: blob:;
+    media-src 'self' blob:;
+    connect-src 'self' ${process.env.SA_MODEL_LINK || 'http://localhost:8000'} https://extensions.aitopia.ai;
+    frame-src https://drive.google.com;
+  `.replace(/\n/g, ' ').trim()
+}
       ],
       }
     ];
