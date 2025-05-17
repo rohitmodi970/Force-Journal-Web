@@ -1,6 +1,6 @@
 'use client';
 import React, { useMemo } from 'react';
-import WordCloud from 'react-d3-cloud';
+import ReactWordcloud from 'react-wordcloud';
 
 interface ActivityWordCloudProps {
   words: string[]; // Array of words from Gemini API response, most important first
@@ -11,17 +11,10 @@ const colorPalette = [
   '#ff9896', '#c49c94', '#f7b6d2', '#dbdb8d', '#17becf', '#aec7e8', '#ffbb78', '#98df8a', '#ff7f0e', '#2ca02c'
 ];
 
-const fontSizeMapper = (word: { value: number }) => {
-  // Generate a random font size between 20 and 60
-  return Math.floor(Math.random() * 40) + 20;
-};
-
 interface WordCloudWord {
   text: string;
   value: number;
 }
-
-const rotate = (word: WordCloudWord, i: number) => (i % 2 === 0 ? 0 : 90);
 
 const ActivityWordCloud: React.FC<ActivityWordCloudProps> = ({ words }) => {
   const wordCloudData = useMemo(
@@ -29,13 +22,24 @@ const ActivityWordCloud: React.FC<ActivityWordCloudProps> = ({ words }) => {
       Array.isArray(words) && words.length > 0
         ? words
             .filter((w): w is string => typeof w === 'string' && w.trim().length > 0)
-            .map((word) => ({
+            .map((word, index) => ({
               text: word,
-              value: Math.floor(Math.random() * 100) + 1, // Random value between 1 and 100
+              value: 100 - index, // More important words come first, so higher value
             }))
         : [],
     [words]
   );
+
+  const options = {
+    rotations: 2,
+    rotationAngles: [0, 90], // Alternating between 0 and 90 degrees
+    fontFamily: 'sans-serif',
+    fontSizes: [20, 60], // Min and max font sizes
+    padding: 2,
+    spiral: 'rectangular', // Same as your original
+    deterministic: false, // For random placement
+    transitionDuration: 1000,
+  };
 
   if (!wordCloudData.length) {
     return (
@@ -58,19 +62,16 @@ const ActivityWordCloud: React.FC<ActivityWordCloudProps> = ({ words }) => {
         margin: "0 auto"
       }}
     >
-      <WordCloud
-        data={wordCloudData}
-        width={550}
-        height={350}
-        font={'sans-serif'}
-        fontSize={fontSizeMapper}
-        rotate={rotate}
-        padding={2}
-        spiral="rectangular"
-        fill={(d, i) => colorPalette[i % colorPalette.length]}
+      <ReactWordcloud
+        words={wordCloudData}
+        options={options}
+        callbacks={{
+          getWordColor: (word: WordCloudWord, index: number) => colorPalette[index % colorPalette.length],
+          getWordTooltip: (word: WordCloudWord) => `${word.text} (importance: ${word.value})`,
+        }}
       />
     </div>
   );
 };
 
-export default ActivityWordCloud; 
+export default ActivityWordCloud;
