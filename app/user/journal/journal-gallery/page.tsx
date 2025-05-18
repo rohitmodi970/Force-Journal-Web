@@ -59,13 +59,13 @@ const JournalGalleryPage = () => {
             <div className="fixed bottom-8 right-8 z-50 flex gap-4">
                 <Link
                     href="/user/journal/analysis"
-                    className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-full shadow-lg transition-colors"
+                    className="flex items-center gap-2 bg-primary hover:bg-primary/90 bg-amber-700 text-white px-4 py-2 rounded-full shadow-lg transition-colors"
                 >
                     <Sparkles className="w-5 h-5" />
                     <span>Analyze</span>
                 </Link>
                 <Link
-                    href="/journal"
+                    href="/user/journal"
                     className="flex items-center gap-2 bg-amber-800 hover:bg-primary/90 text-white px-4 py-2 rounded-full shadow-lg transition-colors"
                 >
                     <NotebookPen className="w-5 h-5" />
