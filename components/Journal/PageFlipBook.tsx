@@ -129,20 +129,28 @@ const PageFlipBook = ({ entries }: PageFlipBookProps) => {
     router.push(`/journal-entry-edit/${entryId}`);
   };
 
+  // Helper function to convert CSS gradient direction to actual CSS value
+  const convertGradientDirection = (direction: string) => {
+    switch (direction) {
+      case "to-b": return "to bottom";
+      case "to-t": return "to top";
+      case "to-r": return "to right";
+      case "to-l": return "to left";
+      case "to-br": return "to bottom right";
+      case "to-tl": return "to top left";
+      case "to-bl": return "to bottom left";
+      case "to-tr": return "to top right";
+      default: return "to bottom right";
+    }
+  };
+
   // Get background class or style based on current settings
   const getBackgroundClass = () => {
-    switch (backgroundType) {
-      case "preset":
-        return backgroundPresets[selectedPreset].class;
-      case "solid":
-        return ""; // No class for solid color, using inline style
-      case "gradient":
-        return `bg-gradient-${gradientDirection}`;
-      case "image":
-        return "bg-cover bg-center";
-      default:
-        return backgroundPresets[0].class;
+    // Only return a class for preset type, otherwise return empty string
+    if (backgroundType === "preset") {
+      return backgroundPresets[selectedPreset].class;
     }
+    return "";
   };
 
   const getBackgroundStyle = () => {
@@ -151,10 +159,20 @@ const PageFlipBook = ({ entries }: PageFlipBookProps) => {
         return { backgroundColor: solidColor };
       case "gradient":
         return { 
-          backgroundImage: `linear-gradient(${gradientDirection.replace('to-', '').split('').map(c => c === 'r' ? 'right' : c === 'l' ? 'left' : c === 't' ? 'top' : c === 'b' ? 'bottom' : '').join(' ')}, ${gradientStartColor}, ${gradientEndColor})`
+          backgroundImage: `linear-gradient(${convertGradientDirection(gradientDirection)}, ${gradientStartColor}, ${gradientEndColor})`
         };
       case "image":
         return { backgroundImage: `url(${imageUrl})` };
+      case "preset":
+        // Extract gradient colors from class string for preset
+        const fromColor = backgroundPresets[selectedPreset].class.includes("from-[") ? 
+          backgroundPresets[selectedPreset].class.split("from-[")[1].split("]")[0] : "#ffffff";
+        const toColor = backgroundPresets[selectedPreset].class.includes("to-[") ? 
+          backgroundPresets[selectedPreset].class.split("to-[")[1].split("]")[0] : "#e2e2e2";
+        
+        return { 
+          backgroundImage: `linear-gradient(to bottom right, ${fromColor}, ${toColor})`
+        };
       default:
         return {};
     }
@@ -169,6 +187,22 @@ const PageFlipBook = ({ entries }: PageFlipBookProps) => {
     return `diary-page h-[733px] ${baseClass} ${textureClass} ${evenOddClass}`;
   };
 
+  // Function to handle color input change (fixes transparency issues)
+  const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>, setter: (value: string) => void) => {
+    const value = e.target.value;
+    setter(value);
+  };
+
+  // Force rerender of the book after settings change
+  const applySettings = (type: string) => {
+    setBackgroundType(type);
+    // Force rerender by toggling a state
+    setIsClient(false);
+    setTimeout(() => {
+      setIsClient(true);
+    }, 0);
+  };
+
   if (!isClient) {
     return (
       <div className="relative mx-auto my-10 px-4 flex justify-center">
@@ -181,7 +215,7 @@ const PageFlipBook = ({ entries }: PageFlipBookProps) => {
     <div className="relative mx-auto my-10 px-4">
       {/* Background Selector Panel */}
       {showBackgroundSelector && (
-        <div className="absolute top-0 right-0 bg-background border rounded-lg shadow-xl p-4 z-20 w-full max-w-md max-h-[500px] overflow-y-auto">
+        <div className="absolute top-0 right-0 bg-white border rounded-lg shadow-xl p-4 z-20 w-full max-w-md max-h-[500px] overflow-y-auto">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium">Background Options</h3>
             <Button 
@@ -212,24 +246,31 @@ const PageFlipBook = ({ entries }: PageFlipBookProps) => {
             
             <TabsContent value="presets" className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
-                {backgroundPresets.map((preset, idx) => (
-                  <div
-                    key={idx}
-                    className={`h-20 rounded-md cursor-pointer transition-all duration-200 ${
-                      selectedPreset === idx && backgroundType === "preset" ? "ring-2 ring-primary scale-95" : ""
-                    }`}
-                    style={{ backgroundImage: preset.class.split("from-")[1].split(" ")[0] && preset.class.split("to-")[1].split(" ")[0] ? 
-                      `linear-gradient(to bottom right, ${preset.class.split("from-")[1].split(" ")[0].replace("[", "").replace("]", "")}, ${preset.class.split("to-")[1].split(" ")[0].replace("[", "").replace("]", "")})` : "" }}
-                    onClick={() => {
-                      setSelectedPreset(idx);
-                      setBackgroundType("preset");
-                    }}
-                  >
-                    <div className="h-full w-full flex items-center justify-center text-center p-2">
-                      <span className="text-sm font-medium text-white drop-shadow-md">{preset.name}</span>
+                {backgroundPresets.map((preset, idx) => {
+                  // Extract gradient colors from class string
+                  const fromColor = preset.class.includes("from-[") ? 
+                    preset.class.split("from-[")[1].split("]")[0] : "#ffffff";
+                  const toColor = preset.class.includes("to-[") ? 
+                    preset.class.split("to-[")[1].split("]")[0] : "#e2e2e2";
+                  
+                  return (
+                    <div
+                      key={idx}
+                      className={`h-20 rounded-md cursor-pointer transition-all duration-200 ${
+                        selectedPreset === idx && backgroundType === "preset" ? "ring-2 ring-primary scale-95" : ""
+                      }`}
+                      style={{ backgroundImage: `linear-gradient(to bottom right, ${fromColor}, ${toColor})` }}
+                      onClick={() => {
+                        setSelectedPreset(idx);
+                        applySettings("preset");
+                      }}
+                    >
+                      <div className="h-full w-full flex items-center justify-center text-center p-2">
+                        <span className="text-sm font-medium text-white drop-shadow-md">{preset.name}</span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </TabsContent>
 
@@ -237,27 +278,29 @@ const PageFlipBook = ({ entries }: PageFlipBookProps) => {
               <div>
                 <label className="block text-sm font-medium mb-2">Choose a color</label>
                 <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    value={solidColor}
-                    onChange={(e) => setSolidColor(e.target.value)}
-                    className="w-10 h-10 rounded cursor-pointer"
-                  />
+                  <div className="w-10 h-10 rounded overflow-hidden border">
+                    <input
+                      type="color"
+                      value={solidColor}
+                      onChange={(e) => handleColorChange(e, setSolidColor)}
+                      className="w-12 h-12 cursor-pointer transform translate-x-[-2px] translate-y-[-2px]"
+                    />
+                  </div>
                   <input
                     type="text"
                     value={solidColor}
-                    onChange={(e) => setSolidColor(e.target.value)}
+                    onChange={(e) => handleColorChange(e, setSolidColor)}
                     className="flex-1 px-3 py-2 border rounded-md text-sm"
                     placeholder="#ffffff"
                   />
                 </div>
                 <div 
-                  className="h-20 rounded-md mt-3"
+                  className="h-20 mt-3 rounded-md border"
                   style={{ backgroundColor: solidColor }}
                 />
                 <Button 
                   className="w-full mt-2" 
-                  onClick={() => setBackgroundType("solid")}
+                  onClick={() => applySettings("solid")}
                 >
                   Apply Solid Color
                 </Button>
@@ -268,16 +311,18 @@ const PageFlipBook = ({ entries }: PageFlipBookProps) => {
               <div>
                 <label className="block text-sm font-medium mb-2">Start Color</label>
                 <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    value={gradientStartColor}
-                    onChange={(e) => setGradientStartColor(e.target.value)}
-                    className="w-10 h-10 rounded cursor-pointer"
-                  />
+                  <div className="w-10 h-10 rounded overflow-hidden border">
+                    <input
+                      type="color"
+                      value={gradientStartColor}
+                      onChange={(e) => handleColorChange(e, setGradientStartColor)}
+                      className="w-12 h-12 cursor-pointer transform translate-x-[-2px] translate-y-[-2px]"
+                    />
+                  </div>
                   <input
                     type="text"
                     value={gradientStartColor}
-                    onChange={(e) => setGradientStartColor(e.target.value)}
+                    onChange={(e) => handleColorChange(e, setGradientStartColor)}
                     className="flex-1 px-3 py-2 border rounded-md text-sm"
                     placeholder="#ffffff"
                   />
@@ -285,16 +330,18 @@ const PageFlipBook = ({ entries }: PageFlipBookProps) => {
                 
                 <label className="block text-sm font-medium mb-2 mt-3">End Color</label>
                 <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    value={gradientEndColor}
-                    onChange={(e) => setGradientEndColor(e.target.value)}
-                    className="w-10 h-10 rounded cursor-pointer"
-                  />
+                  <div className="w-10 h-10 rounded overflow-hidden border">
+                    <input
+                      type="color"
+                      value={gradientEndColor}
+                      onChange={(e) => handleColorChange(e, setGradientEndColor)}
+                      className="w-12 h-12 cursor-pointer transform translate-x-[-2px] translate-y-[-2px]"
+                    />
+                  </div>
                   <input
                     type="text"
                     value={gradientEndColor}
-                    onChange={(e) => setGradientEndColor(e.target.value)}
+                    onChange={(e) => handleColorChange(e, setGradientEndColor)}
                     className="flex-1 px-3 py-2 border rounded-md text-sm"
                     placeholder="#ffffff"
                   />
@@ -312,15 +359,15 @@ const PageFlipBook = ({ entries }: PageFlipBookProps) => {
                 </select>
                 
                 <div 
-                  className="h-20 rounded-md mt-3"
+                  className="h-20 rounded-md mt-3 border"
                   style={{ 
-                    backgroundImage: `linear-gradient(${gradientDirection.replace('to-', '').split('').map(c => c === 'r' ? 'right' : c === 'l' ? 'left' : c === 't' ? 'top' : c === 'b' ? 'bottom' : '').join(' ')}, ${gradientStartColor}, ${gradientEndColor})` 
+                    backgroundImage: `linear-gradient(${convertGradientDirection(gradientDirection)}, ${gradientStartColor}, ${gradientEndColor})` 
                   }}
                 />
                 
                 <Button 
                   className="w-full mt-2" 
-                  onClick={() => setBackgroundType("gradient")}
+                  onClick={() => applySettings("gradient")}
                 >
                   Apply Gradient
                 </Button>
@@ -339,7 +386,7 @@ const PageFlipBook = ({ entries }: PageFlipBookProps) => {
                 />
                 
                 {imageUrl && (
-                  <div className="mt-3 rounded-md overflow-hidden" style={{ height: "120px" }}>
+                  <div className="mt-3 rounded-md overflow-hidden border" style={{ height: "120px" }}>
                     <img 
                       src={imageUrl} 
                       alt="Background preview" 
@@ -353,7 +400,7 @@ const PageFlipBook = ({ entries }: PageFlipBookProps) => {
                 
                 <Button 
                   className="w-full mt-3" 
-                  onClick={() => setBackgroundType("image")}
+                  onClick={() => applySettings("image")}
                   disabled={!imageUrl}
                 >
                   Apply Image
@@ -371,7 +418,14 @@ const PageFlipBook = ({ entries }: PageFlipBookProps) => {
                   className={`h-16 border rounded-md cursor-pointer transition-all duration-200 ${texture.class} ${
                     selectedTexture === idx ? "ring-2 ring-primary" : ""
                   }`}
-                  onClick={() => setSelectedTexture(idx)}
+                  onClick={() => {
+                    setSelectedTexture(idx);
+                    // Force rerender to apply texture
+                    setIsClient(false);
+                    setTimeout(() => {
+                      setIsClient(true);
+                    }, 0);
+                  }}
                 >
                   <div className="h-full w-full flex items-center justify-center">
                     <span className="text-xs font-medium">{texture.name}</span>
@@ -399,6 +453,7 @@ const PageFlipBook = ({ entries }: PageFlipBookProps) => {
             mobileScrollSupport={true}
             onFlip={handlePageFlip}
             className="shadow-xl"
+            style={{}}
             startPage={0}
             drawShadow={true}
             flippingTime={800}
@@ -410,43 +465,41 @@ const PageFlipBook = ({ entries }: PageFlipBookProps) => {
             swipeDistance={30}
             showPageCorners={true}
             disableFlipByClick={false}
-            style={{ 
-              ...getBackgroundStyle(),
-              willChange: "transform"
-            }}
           >
-            {pages.map((page, index) => (
-              <div key={index} className="page-wrapper">
-                {page === 'decorative' ? (
-                  <DecorativePage isEven={index % 2 === 0} backgroundClass={getCombinedBackground(index % 2 === 0)} backgroundStyle={getBackgroundStyle()} />
-                ) : page && typeof page !== 'string' ? (
-                  <div className="relative">
-                    <JournalPage 
-                      entry={page} 
+            {pages.map((page, index) => {
+              // Combine background styles and classes
+              let combinedStyle = getBackgroundStyle();
+              let combinedClass = getCombinedBackground(index % 2 === 0);
+              
+              return (
+                <div key={index} className="page-wrapper">
+                  {page === 'decorative' ? (
+                    <DecorativePage 
                       isEven={index % 2 === 0} 
-                      backgroundClass={getCombinedBackground(index % 2 === 0)}
-                      backgroundStyle={getBackgroundStyle()}
+                      backgroundClass={combinedClass} 
+                      backgroundStyle={combinedStyle} 
                     />
-                    {/* <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute top-4 right-4 bg-background/50 hover:bg-background/80 rounded-full shadow-sm backdrop-blur-sm p-2"
-                      onClick={() => handleEditEntry(page.journalId)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button> */}
-                  </div>
-                ) : (
-                  <div 
-                    className={`${getCombinedBackground(index % 2 === 0)} h-[733px]`}
-                    style={{
-                      ...getBackgroundStyle(),
-                      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.1), 5px 5px 15px rgba(0, 0, 0, 0.1)"
-                    }}
-                  />
-                )}
-              </div>
-            ))}
+                  ) : page && typeof page !== 'string' ? (
+                    <div className="relative">
+                      <JournalPage 
+                        entry={page} 
+                        isEven={index % 2 === 0} 
+                        backgroundClass={combinedClass}
+                        backgroundStyle={combinedStyle}
+                      />
+                    </div>
+                  ) : (
+                    <div 
+                      className={combinedClass}
+                      style={{
+                        ...combinedStyle,
+                        boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.1), 5px 5px 15px rgba(0, 0, 0, 0.1)"
+                      }}
+                    />
+                  )}
+                </div>
+              );
+            })}
           </HTMLFlipBook>
         )}
       </div>

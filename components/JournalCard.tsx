@@ -1,5 +1,4 @@
 import React from 'react';
-import { CardFooter } from './ui/quilted-gallery/ui/card';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/quilted-gallery/ui/card';
 import { Badge } from "@/components/ui/badge";
 import { Smile, Calendar, Bookmark } from "lucide-react";
@@ -14,74 +13,91 @@ interface JournalCardProps {
   mood: string;
   moodColor: string;
   className?: string;
+  onClick?: () => void;
 }
 
 const JournalCard: React.FC<JournalCardProps> = ({
+  id,
   date,
   title,
   preview,
   mood,
   moodColor,
   className,
+  onClick,
 }) => {
   const { currentTheme, isDarkMode } = useTheme();
   
   // Map mood colors to theme properties
   const getMoodColorStyles = (color: string) => {
-    // Use theme colors for mood indicators instead of hardcoded journal-color classes
-    switch(color) {
-      case "green":
-        return {
-          bg: `bg-opacity-10 bg-[#48BB78]`,
-          text: `text-[#48BB78]`,
-          border: `border-[#48BB78] border-opacity-20`,
-          hover: `hover:bg-[#48BB78] hover:bg-opacity-20`
-        };
-      case "blue":
-        return {
-          bg: `bg-opacity-10 bg-[${currentTheme.primary}]`,
-          text: `text-[${currentTheme.primary}]`,
-          border: `border-[${currentTheme.primary}] border-opacity-20`,
-          hover: `hover:bg-[${currentTheme.primary}] hover:bg-opacity-20`
-        };
-      case "yellow":
-        return {
-          bg: `bg-opacity-10 bg-[#ECC94B]`,
-          text: `text-[#ECC94B]`,
-          border: `border-[#ECC94B] border-opacity-30`,
-          hover: `hover:bg-[#ECC94B] hover:bg-opacity-20`
-        };
-      case "red":
-        return {
-          bg: `bg-opacity-10 bg-[#E53E3E]`,
-          text: `text-[#E53E3E]`,
-          border: `border-[#E53E3E] border-opacity-20`,
-          hover: `hover:bg-[#E53E3E] hover:bg-opacity-20`
-        };
-      case "purple":
-        return {
-          bg: `bg-opacity-10 bg-[#9F7AEA]`,
-          text: `text-[#9F7AEA]`,
-          border: `border-[#9F7AEA] border-opacity-20`,
-          hover: `hover:bg-[#9F7AEA] hover:bg-opacity-20`
-        };
-      default:
-        return {
-          bg: `bg-opacity-10 bg-[${currentTheme.primary}]`,
-          text: `text-[${currentTheme.primary}]`,
-          border: `border-[${currentTheme.primary}] border-opacity-20`,
-          hover: `hover:bg-[${currentTheme.primary}] hover:bg-opacity-20`
-        };
-    }
+    const colorMap: Record<string, { 
+      bg: string;
+      text: string;
+      border: string;
+      hover: string;
+    }> = {
+      "green": {
+        bg: "bg-journal-green/10",
+        text: "text-journal-green",
+        border: "border-journal-green/20",
+        hover: "hover:bg-journal-green/20"
+      },
+      "blue": {
+        bg: "bg-journal-blue/10",
+        text: "text-journal-blue",
+        border: "border-journal-blue/20",
+        hover: "hover:bg-journal-blue/20"
+      },
+      "yellow": {
+        bg: "bg-journal-yellow/10",
+        text: "text-journal-yellow",
+        border: "border-journal-yellow/30",
+        hover: "hover:bg-journal-yellow/20"
+      },
+      "red": {
+        bg: "bg-journal-red/10",
+        text: "text-journal-red",
+        border: "border-journal-red/20",
+        hover: "hover:bg-journal-red/20"
+      },
+      "purple": {
+        bg: "bg-journal-purple/10",
+        text: "text-journal-purple",
+        border: "border-journal-purple/20",
+        hover: "hover:bg-journal-purple/20"
+      },
+      "orange": {
+        bg: "bg-journal-orange/10",
+        text: "text-journal-orange",
+        border: "border-journal-orange/20",
+        hover: "hover:bg-journal-orange/20"
+      },
+      "gray": {
+        bg: "bg-gray-100 dark:bg-gray-800",
+        text: "text-gray-600 dark:text-gray-300",
+        border: "border-gray-200 dark:border-gray-700",
+        hover: "hover:bg-gray-200/50 dark:hover:bg-gray-700/50"
+      }
+    };
+
+    return colorMap[color] || {
+      bg: "bg-primary/10",
+      text: "text-primary",
+      border: "border-primary/20",
+      hover: "hover:bg-primary/20"
+    };
   };
 
   const moodStyles = getMoodColorStyles(moodColor);
 
   return (
-    <Card className={cn(
-      "journal-entry-card cursor-pointer group transition-all duration-300 hover:shadow-lg relative overflow-hidden", 
-      className
-    )}>
+    <Card 
+      className={cn(
+        "journal-entry-card cursor-pointer group transition-all duration-300 hover:shadow-lg relative overflow-hidden border border-border/60",
+        className
+      )}
+      onClick={onClick}
+    >
       {/* Background decoration */}
       <div className="absolute top-0 right-0 w-20 h-20 -rotate-45 transform translate-x-10 -translate-y-10 bg-gradient-to-br from-transparent to-primary/5 rounded-full"></div>
       
@@ -118,7 +134,7 @@ const JournalCard: React.FC<JournalCardProps> = ({
           {preview}
         </CardDescription>
       </CardContent>
-      <CardFooter className="pt-0 flex justify-between items-center">
+      <div className="px-6 pb-4 pt-0 flex justify-between items-center">
         <span className="flex items-center text-xs text-primary opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0">
           Read more
           <svg className="ml-1 h-3 w-3 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -126,10 +142,16 @@ const JournalCard: React.FC<JournalCardProps> = ({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h13" />
           </svg>
         </span>
-        <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-primary/80 hover:text-primary">
+        <button 
+          className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-primary/80 hover:text-primary"
+          onClick={(e) => {
+            e.stopPropagation();
+            // Handle bookmark logic here
+          }}
+        >
           <Bookmark className="h-4 w-4" />
         </button>
-      </CardFooter>
+      </div>
       
       {/* Corner fold effect with enhanced animation */}
       <div className="absolute bottom-0 right-0 w-8 h-8 transition-all duration-300 group-hover:w-10 group-hover:h-10 origin-bottom-right">

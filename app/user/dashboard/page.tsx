@@ -17,6 +17,17 @@ import { Lightbulb, ArrowRight, CalendarDays, Sparkle, LogOut, Moon, Sun } from 
 import { Separator } from '@/components/ui/quilted-gallery/ui/separator';
 import { Button } from '@/components/ui/button2';
 import { useRouter } from 'next/navigation';
+import ThemeSidebar from '@/components/Navbar/ThemeSidebar';
+
+interface JournalStats {
+  totalEntries: number;
+  streakCount: number;
+  lastEntryDate: string | null;
+  weeklyEntries: number;
+  averageMood: string;
+  mostProductiveDay: string;
+  topTopics: { name: string; count: number }[];
+}
 
 export default function Dashboard() {
   const router = useRouter();
@@ -24,7 +35,45 @@ export default function Dashboard() {
   const { colorOptions, currentTheme, isDarkMode, setCurrentTheme, toggleDarkMode } = useTheme();
   const [successMessage, setSuccessMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
-  
+  const [stats, setStats] = useState<JournalStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [prompt, setPrompt] = useState({
+    text: "What's something you're looking forward to?",
+    explanation: "Taking a moment to anticipate positive events can boost your mood and give you something to look forward to."
+  });
+
+  // Fetch journal stats on component mount
+  useEffect(() => {
+    if (status === "authenticated") {
+      fetchJournalStats();
+      fetchRandomPrompt();
+    }
+  }, [status]);
+
+  const fetchJournalStats = async () => {
+    try {
+      setLoading(true);
+      // api\fetch-journals\journal-stats
+      const response = await fetch('/api/fetch-journals/journal-stats');
+      const data = await response.json();
+      setStats(data);
+    } catch (error) {
+      console.error("Failed to fetch journal stats:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRandomPrompt = async () => {
+    try {
+      const response = await fetch('/api/prompts/random');
+      const data = await response.json();
+      setPrompt(data);
+    } catch (error) {
+      console.error("Failed to fetch prompt:", error);
+    }
+  };
+
   // Effect to apply dark mode to document
   useEffect(() => {
     if (isDarkMode) {
@@ -53,40 +102,20 @@ export default function Dashboard() {
   };
 
   const showAIInsight = () => {
-    setSuccessMessage("Based on your recent entries, you tend to feel more optimistic on days when you exercise in the morning.");
-    setShowToast(true);
-    setTimeout(() => {
-      setShowToast(false);
-    }, 3000);
+    if (stats?.topTopics) {
+      const mainTopic = stats.topTopics[0];
+      setSuccessMessage(
+        `Your journal entries show a focus on ${mainTopic.name}. ` +
+        `You've mentioned it ${mainTopic.count} times this week.`
+      );
+      setShowToast(true);
+      setTimeout(() => {
+        setShowToast(false);
+      }, 3000);
+    }
   };
 
-  interface ColorOption {
-    name: string;
-    primary: string;
-    hover: string;
-    active: string;
-    light: string;
-    medium: string;
-  }
-
-  interface ColorOptionProps {
-    color: ColorOption;
-  }
-
-  const ColorOption = ({ color }: ColorOptionProps) => (
-    <button
-      className={`h-8 w-8 rounded-full transition-all ${
-        currentTheme.name === color.name 
-          ? 'ring-2 ring-offset-2 ring-primary scale-110' 
-          : 'hover:scale-105'
-      }`}
-      style={{ backgroundColor: color.primary }}
-      onClick={() => setCurrentTheme(color)}
-      aria-label={`Set theme to ${color.name}`}
-    />
-  );
-
-  if (status === "loading") {
+  if (status === "loading" || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -110,7 +139,7 @@ export default function Dashboard() {
 
   return (
     <div className={`min-h-screen flex flex-col bg-background ${isDarkMode ? 'dark' : ''}`}>
-      
+      <ThemeSidebar />  
       {showToast && (
         <Toast 
           message={successMessage} 
@@ -121,21 +150,25 @@ export default function Dashboard() {
       )}
       
       <main className="flex-1 container mx-auto py-6 px-4 sm:px-6 space-y-8">
-        <WelcomeBanner userName={userName} onNewEntry={handleNewEntry} />
+        <WelcomeBanner 
+          userName={userName} 
+          onNewEntry={handleNewEntry}
+          streakCount={stats?.streakCount || 0}
+          lastEntryDate={stats?.lastEntryDate ? new Date(stats.lastEntryDate) : null}
+          journalCount={stats?.totalEntries || 0}
+        />
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
           <div className="md:col-span-2 space-y-4 lg:space-y-6">
-            {/* <JournalStats /> */}
-            
             <CollapsibleCard 
               title="Today's Writing Prompt" 
               icon={<Lightbulb className="h-5 w-5" />}
               defaultOpen={true}
             >
               <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-3 sm:p-4 rounded-lg">
-                <p className="text-md font-medium">What's something you're looking forward to?</p>
+                <p className="text-md font-medium">{prompt.text}</p>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Taking a moment to anticipate positive events can boost your mood and give you something to look forward to.
+                  {prompt.explanation}
                 </p>
                 <div className="flex justify-end mt-4">
                   <button 
@@ -149,84 +182,15 @@ export default function Dashboard() {
               </div>
             </CollapsibleCard>
             
-            {/* <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
-              <MoodTracker />
-              <EntryCategories />
-            </div> */}
-            
             <RecentEntries />
           </div>
           
           <div className="md:col-span-1 space-y-4 lg:space-y-6">
-            <Tabs defaultValue="customize" className="w-full">
+            <Tabs defaultValue="insights" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="customize">Customize</TabsTrigger>
                 <TabsTrigger value="insights">Insights</TabsTrigger>
               </TabsList>
-              {/* <TabsContent value="customize" className="pt-4">
-                <Card className="w-full shadow-md">
-                  <div className="p-4">
-                    <h3 className="text-sm font-medium mb-4">Theme Color</h3>
-                    <div className="flex flex-wrap gap-3 mb-6">
-                      {colorOptions.map((color) => (
-                        <ColorOption key={color.name} color={color} />
-                      ))}
-                    </div>
-                    
-                    <Separator className="my-4" />
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Dark Mode</span>
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => {
-                            toggleDarkMode();
-                            setSuccessMessage(`Dark mode ${!isDarkMode ? 'enabled' : 'disabled'}`);
-                            setShowToast(true);
-                            setTimeout(() => setShowToast(false), 1500);
-                          }}
-                          className={`w-10 h-5 rounded-full transition-colors relative ${
-                            isDarkMode ? 'bg-primary' : 'bg-muted'
-                          }`}
-                          aria-label={`Toggle dark mode, currently ${isDarkMode ? 'on' : 'off'}`}
-                        >
-                          <span 
-                            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
-                              isDarkMode ? 'translate-x-5' : ''
-                            }`} 
-                          />
-                        </button>
-                        <div className="flex items-center gap-1">
-                          <span className="text-sm">{isDarkMode ? 'On' : 'Off'}</span>
-                          {isDarkMode ? (
-                            <Moon className="h-3 w-3 text-primary" />
-                          ) : (
-                            <Sun className="h-3 w-3 text-journal-yellow" />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <Separator className="my-4" />
-                    
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium">Account</p>
-                        <p className="text-xs text-muted-foreground">{session?.user?.email}</p>
-                      </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={handleLogout}
-                        className="flex items-center gap-2"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        Sign out
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              </TabsContent> */}
               <TabsContent value="insights" className="pt-4">
                 <Card className="border p-4 rounded-lg bg-gradient-to-br from-journal-purple/5 to-background">
                   <div className="flex items-start space-x-3">
@@ -236,31 +200,50 @@ export default function Dashboard() {
                     <div>
                       <h3 className="font-medium">AI Insights</h3>
                       <p className="text-sm text-muted-foreground mt-2">
-                        Your journal entries show a positive trend this week. You've mentioned "work" 14 times, and your overall sentiment is optimistic.
+                        {stats?.totalEntries ? (
+                          `You've written ${stats.totalEntries} entries total. ` + 
+                          (stats.weeklyEntries > 0 ? 
+                            `That's ${stats.weeklyEntries} this week!` : 
+                            'Start writing to see insights.')
+                        ) : 'Start writing to see insights.'}
                       </p>
                       <div className="mt-3 flex items-center">
                         <CalendarDays className="h-4 w-4 text-muted-foreground mr-1.5" />
-                        <span className="text-xs text-muted-foreground">Based on entries from May 1-7</span>
+                        <span className="text-xs text-muted-foreground">
+                          {stats?.lastEntryDate ? 
+                            `Last entry: ${new Date(stats.lastEntryDate).toLocaleDateString()}` : 
+                            'No entries yet'}
+                        </span>
                       </div>
-                      <button 
-                        className="mt-3 text-xs text-primary flex items-center hover:underline"
-                        onClick={showAIInsight}
-                      >
-                        Get more insights
-                        <ArrowRight className="ml-1 h-3 w-3" />
-                      </button>
+                      {stats?.topTopics && stats.topTopics.length > 0 && (
+                        <button 
+                          className="mt-3 text-xs text-primary flex items-center hover:underline"
+                          onClick={showAIInsight}
+                        >
+                          Get more insights
+                          <ArrowRight className="ml-1 h-3 w-3" />
+                        </button>
+                      )}
                     </div>
                   </div>
-                  <Separator className="my-4" />
-                  <div className="mt-2">
-                    <h4 className="text-sm font-medium">Top Mentioned Topics</h4>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      <div className="text-xs bg-journal-blue/10 text-journal-blue px-2 py-1 rounded-full">work (14)</div>
-                      <div className="text-xs bg-journal-green/10 text-journal-green px-2 py-1 rounded-full">exercise (8)</div>
-                      <div className="text-xs bg-journal-purple/10 text-journal-purple px-2 py-1 rounded-full">family (6)</div>
-                      <div className="text-xs bg-journal-yellow/10 text-journal-yellow px-2 py-1 rounded-full">goals (5)</div>
-                    </div>
-                  </div>
+                  {stats?.topTopics && stats.topTopics.length > 0 && (
+                    <>
+                      <Separator className="my-4" />
+                      <div className="mt-2">
+                        <h4 className="text-sm font-medium">Top Mentioned Topics</h4>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {stats.topTopics.slice(0, 4).map((topic, index) => (
+                            <div 
+                              key={index}
+                              className="text-xs bg-journal-blue/10 text-journal-blue px-2 py-1 rounded-full"
+                            >
+                              {topic.name} ({topic.count})
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </Card>
               </TabsContent>
             </Tabs>
@@ -268,14 +251,37 @@ export default function Dashboard() {
             <CollapsibleCard title="Weekly Summary">
               <div className="space-y-3">
                 <div>
-                  <h3 className="text-sm font-medium">Total Entries: 5</h3>
-                  <p className="text-xs text-muted-foreground">That's 2 more than last week!</p>
+                  <h3 className="text-sm font-medium">
+                    Total Entries: {stats?.weeklyEntries || 0}
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    {stats?.weeklyEntries ? 
+                      'Keep up the good work!' : 
+                      'Write your first entry this week!'}
+                  </p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium">Average Mood: Positive</h3>
+                  <h3 className="text-sm font-medium">
+                    Average Mood: {stats?.averageMood || 'N/A'}
+                  </h3>
                   <div className="w-full bg-muted h-2 rounded-full mt-1.5">
-                    <div className="bg-journal-green h-2 rounded-full relative" style={{ width: '75%' }}>
-                      <div className="absolute -right-1 -top-2 h-6 w-1 bg-journal-green rounded-full" />
+                    <div 
+                      className={`h-2 rounded-full relative ${
+                        !stats?.averageMood ? 'bg-gray-300' : 
+                        stats.averageMood.toLowerCase().includes('positive') ? 'bg-journal-green' :
+                        stats.averageMood.toLowerCase().includes('negative') ? 'bg-journal-red' :
+                        'bg-journal-yellow'
+                      }`} 
+                      style={{ width: stats?.averageMood ? '75%' : '0%' }}
+                    >
+                      {stats?.averageMood && (
+                        <div className="absolute -right-1 -top-2 h-6 w-1 rounded-full" style={{
+                          backgroundColor: 
+                            stats.averageMood.toLowerCase().includes('positive') ? '#10B981' :
+                            stats.averageMood.toLowerCase().includes('negative') ? '#EF4444' :
+                            '#F59E0B'
+                        }} />
+                      )}
                     </div>
                   </div>
                   <div className="flex justify-between text-xs text-muted-foreground mt-1">
@@ -291,46 +297,72 @@ export default function Dashboard() {
                       <div 
                         key={day + i} 
                         className={`h-8 rounded flex items-center justify-center text-xs
-                          ${i === 2 ? 'bg-primary/20 text-primary font-medium' : 'bg-muted/50 text-muted-foreground'}
+                          ${
+                            stats?.mostProductiveDay && 
+                            day === stats.mostProductiveDay.substring(0, 1) ? 
+                            'bg-primary/20 text-primary font-medium' : 
+                            'bg-muted/50 text-muted-foreground'
+                          }
                         `}
                       >
                         {day}
                       </div>
                     ))}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">Wednesday with 2 entries</p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {stats?.mostProductiveDay ? 
+                      `${stats.mostProductiveDay} was most productive` : 
+                      'No entries this week'}
+                  </p>
                 </div>
               </div>
             </CollapsibleCard>
             
-            <div className="bg-gradient-to-br from-journal-yellow/10 to-journal-orange/5 p-4 rounded-lg border border-journal-yellow/20" style={{animation: "pulse 10s infinite ease-in-out"}}>
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-full bg-journal-yellow/20 flex items-center justify-center flex-shrink-0">
-                  <Lightbulb className="h-4 w-4 text-journal-yellow" />
+            {stats?.streakCount !== undefined && stats.streakCount > 0 && (
+              <div className="bg-gradient-to-br from-journal-yellow/10 to-journal-orange/5 p-4 rounded-lg border border-journal-yellow/20" style={{animation: "pulse 10s infinite ease-in-out"}}>
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-journal-yellow/20 flex items-center justify-center flex-shrink-0">
+                    <Lightbulb className="h-4 w-4 text-journal-yellow" />
+                  </div>
+                  <h3 className="font-medium">Journal streak challenge</h3>
                 </div>
-                <h3 className="font-medium">Journal streak challenge</h3>
+                <p className="text-sm text-muted-foreground mt-2">
+                  {stats.streakCount >= 7 ? 
+                    `Amazing! You've maintained a ${stats.streakCount}-day streak!` :
+                    `Write an entry for 7 consecutive days to earn your first streak badge!`
+                  }
+                </p>
+                <div className="flex justify-between mt-3 items-center">
+                  <div className="text-xs">
+                    {stats.streakCount >= 7 ? 
+                      `${stats.streakCount} days` : 
+                      `${stats.streakCount}/7 days`
+                    }
+                  </div>
+                  <button 
+                    onClick={handleNewEntry}
+                    className="text-xs bg-journal-yellow/20 hover:bg-journal-yellow/30 text-journal-yellow px-3 py-1 rounded-full transition-colors"
+                  >
+                    {stats.lastEntryDate && new Date(stats.lastEntryDate).toDateString() === new Date().toDateString() ?
+                      'Add another' : 'Write today'
+                    }
+                  </button>
+                </div>
+                <div className="w-full bg-white/30 h-2 rounded-full mt-2">
+                  <div 
+                    className="bg-journal-yellow h-2 rounded-full" 
+                    style={{ 
+                      width: stats.streakCount >= 7 ? '100%' : `${(stats.streakCount / 7) * 100}%` 
+                    }}
+                  ></div>
+                </div>
               </div>
-              <p className="text-sm text-muted-foreground mt-2">
-                Write an entry for 7 consecutive days to earn your first streak badge!
-              </p>
-              <div className="flex justify-between mt-3 items-center">
-                <div className="text-xs">5/7 days</div>
-                <button 
-                  onClick={handleNewEntry}
-                  className="text-xs bg-journal-yellow/20 hover:bg-journal-yellow/30 text-journal-yellow px-3 py-1 rounded-full transition-colors"
-                >
-                  Write today
-                </button>
-              </div>
-              <div className="w-full bg-white/30 h-2 rounded-full mt-2">
-                <div className="bg-journal-yellow h-2 rounded-full" style={{ width: '71%' }}></div>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </main>
       
-      <FloatingActionButton />
+      <FloatingActionButton  />
       
       <style jsx global>{`
         @keyframes pulse {

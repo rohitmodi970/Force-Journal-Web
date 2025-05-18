@@ -13,6 +13,7 @@ type GradientBackground = {
   type: "gradient";
   name: string;
   value: string;
+  className: string; // Add className for Tailwind classes
 };
 
 type SolidBackground = {
@@ -38,56 +39,92 @@ type CustomGradientBackground = {
 };
 
 // Union type for all background types
-type BackgroundOption = 
-  | GradientBackground 
-  | SolidBackground 
-  | ImageBackground 
+type BackgroundOption =
+  | GradientBackground
+  | SolidBackground
+  | ImageBackground
   | CustomGradientBackground;
 
 // Background options with predefined gradients and images
 const backgroundOptions: BackgroundOption[] = [
-  { 
-    type: "gradient", 
-    name: "Default", 
-    value: "bg-gradient-to-br from-amber-50 to-amber-100" 
+  {
+    type: "gradient",
+    name: "Default",
+    value: "linear-gradient(to bottom right, #fffbeb, #fef3c7)", // CSS gradient value
+    className: "bg-gradient-to-br from-amber-50 to-amber-100"    // Tailwind class for the Layout
   },
-  { 
-    type: "gradient", 
-    name: "Sunset", 
-    value: "bg-gradient-to-br from-orange-200 to-rose-300" 
+  {
+    type: "gradient",
+    name: "Sunset",
+    value: "linear-gradient(to bottom right, #fed7aa, #fda4af)",
+    className: "bg-gradient-to-br from-orange-200 to-rose-300"
   },
-  { 
-    type: "gradient", 
-    name: "Ocean", 
-    value: "bg-gradient-to-br from-blue-200 to-cyan-100" 
+  {
+    type: "gradient",
+    name: "Ocean",
+    value: "linear-gradient(to bottom right, #bae6fd, #cffafe)",
+    className: "bg-gradient-to-br from-blue-200 to-cyan-100"
   },
-  { 
-    type: "gradient", 
-    name: "Forest", 
-    value: "bg-gradient-to-br from-green-100 to-emerald-200" 
+  {
+    type: "gradient",
+    name: "Forest",
+    value: "linear-gradient(to bottom right, #dcfce7, #a7f3d0)",
+    className: "bg-gradient-to-br from-green-100 to-emerald-200"
   },
-  { 
-    type: "gradient", 
-    name: "Lavender", 
-    value: "bg-gradient-to-br from-purple-100 to-fuchsia-200" 
+  {
+    type: "gradient",
+    name: "Lavender",
+    value: "linear-gradient(to bottom right, #f3e8ff, #f5d0fe)",
+    className: "bg-gradient-to-br from-purple-100 to-fuchsia-200"
   },
   {
     type: "image",
-    name: "Rainbow Blur",
+    name: "Rainbow Blur 1",
     value: "https://images.unsplash.com/photo-1707742984673-ae30d982bdec?q=80&w=2532&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
   },
-  
   {
     type: "image",
-    name: "Rainbow Blur",
+    name: "Rainbow Blur 2",
     value: "https://images.unsplash.com/photo-1729575846511-f499d2e17d79?q=80&w=2532&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
   },
   {
     type: "image",
-    name: "Rainbow Blur",
+    name: "Rainbow Blur 3",
     value: "https://images.unsplash.com/photo-1729601648807-3c45ee96343d?q=80&w=2532&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
   },
 ];
+
+// Helper function to convert CSS direction to Tailwind direction
+const cssToTailwindDirection = (cssDirection: string): string => {
+  const directionMap: { [key: string]: string } = {
+    "to right": "to-r",
+    "to left": "to-l",
+    "to top": "to-t",
+    "to bottom": "to-b",
+    "to top right": "to-tr",
+    "to top left": "to-tl",
+    "to bottom right": "to-br",
+    "to bottom left": "to-bl"
+  };
+
+  return directionMap[cssDirection] || "to-r";
+};
+
+// Helper function to convert Tailwind direction to CSS direction
+const tailwindToCssDirection = (tailwindDirection: string): string => {
+  const directionMap: { [key: string]: string } = {
+    "to-r": "to right",
+    "to-l": "to left",
+    "to-t": "to top",
+    "to-b": "to bottom",
+    "to-tr": "to top right",
+    "to-tl": "to top left",
+    "to-br": "to bottom right",
+    "to-bl": "to bottom left"
+  };
+
+  return directionMap[tailwindDirection] || "to right";
+};
 
 const JournalPage = () => {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
@@ -97,7 +134,7 @@ const JournalPage = () => {
   const [selectedBackground, setSelectedBackground] = useState<BackgroundOption>(backgroundOptions[0]);
   const [entryImages, setEntryImages] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState("preset");
-  
+
   // Custom background states
   const [customColor, setCustomColor] = useState("#FFFFFF");
   const [gradientColor1, setGradientColor1] = useState("#FFFFFF");
@@ -110,11 +147,10 @@ const JournalPage = () => {
       try {
         setIsLoading(true);
         const fetchedEntries = await getAllJournalEntries();
-        console.log(fetchedEntries)
         setEntries(fetchedEntries);
-        
+
         // Extract all images from entries
-        const allImages = fetchedEntries.flatMap(entry => 
+        const allImages = fetchedEntries.flatMap(entry =>
           entry.mediaUrl?.image || []
         );
         setEntryImages(allImages);
@@ -125,15 +161,27 @@ const JournalPage = () => {
         setIsLoading(false);
       }
     }
-    
+
     loadJournalEntries();
-    console.log(entries)
+
     // Load saved background preference from localStorage
     const savedBackground = localStorage.getItem('journalBackground');
     if (savedBackground) {
       try {
         const parsed = JSON.parse(savedBackground);
-        setSelectedBackground(parsed as BackgroundOption);
+        // Handle custom gradients specifically
+        if (parsed.type === "customGradient" && parsed.value) {
+          setSelectedBackground({
+            ...parsed,
+            value: {
+              color1: parsed.value.color1 || "#FFFFFF",
+              color2: parsed.value.color2 || "#EEEEEE",
+              direction: parsed.value.direction || "to-r"
+            }
+          });
+        } else {
+          setSelectedBackground(parsed as BackgroundOption);
+        }
       } catch (e) {
         console.error('Failed to parse saved background', e);
       }
@@ -155,7 +203,7 @@ const JournalPage = () => {
   };
 
   const applyCustomGradient = () => {
-    handleBackgroundSelect({
+    const newBackground: CustomGradientBackground = {
       type: "customGradient",
       name: "Custom Gradient",
       value: {
@@ -163,7 +211,8 @@ const JournalPage = () => {
         color2: gradientColor2,
         direction: gradientDirection
       }
-    });
+    };
+    handleBackgroundSelect(newBackground);
   };
 
   const applyCustomImageUrl = () => {
@@ -178,33 +227,82 @@ const JournalPage = () => {
 
   // Create background style based on selection
   const getBackgroundClass = () => {
-    if (selectedBackground.type === "gradient") {
-      return selectedBackground.value;
+    if (selectedBackground.type === "gradient" && "className" in selectedBackground) {
+      return selectedBackground.className;
     }
     return "";
   };
 
   const getBackgroundStyle = () => {
     if (selectedBackground.type === "image") {
-      return { 
-        backgroundImage: `url(${selectedBackground.value})`, 
-        backgroundSize: 'cover', 
-        backgroundPosition: 'center' 
+      return {
+        backgroundImage: `url(${selectedBackground.value})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
       };
     } else if (selectedBackground.type === "solid") {
       return { backgroundColor: selectedBackground.value };
+    } else if (selectedBackground.type === "gradient") {
+      // Use the CSS value for gradient backgrounds in preview
+      return {
+        backgroundImage: selectedBackground.value
+      };
     } else if (selectedBackground.type === "customGradient") {
       const { color1, color2, direction } = selectedBackground.value;
-      return { 
-        backgroundImage: `linear-gradient(${direction.replace('to-', '')} ${color1}, ${color2})` 
+      const cssDirection = tailwindToCssDirection(direction);
+      return {
+        backgroundImage: `linear-gradient(${cssDirection}, ${color1}, ${color2})`,
+        backgroundSize: 'cover',
+        backgroundAttachment: 'fixed'
       };
     }
     return {};
   };
 
+  // Helper function to render preset background button styles
+  const getPresetButtonStyle = (bg: BackgroundOption) => {
+    if (bg.type === "image") {
+      return {
+        backgroundImage: `url(${bg.value})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      };
+    } else if (bg.type === "gradient") {
+      return {
+        backgroundImage: bg.value
+      };
+    } else if (bg.type === "solid") {
+      return {
+        backgroundColor: bg.value
+      };
+    } else if (bg.type === "customGradient") {
+      const { color1, color2, direction } = bg.value;
+      return {
+        backgroundImage: `linear-gradient(${tailwindToCssDirection(direction)} ${color1}, ${color2})`
+      };
+    }
+    return {};
+  };
+
+  // Helper function to check if a background is selected
+  const isBackgroundSelected = (bg: BackgroundOption) => {
+    if (selectedBackground.type !== bg.type) return false;
+
+    if (bg.type === "customGradient" && selectedBackground.type === "customGradient") {
+      return JSON.stringify(selectedBackground.value) === JSON.stringify(bg.value);
+    } else if ((bg.type === "gradient" || bg.type === "solid" || bg.type === "image") &&
+      (selectedBackground.type === "gradient" || selectedBackground.type === "solid" || selectedBackground.type === "image")) {
+      return selectedBackground.value === bg.value;
+    }
+
+    return false;
+  };
+
   return (
     <Layout
-      backgroundClass={getBackgroundClass()}
+      backgroundClass={selectedBackground.type === "gradient" && "className" in selectedBackground
+        ? selectedBackground.className
+        : ""}
       backgroundStyle={getBackgroundStyle()}
     >
       <div className="max-w-7xl mx-auto">
@@ -214,7 +312,7 @@ const JournalPage = () => {
             A collection of Journal
           </p>
         </div>
-        
+
         {isLoading ? (
           <div className="text-center py-8">
             <p>Loading your journal entries...</p>
@@ -231,7 +329,7 @@ const JournalPage = () => {
           <PageFlipBook entries={entries} />
         )}
       </div>
-      
+
       {/* Background selector toggle button */}
       <div className="fixed bottom-8 right-8 z-50 flex gap-3">
         <button
@@ -241,7 +339,7 @@ const JournalPage = () => {
           <Palette className="w-5 h-5" />
           <span>Change Background</span>
         </button>
-        
+
         <Link
           href="/journal/journal-gallery"
           className="flex items-center gap-2 bg-amber-800 hover:bg-amber-700 text-white px-4 py-2 rounded-full shadow-lg transition-colors"
@@ -250,48 +348,48 @@ const JournalPage = () => {
           <span>Gallery View</span>
         </Link>
       </div>
-      
+
       {/* Background selector panel */}
       {showBackgroundSelector && (
         <div className="fixed bottom-24 right-8 z-50 bg-white rounded-lg shadow-xl p-4 w-96 max-h-96 overflow-y-auto">
           <div className="flex justify-between items-center mb-3">
             <h3 className="font-semibold text-lg">Choose Background</h3>
-            <button 
+            <button
               onClick={() => setShowBackgroundSelector(false)}
               className="text-gray-500 hover:text-gray-700"
             >
               ✕
             </button>
           </div>
-          
+
           {/* Tabs */}
           <div className="flex mb-4 border-b">
-            <button 
+            <button
               className={`px-3 py-2 ${activeTab === 'preset' ? 'border-b-2 border-amber-800 text-amber-800' : 'text-gray-500'}`}
               onClick={() => setActiveTab('preset')}
             >
               Presets
             </button>
-            <button 
+            <button
               className={`px-3 py-2 ${activeTab === 'solid' ? 'border-b-2 border-amber-800 text-amber-800' : 'text-gray-500'}`}
               onClick={() => setActiveTab('solid')}
             >
               Solid Color
             </button>
-            <button 
+            <button
               className={`px-3 py-2 ${activeTab === 'gradient' ? 'border-b-2 border-amber-800 text-amber-800' : 'text-gray-500'}`}
               onClick={() => setActiveTab('gradient')}
             >
               Gradient
             </button>
-            <button 
+            <button
               className={`px-3 py-2 ${activeTab === 'image' ? 'border-b-2 border-amber-800 text-amber-800' : 'text-gray-500'}`}
               onClick={() => setActiveTab('image')}
             >
               Image URL
             </button>
           </div>
-          
+
           {/* Preset backgrounds tab */}
           {activeTab === 'preset' && (
             <>
@@ -302,26 +400,15 @@ const JournalPage = () => {
                     <button
                       key={index}
                       onClick={() => handleBackgroundSelect(bg)}
-                      className={`w-full aspect-square rounded-md border-2 transition-all ${
-                        selectedBackground.type === bg.type && 
-                        (bg.type === "customGradient" 
-                          ? JSON.stringify(selectedBackground.value) === JSON.stringify(bg.value)
-                          : selectedBackground.value === bg.value)
-                          ? 'border-amber-800 scale-105' : 'border-gray-200'
-                      }`}
-                      style={
-                        bg.type === "image" 
-                          ? { backgroundImage: `url(${bg.value})`, backgroundSize: 'cover' } 
-                          : bg.type === "gradient" 
-                            ? { background: bg.value.replace('bg-', '') } 
-                            : { backgroundColor: typeof bg.value === 'string' ? bg.value : undefined }
-                      }
+                      className={`w-full aspect-square rounded-md border-2 transition-all ${isBackgroundSelected(bg) ? 'border-amber-800 scale-105' : 'border-gray-200'
+                        }`}
+                      style={getPresetButtonStyle(bg)}
                       title={bg.name}
                     />
                   ))}
                 </div>
               </div>
-              
+
               {entryImages.length > 0 && (
                 <div>
                   <h4 className="font-medium mb-2">Your Journal Images</h4>
@@ -329,11 +416,14 @@ const JournalPage = () => {
                     {entryImages.map((imgUrl, index) => (
                       <button
                         key={index}
-                        onClick={() => handleBackgroundSelect({ type: "image", name: `Journal Image ${index + 1}`, value: imgUrl })}
-                        className={`w-full aspect-square rounded-md border-2 transition-all ${
-                          selectedBackground.type === "image" && selectedBackground.value === imgUrl 
+                        onClick={() => handleBackgroundSelect({
+                          type: "image",
+                          name: `Journal Image ${index + 1}`,
+                          value: imgUrl
+                        })}
+                        className={`w-full aspect-square rounded-md border-2 transition-all ${selectedBackground.type === "image" && selectedBackground.value === imgUrl
                             ? 'border-amber-800 scale-105' : 'border-gray-200'
-                        }`}
+                          }`}
                         style={{ backgroundImage: `url(${imgUrl})`, backgroundSize: 'cover' }}
                         title={`Journal Image ${index + 1}`}
                       />
@@ -343,19 +433,19 @@ const JournalPage = () => {
               )}
             </>
           )}
-          
+
           {/* Solid color tab */}
           {activeTab === 'solid' && (
             <div className="space-y-4">
               <h4 className="font-medium mb-2">Pick a Solid Color</h4>
               <div className="flex items-center gap-3">
-                <input 
-                  type="color" 
+                <input
+                  type="color"
                   value={customColor}
                   onChange={(e) => setCustomColor(e.target.value)}
                   className="w-10 h-10 rounded cursor-pointer"
                 />
-                <input 
+                <input
                   type="text"
                   value={customColor}
                   onChange={(e) => setCustomColor(e.target.value)}
@@ -363,7 +453,10 @@ const JournalPage = () => {
                   className="flex-1 border rounded p-2"
                 />
               </div>
-              <div className="h-20 rounded border-2" style={{ backgroundColor: customColor }}></div>
+              <div
+                className="h-20 rounded border-2"
+                style={{ backgroundColor: customColor }}
+              ></div>
               <button
                 onClick={applyCustomColor}
                 className="w-full bg-amber-800 hover:bg-amber-700 text-white py-2 rounded transition-colors"
@@ -372,7 +465,7 @@ const JournalPage = () => {
               </button>
             </div>
           )}
-          
+
           {/* Gradient tab */}
           {activeTab === 'gradient' && (
             <div className="space-y-4">
@@ -381,13 +474,13 @@ const JournalPage = () => {
                 <div>
                   <label className="block text-sm mb-1">Color 1</label>
                   <div className="flex items-center gap-2">
-                    <input 
-                      type="color" 
+                    <input
+                      type="color"
                       value={gradientColor1}
                       onChange={(e) => setGradientColor1(e.target.value)}
                       className="w-8 h-8 rounded cursor-pointer"
                     />
-                    <input 
+                    <input
                       type="text"
                       value={gradientColor1}
                       onChange={(e) => setGradientColor1(e.target.value)}
@@ -399,13 +492,13 @@ const JournalPage = () => {
                 <div>
                   <label className="block text-sm mb-1">Color 2</label>
                   <div className="flex items-center gap-2">
-                    <input 
-                      type="color" 
+                    <input
+                      type="color"
                       value={gradientColor2}
                       onChange={(e) => setGradientColor2(e.target.value)}
                       className="w-8 h-8 rounded cursor-pointer"
                     />
-                    <input 
+                    <input
                       type="text"
                       value={gradientColor2}
                       onChange={(e) => setGradientColor2(e.target.value)}
@@ -415,7 +508,7 @@ const JournalPage = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div>
                 <label className="block text-sm mb-1">Direction</label>
                 <select
@@ -433,11 +526,15 @@ const JournalPage = () => {
                   <option value="to-bl">Top Right to Bottom Left</option>
                 </select>
               </div>
-              
-              <div className="h-20 rounded border-2" style={{ 
-                backgroundImage: `linear-gradient(${gradientDirection.replace('to-', '')} ${gradientColor1}, ${gradientColor2})` 
-              }}></div>
-              
+
+              <div
+                className="h-20 rounded border-2"
+                style={{
+                  backgroundImage: `linear-gradient(${tailwindToCssDirection(gradientDirection)}, ${gradientColor1}, ${gradientColor2})`,
+                  backgroundSize: 'cover'
+                }}
+              ></div>
+
               <button
                 onClick={applyCustomGradient}
                 className="w-full bg-amber-800 hover:bg-amber-700 text-white py-2 rounded transition-colors"
@@ -446,13 +543,13 @@ const JournalPage = () => {
               </button>
             </div>
           )}
-          
+
           {/* Image URL tab */}
           {activeTab === 'image' && (
             <div className="space-y-4">
               <h4 className="font-medium mb-2">Add Image URL</h4>
               <div>
-                <input 
+                <input
                   type="text"
                   value={customImageUrl}
                   onChange={(e) => setCustomImageUrl(e.target.value)}
@@ -460,21 +557,23 @@ const JournalPage = () => {
                   className="w-full border rounded p-2"
                 />
               </div>
-              
+
               {customImageUrl && (
-                <div className="h-32 rounded border-2 bg-cover bg-center" style={{ 
-                  backgroundImage: `url(${customImageUrl})` 
-                }}></div>
+                <div
+                  className="h-32 rounded border-2 bg-cover bg-center"
+                  style={{
+                    backgroundImage: `url(${customImageUrl})`
+                  }}
+                ></div>
               )}
-              
+
               <button
                 onClick={applyCustomImageUrl}
                 disabled={!customImageUrl.trim()}
-                className={`w-full py-2 rounded transition-colors ${
-                  !customImageUrl.trim() 
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                className={`w-full py-2 rounded transition-colors ${!customImageUrl.trim()
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     : 'bg-amber-800 hover:bg-amber-700 text-white'
-                }`}
+                  }`}
               >
                 Apply Image
               </button>

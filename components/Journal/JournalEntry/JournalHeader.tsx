@@ -197,7 +197,7 @@ const JournalHeader: React.FC<JournalHeaderProps> = ({
                 }
               </button>
               
-              {/* Palette button */}
+              {/* Palette button
               <ColorPalette 
                 showColorPalette={showColorPalette}
                 setShowColorPalette={setShowColorPalette}
@@ -205,7 +205,7 @@ const JournalHeader: React.FC<JournalHeaderProps> = ({
                 selectedAccent={selectedAccent}
                 changeAccentColor={changeAccentColor}
                 styles={styles}
-              />
+              /> */}
               
               {/* Collapse/expand header */}
               <button 

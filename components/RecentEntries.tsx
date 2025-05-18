@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import JournalCard from './JournalCard';
 import { Button } from './ui/button2';
-import { ArrowRight, Filter, ArrowUpDown } from "lucide-react";
+import { ArrowRight, Filter, ArrowUpDown, Loader2 } from "lucide-react";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -12,37 +14,84 @@ import {
   DropdownMenuTrigger 
 } from './ui/quilted-gallery/ui/dropdown-menu';
 import { useTheme } from '../utilities/context/ThemeContext';
+import { useRouter } from 'next/navigation';
 
-const recentJournalEntries = [
-  {
-    id: "1",
-    date: "Today, 2:30 PM",
-    title: "Meeting with the team",
-    preview: "Today's meeting went really well. We discussed the upcoming project deadlines and assigned tasks to everyone. I'm feeling confident about our progress.",
-    mood: "Optimistic",
-    moodColor: "green"
-  },
-  {
-    id: "2",
-    date: "Yesterday",
-    title: "A walk in the park",
-    preview: "Took some time for myself today and went for a long walk in the park. The fresh air really helped clear my mind and I came back feeling refreshed.",
-    mood: "Peaceful",
-    moodColor: "blue"  // This will now use the current theme's primary color
-  },
-  {
-    id: "3",
-    date: "May 5, 2025",
-    title: "Reflecting on goals",
-    preview: "Spent some time thinking about my yearly goals today. I'm a bit behind on some, but I've made good progress overall. Need to refocus on the health ones.",
-    mood: "Thoughtful",
-    moodColor: "purple"
-  }
-];
+interface JournalEntry {
+  id: string;
+  title: string;
+  preview: string;
+  date: string;
+  mood: string;
+  moodColor: string;
+  tags?: string[];
+}
 
 const RecentEntries: React.FC = () => {
   const { currentTheme } = useTheme();
+  const router = useRouter();
   const [entriesView, setEntriesView] = useState<'grid' | 'compact'>('grid');
+  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [filterOption, setFilterOption] = useState('all');
+  const [sortOption, setSortOption] = useState('newest');
+
+  useEffect(() => {
+    fetchJournalEntries();
+  }, [filterOption, sortOption]);
+
+  const fetchJournalEntries = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // Build query parameters based on filter and sort options
+      let queryParams = new URLSearchParams();
+      queryParams.append('limit', '6');  // Limit to 6 entries for recent view
+      
+      if (filterOption === 'week') {
+        queryParams.append('since', getDateNDaysAgo(7));
+      } else if (filterOption === 'month') {
+        queryParams.append('since', getDateNDaysAgo(30));
+      }
+      
+      if (sortOption === 'oldest') {
+        queryParams.append('sortBy', 'createdAt');
+        queryParams.append('sortOrder', 'asc');
+      } else {
+        queryParams.append('sortBy', 'createdAt');
+        queryParams.append('sortOrder', 'desc');
+      }
+      
+      const response = await fetch(`/api/fetch-journals?${queryParams.toString()}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch journal entries');
+      }
+      
+      const data = await response.json();
+      setJournalEntries(data.journals);
+    } catch (err) {
+      console.error('Error fetching journal entries:', err);
+      setError('Failed to load journal entries');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getDateNDaysAgo = (days: number) => {
+    const date = new Date();
+    date.setDate(date.getDate() - days);
+    return date.toISOString().split('T')[0];
+  };
+
+  const handleViewEntry = (journalId: string) => {
+    router.push(`/user/journal/${journalId}`);
+  };
+
+  const handleViewAll = () => {
+    router.push('/user/journals');
+  };
 
   return (
     <div className="space-y-4">
@@ -60,13 +109,13 @@ const RecentEntries: React.FC = () => {
               <DropdownMenuLabel>Filter by</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFilterOption('all')}>
                   All entries
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFilterOption('week')}>
                   This week
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFilterOption('month')}>
                   This month
                 </DropdownMenuItem>
               </DropdownMenuGroup>
@@ -74,10 +123,10 @@ const RecentEntries: React.FC = () => {
               <DropdownMenuLabel>Sort by</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortOption('newest')}>
                   Newest first
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortOption('oldest')}>
                   Oldest first
                 </DropdownMenuItem>
               </DropdownMenuGroup>
@@ -93,27 +142,53 @@ const RecentEntries: React.FC = () => {
             <ArrowUpDown className="h-4 w-4" />
           </Button>
           
-          <Button variant="ghost" size="sm" className="gap-1">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="gap-1"
+            onClick={handleViewAll}
+          >
             View All
             <ArrowRight className="ml-1 h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      <div className={`grid ${entriesView === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'grid-cols-1 gap-2'}`}>
-        {recentJournalEntries.map(entry => (
-          <JournalCard
-            key={entry.id}
-            id={entry.id}
-            date={entry.date}
-            title={entry.title}
-            preview={entry.preview}
-            mood={entry.mood}
-            moodColor={entry.moodColor}
-            className={entriesView === 'compact' ? 'p-2' : ''}
-          />
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="h-8 w-8 text-primary animate-spin" />
+        </div>
+      ) : error ? (
+        <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-lg text-center">
+          {error}
+        </div>
+      ) : journalEntries.length === 0 ? (
+        <div className="bg-muted/30 p-8 rounded-lg text-center">
+          <p className="text-muted-foreground">No journal entries yet. Start writing your first entry!</p>
+          <Button 
+            onClick={() => router.push('/user/journal-entry')}
+            className="mt-4"
+          >
+            Create Entry
+          </Button>
+        </div>
+      ) : (
+        <div className={`grid ${entriesView === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'grid-cols-1 gap-2'}`}>
+          {journalEntries.map(entry => (
+            <JournalCard
+              key={entry.id}
+              id={entry.id}
+              date={entry.date}
+              title={entry.title}
+              preview={entry.preview}
+              mood={entry.mood}
+              moodColor={entry.moodColor}
+              className={entriesView === 'compact' ? 'p-2' : ''}
+              onClick={() => handleViewEntry(entry.id)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

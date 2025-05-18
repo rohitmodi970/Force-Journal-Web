@@ -1,28 +1,10 @@
 "use client"
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { IoMenu, IoClose } from "react-icons/io5";
-import { 
-  HiHome, 
-  HiUser, 
-  HiMail, 
-  HiDocumentText, 
-  HiSun, 
-  HiMoon, 
-  HiLogin, 
-  HiLogout, 
-  HiArchive,
-  HiOutlineChip,
-  HiChevronRight,
-  HiPhotograph,
-  HiViewGrid,
-  HiPencilAlt,
-  HiChartBar,
-  HiCog
-} from "react-icons/hi";
+import { HiHome, HiUser, HiMail, HiDocumentText, HiSun, HiMoon, HiLogin, HiLogout, HiArchive, HiOutlineChip, HiChevronRight, HiPhotograph, HiViewGrid, HiPencilAlt, HiChartBar, HiDocumentSearch, HiDocumentReport, HiCollection, HiChartPie, HiPresentationChartLine, HiEmojiHappy, HiMicrophone, HiVolumeUp, HiAdjustments, HiCog } from "react-icons/hi";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn, signOut } from "next-auth/react";
-import { JSX } from "react/jsx-runtime";
 import { motion, AnimatePresence } from "framer-motion";
 import { GiNotebook } from "react-icons/gi";
 import LogoutButton from "../LogoutButton";
@@ -30,8 +12,6 @@ import { GrUserSettings } from "react-icons/gr";
 import { ColorOption } from "../../utilities/context/ThemeContext";
 import DockItem from "./DockItem";
 
-
-// Define props interface for side navbar
 interface SideNavbarProps {
   currentTheme: ColorOption;
   isDarkMode: boolean;
@@ -50,9 +30,6 @@ interface SideNavbarProps {
   }[];
 }
 
-
-
-// Pre-calculate icon components
 const ICON_MAP = {
   HiHome: (size: number) => <HiHome size={size} />,
   HiUser: (size: number) => <HiUser size={size} />,
@@ -66,23 +43,22 @@ const ICON_MAP = {
   HiViewGrid: (size: number) => <HiViewGrid size={size} />,
   HiPencilAlt: (size: number) => <HiPencilAlt size={size} />,
   HiChartBar: (size: number) => <HiChartBar size={size} />,
-  HiCog: (size: number) => <HiCog size={size} />
+  HiCog: (size: number) => <HiCog size={size} />,
+  HiDocumentSearch: (size: number) => <HiDocumentSearch size={size} />,
+  HiDocumentReport: (size: number) => <HiDocumentReport size={size} />,
+  HiCollection: (size: number) => <HiCollection size={size} />,
+  HiChartPie: (size: number) => <HiChartPie size={size} />,
+  HiPresentationChartLine: (size: number) => <HiPresentationChartLine size={size} />,
+  HiEmojiHappy: (size: number) => <HiEmojiHappy size={size} />,
+  HiMicrophone: (size: number) => <HiMicrophone size={size} />,
+  HiVolumeUp: (size: number) => <HiVolumeUp size={size} />,
+  HiAdjustments: (size: number) => <HiAdjustments size={size} />
 };
 
-// Get the appropriate icon component - memoized
 const getIcon = (iconName: string, size = 24) => {
   return ICON_MAP[iconName as keyof typeof ICON_MAP]?.(size) || <HiHome size={size} />;
 };
 
-
-
-
-
-
-
-
-
-// Create a submenu item component
 interface SubMenuItemProps {
   item: {
     name: string;
@@ -97,18 +73,21 @@ interface SubMenuItemProps {
 
 const SubMenuItem: React.FC<SubMenuItemProps> = ({ item, isActive, currentTheme, isDarkMode, onClick }) => {
   const bgColor = isDarkMode
-    ? isActive ? "bg-gray-700" : "hover:bg-gray-700/70"
-    : isActive ? "bg-gray-100" : "hover:bg-gray-100/80";
+    ? isActive ? `bg-[${currentTheme.primary}]/20` : "hover:bg-gray-700/20"
+    : isActive ? `bg-[${currentTheme.primary}]/10` : "hover:bg-gray-100/80";
 
   const textColor = isActive 
-    ? currentTheme.primary 
+    ? `text-[${currentTheme.primary}]` 
     : isDarkMode ? "text-gray-200" : "text-gray-700";
 
   return (
     <Link href={item.href} passHref>
       <motion.div
         className={`flex items-center w-full p-2 pl-11 text-base transition-all duration-100 rounded-lg ${bgColor}`}
-        style={{ color: isActive ? currentTheme.primary : undefined }}
+        style={{ 
+          color: isActive ? currentTheme.primary : undefined,
+          backgroundColor: isActive ? (isDarkMode ? `${currentTheme.primary}20` : `${currentTheme.primary}10`) : undefined
+        }}
         whileHover={{ x: 5 }}
         whileTap={{ scale: 0.98 }}
         initial={{ opacity: 0, y: -5 }}
@@ -143,7 +122,6 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const touchStartRef = useRef<number | null>(null);
 
-  // Set up expanded menus based on active paths on initial render
   useEffect(() => {
     if (pathname) {
       const initialExpandedMenus = {} as { [key: string]: boolean };
@@ -158,7 +136,6 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
     }
   }, [pathname, menuItems]);
 
-  // Close drawer on resize to mobile
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 640 && isOpen) {
@@ -170,7 +147,6 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
     return () => window.removeEventListener('resize', handleResize);
   }, [isOpen]);
 
-  // Toggle submenu expansion - memoized
   const toggleSubMenu = useCallback((name: string) => {
     setExpandedMenus(prev => ({
       ...prev,
@@ -178,7 +154,6 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
     }));
   }, []);
 
-  // Check if menu item is active - improved logic
   const isItemActive = useCallback((href: string) => {
     if (!pathname) return false;
     if (href === "/" && pathname === "/") return true;
@@ -186,16 +161,13 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
     return false;
   }, [pathname]);
 
-  // Navigate without full page refresh
   const navigateTo = useCallback((href: string) => {
     router.push(href);
-    // Close drawer on navigation on mobile devices
     if (window.innerWidth < 640) {
       setIsOpen(false);
     }
   }, [router]);
 
-  // Create dock items from menuItems for collapsed state
   const dockItems = useMemo(() => menuItems.map(item => ({
     icon: getIcon(item.icon),
     label: item.name,
@@ -211,7 +183,6 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
     hasSubItems: !!item.subItems?.length
   })), [menuItems, isItemActive, navigateTo, toggleSubMenu]);
 
-  // Additional special items
   const specialDockItems = useMemo(() => [
     { 
       icon: isDarkMode ? <HiSun size={24} /> : <HiMoon size={24} />, 
@@ -235,11 +206,9 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
     },
   ], [isDarkMode, toggleDarkMode, session]);
 
-  // All dock items combined
   const allDockItems = useMemo(() => [...dockItems, ...specialDockItems], 
     [dockItems, specialDockItems]);
 
-  // Handle mouse over to show all icons
   const handleMouseEnter = useCallback(() => {
     setShowAllIcons(true);
     if (timeoutRef.current) {
@@ -248,30 +217,26 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
     }
   }, []);
 
-  // Handle mouse leave to start hiding inactive icons
   const handleMouseLeave = useCallback(() => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
     timeoutRef.current = setTimeout(() => {
       setShowAllIcons(false);
-    }, 1000); // 1 second delay before hiding
+    }, 1000);
   }, []);
 
-  // Text gradient style for logo text
   const textGradientStyle = useMemo(() => ({
-    background: `linear-gradient(120deg, ${currentTheme.primary}, ${currentTheme.hover})`,
+    backgroundImage: `linear-gradient(120deg, ${currentTheme.primary}, ${currentTheme.hover})`,
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
     backgroundClip: 'text',
   }), [currentTheme]);
 
-  // Button styles with the theme
   const buttonGradientStyle = useMemo(() => ({
     background: `linear-gradient(to right, ${currentTheme.primary}, ${currentTheme.hover})`,
   }), [currentTheme]);
 
-  // Handle clicks outside the drawer to close it
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
       if (isOpen && drawerRef.current && !drawerRef.current.contains(event.target as Node) &&
@@ -292,7 +257,6 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
     };
   }, [isOpen]);
 
-  // Add keyboard navigation handler
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
@@ -304,7 +268,6 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
-  // Handle touch gestures for mobile devices
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartRef.current = e.touches[0].clientX;
   }, []);
@@ -315,13 +278,11 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
     const touchX = e.touches[0].clientX;
     const diff = touchStartRef.current - touchX;
     
-    // Swipe left (close drawer)
     if (diff > 50 && isOpen) {
       setIsOpen(false);
       touchStartRef.current = null;
     }
     
-    // Swipe right (open drawer)
     if (diff < -50 && !isOpen) {
       setIsOpen(true);
       touchStartRef.current = null;
@@ -332,37 +293,31 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
     touchStartRef.current = null;
   }, []);
 
-  // Filter items to show in dock view
   const visibleItems = useMemo(() => showAllIcons 
     ? allDockItems 
     : allDockItems.filter(item => item.isActive),
   [showAllIcons, allDockItems]);
 
-  // Dock background color based on theme
   const dockBgColor = useMemo(() => isDarkMode 
     ? "bg-gray-900/90 backdrop-blur-sm" 
     : "bg-white/90 backdrop-blur-sm",
   [isDarkMode]);
 
-  // Drawer background color based on theme
   const drawerBgColor = useMemo(() => isDarkMode 
     ? "bg-gray-900" 
     : "bg-white",
   [isDarkMode]);
 
-  // Text color based on theme
   const textColor = useMemo(() => isDarkMode 
     ? "text-gray-100" 
     : "text-gray-900",
   [isDarkMode]);
 
-  // Secondary text color based on theme
   const secondaryTextColor = useMemo(() => isDarkMode 
     ? "text-gray-400" 
     : "text-gray-500",
   [isDarkMode]);
 
-  // Pre-compute drawer variants
   const drawerVariants = {
     closed: {
       x: "-100%",
@@ -374,7 +329,6 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
     }
   };
 
-  // Framer motion transition with spring physics
   const springTransition = {
     type: "spring",
     stiffness: 300,
@@ -382,7 +336,6 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
     mass: 1
   };
 
-  // Optimized fade transition
   const fadeTransition = { 
     duration: 0.2, 
     ease: "easeInOut" 
@@ -390,7 +343,6 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
 
   return (
     <>
-      {/* Backdrop overlay */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -405,7 +357,6 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Dock view (always visible) */}
       <motion.div
         ref={navbarRef}
         className={`fixed left-6 top-1/2 -translate-y-1/2 h-auto rounded-2xl z-40 transition-all duration-200 ${dockBgColor} shadow-lg shadow-black/5 w-16 overflow-visible`}
@@ -421,7 +372,6 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
         aria-label="Quick navigation"
       >
         <div className="flex flex-col items-center justify-center py-6 space-y-6">
-          {/* Menu toggle button */}
           <motion.button
             onClick={() => setIsOpen(!isOpen)}
             className={`p-3 rounded-full transition-all ${
@@ -436,7 +386,6 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
             <IoMenu className="w-6 h-6" />
           </motion.button>
           
-          {/* Dock items */}
           <AnimatePresence mode="popLayout">
             {visibleItems.map((item, index) => (
               <DockItem
@@ -454,7 +403,6 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
         </div>
       </motion.div>
 
-      {/* Drawer sidebar */}
       <motion.div
         ref={drawerRef}
         id="sidebar-drawer"
@@ -470,7 +418,6 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
         aria-modal="true"
         aria-label="Navigation sidebar"
       >
-        {/* Drawer header */}
         <div className="flex justify-between items-center mb-6">
           <motion.h5 
             className="text-xl font-bold"
@@ -492,7 +439,6 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
           </motion.button>
         </div>
 
-        {/* User profile section if logged in */}
         {session && (
           <motion.div 
             className="flex items-center mb-6 pb-6 border-b border-gray-200 dark:border-gray-700"
@@ -513,7 +459,6 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
           </motion.div>
         )}
 
-        {/* Menu items */}
         <div className="py-4 overflow-y-auto">
           <ul className="space-y-2 font-medium" role="menu">
             {menuItems.map((item, index) => {
@@ -576,7 +521,6 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
                                   currentTheme={currentTheme}
                                   isDarkMode={isDarkMode}
                                   onClick={() => {
-                                    // Close drawer on mobile
                                     if (window.innerWidth < 640) {
                                       setTimeout(() => setIsOpen(false), 150);
                                     }
@@ -602,7 +546,6 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
                         role="menuitem"
                         aria-current={isActive ? "page" : undefined}
                         onClick={() => {
-                          // Close drawer on mobile
                           if (window.innerWidth < 640) {
                             setTimeout(() => setIsOpen(false), 150);
                           }
@@ -619,14 +562,12 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
           </ul>
         </div>
         
-        {/* Footer actions */}
         <motion.div 
           className="mt-8 space-y-4 border-t border-gray-200 dark:border-gray-700 pt-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
         >
-          {/* Theme toggle */}
           <motion.button
             onClick={toggleDarkMode}
             className={`w-full flex items-center p-3 rounded-lg ${
@@ -640,7 +581,6 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
             <span>{isDarkMode ? "Light Mode" : "Dark Mode"}</span>
           </motion.button>
           
-          {/* Auth button */}
           {session ? (
             <LogoutButton 
               className="w-full mt-2 px-4 py-3 rounded-lg text-white font-semibold shadow-md hover:shadow-lg transition-all duration-300"

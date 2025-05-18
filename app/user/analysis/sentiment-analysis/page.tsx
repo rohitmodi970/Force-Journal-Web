@@ -1,12 +1,12 @@
-// import SentimentAnalysisDashboard from '@/components/Journal/JournalEntry/SentimentAnalysis'
+import SentimentAnalysisDashboard from '@/components/Journal/JournalEntry/SentimentAnalysis'
 import React from 'react'
 
-const page = () => {
+const SentimentAnalysis = () => {
   return (
     <div>
-      {/* <SentimentAnalysisDashboard /> */}
+      <SentimentAnalysisDashboard />
     </div>
   )
 }
 
-export default page
+export default SentimentAnalysis

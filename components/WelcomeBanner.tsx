@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from './ui/quilted-gallery/ui/card';
 import { Button } from './ui/button2';
@@ -14,9 +13,18 @@ import {
 interface WelcomeBannerProps {
   userName: string;
   onNewEntry: () => void;
+  streakCount?: number;
+  lastEntryDate?: Date | null;
+  journalCount?: number;
 }
 
-const WelcomeBanner: React.FC<WelcomeBannerProps> = ({ userName, onNewEntry }) => {
+const WelcomeBanner: React.FC<WelcomeBannerProps> = ({ 
+  userName, 
+  onNewEntry,
+  streakCount = 0,
+  lastEntryDate = null,
+  journalCount = 0
+}) => {
   // Get current time to personalize greeting
   const currentHour = new Date().getHours();
   let greeting = "Good day";
@@ -33,7 +41,10 @@ const WelcomeBanner: React.FC<WelcomeBannerProps> = ({ userName, onNewEntry }) =
     timeIcon = "evening";
   }
   
-  // Generate a random prompt
+  // Check if user wrote today
+  const wroteToday = lastEntryDate && new Date(lastEntryDate).toDateString() === new Date().toDateString();
+  
+  // Generate a random prompt or use a streak-related one if applicable
   const prompts = [
     "How are you feeling today?",
     "What made you smile today?",
@@ -43,8 +54,32 @@ const WelcomeBanner: React.FC<WelcomeBannerProps> = ({ userName, onNewEntry }) =
     "What made today unique?",
     "What are you grateful for today?",
   ];
-  
+
+  // Add streak-related prompts if applicable
+  if (streakCount > 3) {
+    prompts.push(
+      `You're on a ${streakCount}-day streak! What's keeping you motivated?`,
+      `${streakCount} days in a row! What have you learned from your journaling habit?`
+    );
+  }
+
+  if (wroteToday) {
+    prompts.push(
+      "You already wrote today. Want to add more to your entry?",
+      "How has your day evolved since your last entry?"
+    );
+  }
+
   const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
+
+  // Get streak encouragement message
+  const getStreakMessage = () => {
+    if (streakCount === 0) return "Start your journaling streak today!";
+    if (streakCount < 3) return `${streakCount} day streak - keep going!`;
+    if (streakCount < 7) return `Great job! ${streakCount} day streak!`;
+    if (streakCount < 14) return `Amazing! ${streakCount} days in a row!`;
+    return `Incredible ${streakCount} day streak!`;
+  };
 
   return (
     <Card className="border-0 shadow-none bg-gradient-to-r from-primary/10 via-primary/5 to-transparent overflow-hidden relative">
@@ -70,19 +105,24 @@ const WelcomeBanner: React.FC<WelcomeBannerProps> = ({ userName, onNewEntry }) =
               <p className="text-lg font-medium text-muted-foreground animate-fade-in">
                 {greeting},
               </p>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-center gap-1 bg-journal-green/10 px-2 py-0.5 rounded-full text-xs text-journal-green">
-                      <TrendingUp className="h-3 w-3" />
-                      <span>5 day streak</span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>You've written in your journal for 5 days in a row!</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              {streakCount > 0 && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-1 bg-journal-green/10 px-2 py-0.5 rounded-full text-xs text-journal-green">
+                        <TrendingUp className="h-3 w-3" />
+                        <span>{streakCount} day streak</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{getStreakMessage()}</p>
+                      {lastEntryDate && (
+                        <p className="mt-1 text-xs">Last entry: {new Date(lastEntryDate).toLocaleDateString()}</p>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
             <h1 className="text-3xl font-bold text-foreground animate-fade-in" style={{animationDelay: "0.1s"}}>
               {userName} <span className="inline-block animate-pulse-gentle">👋</span>
@@ -99,6 +139,11 @@ const WelcomeBanner: React.FC<WelcomeBannerProps> = ({ userName, onNewEntry }) =
                   <CalendarDays className="h-4 w-4 text-muted-foreground" />
                   <span className="text-muted-foreground">{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                 </div>
+                {journalCount > 0 && (
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {journalCount} {journalCount === 1 ? 'entry' : 'entries'} total
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -110,7 +155,9 @@ const WelcomeBanner: React.FC<WelcomeBannerProps> = ({ userName, onNewEntry }) =
               className="group animate-fade-in hover:shadow-md transition-all duration-300 relative overflow-hidden"
               style={{animationDelay: "0.3s"}}
             >
-              <span className="relative z-10">Start Writing</span>
+              <span className="relative z-10">
+                {wroteToday ? 'Add Another Entry' : 'Start Writing'}
+              </span>
               <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1 relative z-10" />
               <div className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-white transition-opacity duration-300 z-0"></div>
             </Button>

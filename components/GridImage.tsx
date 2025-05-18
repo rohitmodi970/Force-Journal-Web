@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { CalendarIcon, Maximize2, Eye, Loader2 } from "lucide-react"
 import { Badge } from "./ui/quilted-gallery/ui/badge"
+import { useTheme } from "@/utilities/context/ThemeContext"
 
 // Define the image item type with date and size
 interface ImageItem {
@@ -37,6 +38,7 @@ const GoogleDriveEmbed = ({
   const [isExpanded, setIsExpanded] = useState(false)
   const [hasThumbnail, setHasThumbnail] = useState(!!thumbnailUrl)
   const [showIframe, setShowIframe] = useState(false)
+  const { currentTheme, isDarkMode } = useTheme()
   
   // Extract file ID from either the driveFileId prop or the src URL
   const getFileId = () => {
@@ -122,9 +124,10 @@ const GoogleDriveEmbed = ({
       
       {/* Placeholder while loading */}
       {isLoading && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 z-10">
-          <Loader2 className="w-8 h-8 text-blue-500 animate-spin mb-2" />
-          <span className="text-sm text-gray-500">Loading preview...</span>
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 z-10" 
+             style={{ backgroundColor: isDarkMode ? '#374151' : '#F3F4F6' }}>
+          <Loader2 className="w-8 h-8 animate-spin mb-2" style={{ color: currentTheme.primary }} />
+          <span className="text-sm" style={{ color: isDarkMode ? '#D1D5DB' : '#4B5563' }}>Loading preview...</span>
         </div>
       )}
       
@@ -148,6 +151,7 @@ const GoogleDriveEmbed = ({
         <button 
           onClick={toggleExpanded}
           className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
+          style={{ backgroundColor: isDarkMode ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.5)' }}
         >
           <Maximize2 className="w-5 h-5" />
         </button>
@@ -156,7 +160,7 @@ const GoogleDriveEmbed = ({
       {/* View indicator - only shown if using thumbnail */}
       {thumbnailUrl && !showIframe && !isLoading && (
         <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-          <div className="bg-black/50 rounded-full p-3">
+          <div className="rounded-full p-3" style={{ backgroundColor: `${currentTheme.primary}99` }}>
             <Eye className="w-6 h-6 text-white" />
           </div>
         </div>
@@ -174,12 +178,13 @@ export default function GridImage({ image }: { image: ImageItem }) {
   }
 
   const [isHovered, setIsHovered] = useState(false)
+  const { currentTheme, isDarkMode } = useTheme()
 
   return (
     <div
       style={style}
       className={cn(
-        "relative overflow-hidden rounded-lg border border-border",
+        "relative overflow-hidden rounded-lg border",
         isHovered ? "shadow-lg" : "shadow-sm",
         "transition-all duration-300"
       )}
@@ -206,9 +211,12 @@ export default function GridImage({ image }: { image: ImageItem }) {
       {/* Expand button */}
       <button
         className={cn(
-          "absolute top-2 right-2 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-all",
+          "absolute top-2 right-2 p-2 text-white rounded-full transition-all",
           isHovered ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
         )}
+        style={{ 
+          backgroundColor: isHovered ? currentTheme.hover : currentTheme.primary,
+        }}
         onClick={(e) => {
           e.stopPropagation()
           // Find the GoogleDriveEmbed inside this component and trigger its expand function
@@ -243,7 +251,14 @@ export default function GridImage({ image }: { image: ImageItem }) {
             isHovered ? "opacity-100" : "opacity-0"
           )}
         >
-          <Badge variant="secondary" className="bg-black/50 text-white border-none">
+          <Badge 
+            variant="secondary" 
+            className="border-none" 
+            style={{ 
+              backgroundColor: image.importance === 3 ? currentTheme.primary : currentTheme.light,
+              color: image.importance === 3 ? 'white' : isDarkMode ? '#F9FAFB' : '#111827'
+            }}
+          >
             {image.importance === 3 ? "High" : "Medium"} Priority
           </Badge>
         </div>

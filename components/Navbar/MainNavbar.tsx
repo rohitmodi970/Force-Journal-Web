@@ -50,14 +50,29 @@ const MainNavbar = () => {
           icon: 'HiPencilAlt',
         },
         {
-          name: 'Journal Gallery',
-          href: '/user/journal/journal-gallery',
-          icon: 'HiPhotograph',
+          name: 'Journal Analysis',
+          href: '/user/journal/analysis',
+          icon: 'HiDocumentSearch',
         },
         {
-          name: 'Quilted Gallery',
+          name: 'Advanced Analysis',
+          href: '/user/journal/analysis/advanced',
+          icon: 'HiDocumentReport',
+        },
+        {
+          name: 'Journal Diary',
+          href: '/user/journal',
+          icon: 'HiCollection',
+        },
+        {
+          name: 'Journal Entries',
+          href: '/user/journal/journal-gallery',
+          icon: 'HiDocumentText',
+        },
+        {
+          name: 'Photo Gallery',
           href: '/user/journal/quilted-gallery',
-          icon: 'HiViewGrid',
+          icon: 'HiPhotograph',
         },
       ],
     },
@@ -66,6 +81,11 @@ const MainNavbar = () => {
       href: '/user/analysis',
       icon: 'HiChartPie',
       subItems: [
+        {
+          name: 'Analysis',
+          href: '/user/analysis',
+          icon: 'HiPresentationChartLine',
+        },
         {
           name: 'Sentiment Analysis',
           href: '/user/analysis/sentiment-analysis',
@@ -79,12 +99,7 @@ const MainNavbar = () => {
         {
           name: 'Audio Analysis',
           href: '/user/analysis/audio-analysis',
-          icon: 'HiMusicNote',
-        },
-        {
-          name: 'Advanced Analysis',
-          href: '/user/journal/analysis/advanced',
-          icon: 'HiOutlineChip',
+          icon: 'HiVolumeUp',
         },
       ],
     },
@@ -96,7 +111,7 @@ const MainNavbar = () => {
         {
           name: 'Preferences',
           href: '/user/settings',
-          icon: 'HiCog',
+          icon: 'HiAdjustments',
         },
       ],
     },

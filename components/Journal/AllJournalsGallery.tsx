@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Loader2 } from "lucide-react"
 import { Alert, AlertDescription } from"../ui/quilted-gallery/ui/alert"
 import GridImage from "@/components/GridImage"
+import { useTheme } from "@/utilities/context/ThemeContext"
 
 // Define types for image and journal data
 interface ImageItem {
@@ -69,6 +70,7 @@ function CombinedGallery({ journalIds }: CombinedGalleryProps) {
     loaded: 0, 
     total: journalIds.length 
   })
+  const { currentTheme, isDarkMode } = useTheme()
 
   useEffect(() => {
     let isMounted = true
@@ -163,7 +165,7 @@ function CombinedGallery({ journalIds }: CombinedGalleryProps) {
   if (loading) {
     return (
       <div className="container px-4 py-8 flex flex-col items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin mb-2" />
+        <Loader2 className="h-8 w-8 animate-spin mb-2" style={{ color: currentTheme.primary }} />
         <p className="text-muted-foreground">
           Loading images from all journals ({loadingProgress.loaded} of {loadingProgress.total})...
         </p>
@@ -209,6 +211,7 @@ export default function AllJournalsGallery() {
   const [journalIds, setJournalIds] = useState<string[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
+  const { currentTheme } = useTheme()
 
   useEffect(() => {
     const fetchJournalIds = async () => {
@@ -244,7 +247,7 @@ export default function AllJournalsGallery() {
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin mb-2" />
+        <Loader2 className="h-8 w-8 animate-spin mb-2" style={{ color: currentTheme.primary }} />
         <p className="text-muted-foreground">Loading journals...</p>
       </div>
     )
@@ -274,7 +277,7 @@ export default function AllJournalsGallery() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">All Journals Gallery</h1>
+      <h1 className="text-3xl font-bold mb-6" style={{ color: currentTheme.primary }}>All Journals Gallery</h1>
       <CombinedGallery journalIds={journalIds} />
     </div>
   )

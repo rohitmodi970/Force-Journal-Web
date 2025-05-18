@@ -13,7 +13,7 @@ import MediaPreview from './file-attachements/MediaPreview';
 
 import Toast from '@/components/ui/toast';
 import SentimentAnalysisDashboard from '@/components/Journal/JournalEntry/SentimentAnalysis';
-
+import ThemeSidebar from '@/components/Navbar/ThemeSidebar';
 interface MediaFile {
   id: string;
   file: File;
@@ -21,8 +21,6 @@ interface MediaFile {
   progress: number;
   status: 'idle' | 'uploading' | 'success' | 'error';
   url?: string;
-  cloudinaryPublicId?: string;
-  cloudinaryResourceType?: string;
   driveFileId?: string;
   driveMimeType?: string;
 }
@@ -153,7 +151,16 @@ const JournalEntry: React.FC = () => {
     { id: 'angry', emoji: '😠', label: 'Angry' },
     { id: 'neutral', emoji: '😐', label: 'Neutral' },
     { id: 'tired', emoji: '😴', label: 'Tired' },
-    { id: 'grateful', emoji: '🙏', label: 'Grateful' }
+    { id: 'grateful', emoji: '🙏', label: 'Grateful' },
+    { id: 'inspired', emoji: '💡', label: 'Inspired' },
+    { id: 'confused', emoji: '🤔', label: 'Confused' },
+    { id: 'proud', emoji: '😎', label: 'Proud' },
+    { id: 'hopeful', emoji: '🌟', label: 'Hopeful' },
+    { id: 'overwhelmed', emoji: '😩', label: 'Overwhelmed' },
+    { id: 'motivated', emoji: '💪', label: 'Motivated' },
+    { id: 'peaceful', emoji: '🕊️', label: 'Peaceful' },
+    { id: 'frustrated', emoji: '😤', label: 'Frustrated' },
+    { id: 'confident', emoji: '🦸', label: 'Confident' }
   ];
 
   // Accent colors (using the theme's color options)
@@ -788,8 +795,6 @@ const handleMediaUploadComplete = (mediaFiles: Record<string, unknown>[]) => {
                     progress: 100,
                     status: 'success',
                     url: file.url as string,
-                    cloudinaryPublicId: file.cloudinaryPublicId as string,
-                    cloudinaryResourceType: file.cloudinaryResourceType as string
                   });
                 }
               });
@@ -886,25 +891,12 @@ const handleMediaUploadComplete = (mediaFiles: Record<string, unknown>[]) => {
       className="flex flex-col h-screen transition-all duration-300"
       style={{ backgroundColor: styles.bgPage }}
     >
-
+      <ThemeSidebar/>
       {/* Success Message Toast */}
       {successMessage && (
         <Toast message={successMessage} type="success" visible={true} duration={3000} />
       )}
-
-      {/* Error Message Toast */}
-      {errorMessage && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          className="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded shadow-lg z-50 flex items-center"
-          style={{ maxWidth: "calc(100% - 2rem)" }}
-        >
-          <div className="mr-2">⚠</div>
-          <p>{errorMessage}</p>
-        </motion.div>
-      )}
+      
       {/* Error Message Toast */}
       {errorMessage && (
         <Toast message={errorMessage} type="error" visible={true} duration={2000} />
@@ -1103,7 +1095,7 @@ const handleMediaUploadComplete = (mediaFiles: Record<string, unknown>[]) => {
                   ref={editorRef}
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  className="w-full bg-transparent border-none outline-none resize-none p-5 text-lg leading-relaxed transition-all duration-300 rounded-lg"
+                  className="w-full h-[70vh]  bg-transparent border-none outline-none resize-none p-5 text-lg leading-relaxed transition-all duration-300 rounded-lg"
                   style={{
                     color: styles.textPrimary,
                     minHeight: '400px',
@@ -1136,7 +1128,7 @@ const handleMediaUploadComplete = (mediaFiles: Record<string, unknown>[]) => {
                 </div>
 
                 <div className="flex gap-2">
-                  <motion.button
+                  {/* <motion.button
                     onClick={handleAnalyzeSentiment}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium shadow-md hover:shadow-lg transition-all"
                     whileHover={{ scale: 1.05 }}
@@ -1149,7 +1141,7 @@ const handleMediaUploadComplete = (mediaFiles: Record<string, unknown>[]) => {
                   >
                     <Brain size={18} />
                     <span>Analyze Sentiment</span>
-                  </motion.button>
+                  </motion.button> */}
 
                   <motion.button
                     onClick={saveEntry}

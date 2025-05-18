@@ -1,8 +1,9 @@
 import React, { useRef, useState, useCallback } from 'react';
 import { Image, Mic, FileText, Film, Plus, StopCircle } from 'lucide-react';
 import { MediaFile, MediaLimits } from '../../types';
+import { useTheme } from '@/utilities/context/ThemeContext';
 
-// Add helper function for WAV conversion
+// Add helper function for WAV conversion 
 function audioBufferToWAV(buffer: AudioBuffer): Promise<Blob> {
   return new Promise(resolve => {
     const numOfChannels = buffer.numberOfChannels;
@@ -40,7 +41,7 @@ function audioBufferToWAV(buffer: AudioBuffer): Promise<Blob> {
       const s = Math.max(-1, Math.min(1, data[i]));
       view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
       offset += 2;
-    }
+    } 
     
     resolve(new Blob([view], { type: 'audio/wav' }));
   });
@@ -78,6 +79,9 @@ const MediaSelector: React.FC<MediaSelectorProps> = ({
   const [audioRecorder, setAudioRecorder] = useState<MediaRecorder | null>(null);
   const [recordedChunks, setRecordedChunks] = useState<BlobPart[]>([]);
   const [showAudioOptions, setShowAudioOptions] = useState(false);
+  
+  // Get theme from context
+  const { currentTheme, isDarkMode } = useTheme();
 
   // Function to start recording audio
   const startRecording = async () => {
@@ -236,8 +240,44 @@ const MediaSelector: React.FC<MediaSelectorProps> = ({
     }
   };
 
+  // Get background colors that match the theme
+  const getBackgroundColor = (type: string) => {
+    if (disabled || (type === 'audio' && isRecording)) {
+      return isDarkMode ? 'bg-gray-700' : 'bg-gray-200';
+    }
+
+    switch(type) {
+      case 'image': 
+        return `bg-${currentTheme.light} hover:bg-${currentTheme.medium}`;
+      case 'audio': 
+        return isRecording 
+          ? 'bg-red-100 hover:bg-red-200' 
+          : `bg-green-100 hover:bg-green-200`;
+      case 'video': 
+        return `bg-purple-100 hover:bg-purple-200`;
+      case 'document': 
+        return `bg-amber-100 hover:bg-amber-200`;
+      default: 
+        return '';
+    }
+  };
+
+  const getIconColor = (type: string) => {
+    if (disabled && type !== 'audio') {
+      return isDarkMode ? 'text-gray-500' : 'text-gray-500';
+    }
+
+    switch(type) {
+      case 'image': return `text-${currentTheme.name.toLowerCase()}-600`;
+      case 'audio': return isRecording ? 'text-red-600' : 'text-green-600';
+      case 'video': return 'text-purple-600';
+      case 'document': return 'text-amber-600';
+      default: return '';
+    }
+  };
+
   return (
-    <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+    <div className={`flex items-center gap-3 p-2 ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'} rounded-lg`}>
       {/* Image Button */}
       <div className="relative">
         <button
@@ -246,11 +286,12 @@ const MediaSelector: React.FC<MediaSelectorProps> = ({
           onMouseEnter={() => setActiveTooltip('image')}
           onMouseLeave={() => setActiveTooltip(null)}
           className={`p-2 rounded-full transition-all duration-200 ${
-            disabled || isRecording ? 'bg-gray-200 cursor-not-allowed' : 'bg-blue-100 hover:bg-blue-200'
+            disabled || isRecording ? (isDarkMode ? 'bg-gray-700 cursor-not-allowed' : 'bg-gray-200 cursor-not-allowed') : 
+            `${currentTheme.light.replace('rgba(', 'bg-').split(',')[0]}-100 hover:${currentTheme.light.replace('rgba(', 'bg-').split(',')[0]}-200`
           }`}
           aria-label="Upload image"
         >
-          <Image size={20} className="text-blue-600" />
+          <Image size={20} className={getIconColor('image')} />
           <input
             ref={fileInputRefs.image}
             type="file"
@@ -262,7 +303,7 @@ const MediaSelector: React.FC<MediaSelectorProps> = ({
           />
         </button>
         {activeTooltip === 'image' && (
-          <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+          <div className={`absolute -top-8 left-1/2 transform -translate-x-1/2 ${isDarkMode ? 'bg-gray-700 text-gray-100' : 'bg-gray-800 text-white'} text-xs px-2 py-1 rounded whitespace-nowrap`}>
             {getTooltipText('image')}
           </div>
         )}
@@ -287,7 +328,7 @@ const MediaSelector: React.FC<MediaSelectorProps> = ({
             onMouseEnter={() => setActiveTooltip('audio')}
             onMouseLeave={() => setActiveTooltip(null)}
             className={`p-2 rounded-full transition-all duration-200 ${
-              disabled ? 'bg-gray-200 cursor-not-allowed' : 'bg-green-100 hover:bg-green-200'
+              disabled ? (isDarkMode ? 'bg-gray-700 cursor-not-allowed' : 'bg-gray-200 cursor-not-allowed') : 'bg-green-100 hover:bg-green-200'
             }`}
             aria-label="Audio options"
           >
@@ -304,26 +345,26 @@ const MediaSelector: React.FC<MediaSelectorProps> = ({
           </button>
         )}
         {activeTooltip === 'audio' && (
-          <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+          <div className={`absolute -top-8 left-1/2 transform -translate-x-1/2 ${isDarkMode ? 'bg-gray-700 text-gray-100' : 'bg-gray-800 text-white'} text-xs px-2 py-1 rounded whitespace-nowrap`}>
             {getTooltipText('audio')}
           </div>
         )}
         
         {/* Audio options dropdown */}
         {showAudioOptions && !isRecording && (
-          <div className="absolute top-12 left-1/2 transform -translate-x-1/2 bg-white shadow-lg rounded-md p-2 z-10 border border-gray-200">
+          <div className={`absolute top-12 left-1/2 transform -translate-x-1/2 ${isDarkMode ? 'bg-gray-700 shadow-lg border border-gray-600' : 'bg-white shadow-lg border border-gray-200'} rounded-md p-2 z-10`}>
             <div className="relative">
               <button
                 onClick={handleAudioRecord}
                 onMouseEnter={() => setActiveTooltip('record')}
                 onMouseLeave={() => setActiveTooltip(null)}
-                className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-md w-full text-left text-sm"
+                className={`flex items-center gap-2 px-3 py-2 ${isDarkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-100'} rounded-md w-full text-left text-sm`}
               >
                 <Mic size={16} className="text-red-600" />
                 <span>Record Audio</span>
               </button>
               {activeTooltip === 'record' && (
-                <div className="absolute -right-32 top-2 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                <div className={`absolute -right-32 top-2 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-800'} text-white text-xs px-2 py-1 rounded whitespace-nowrap`}>
                   {getTooltipText('record')}
                 </div>
               )}
@@ -333,13 +374,13 @@ const MediaSelector: React.FC<MediaSelectorProps> = ({
                 onClick={handleAudioUpload}
                 onMouseEnter={() => setActiveTooltip('upload')}
                 onMouseLeave={() => setActiveTooltip(null)}
-                className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-md w-full text-left text-sm"
+                className={`flex items-center gap-2 px-3 py-2 ${isDarkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-100'} rounded-md w-full text-left text-sm`}
               >
                 <Plus size={16} className="text-green-600" />
                 <span>Upload Audio File</span>
               </button>
               {activeTooltip === 'upload' && (
-                <div className="absolute -right-32 top-2 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                <div className={`absolute -right-32 top-2 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-800'} text-white text-xs px-2 py-1 rounded whitespace-nowrap`}>
                   {getTooltipText('upload')}
                 </div>
               )}
@@ -356,7 +397,7 @@ const MediaSelector: React.FC<MediaSelectorProps> = ({
           onMouseEnter={() => setActiveTooltip('video')}
           onMouseLeave={() => setActiveTooltip(null)}
           className={`p-2 rounded-full transition-all duration-200 ${
-            disabled || isRecording ? 'bg-gray-200 cursor-not-allowed' : 'bg-purple-100 hover:bg-purple-200'
+            disabled || isRecording ? (isDarkMode ? 'bg-gray-700 cursor-not-allowed' : 'bg-gray-200 cursor-not-allowed') : 'bg-purple-100 hover:bg-purple-200'
           }`}
           aria-label="Upload video"
         >
@@ -372,7 +413,7 @@ const MediaSelector: React.FC<MediaSelectorProps> = ({
           />
         </button>
         {activeTooltip === 'video' && (
-          <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+          <div className={`absolute -top-8 left-1/2 transform -translate-x-1/2 ${isDarkMode ? 'bg-gray-700 text-gray-100' : 'bg-gray-800 text-white'} text-xs px-2 py-1 rounded whitespace-nowrap`}>
             {getTooltipText('video')}
           </div>
         )}
@@ -386,7 +427,7 @@ const MediaSelector: React.FC<MediaSelectorProps> = ({
           onMouseEnter={() => setActiveTooltip('document')}
           onMouseLeave={() => setActiveTooltip(null)}
           className={`p-2 rounded-full transition-all duration-200 ${
-            disabled || isRecording ? 'bg-gray-200 cursor-not-allowed' : 'bg-amber-100 hover:bg-amber-200'
+            disabled || isRecording ? (isDarkMode ? 'bg-gray-700 cursor-not-allowed' : 'bg-gray-200 cursor-not-allowed') : 'bg-amber-100 hover:bg-amber-200'
           }`}
           aria-label="Upload document"
         >
@@ -402,14 +443,14 @@ const MediaSelector: React.FC<MediaSelectorProps> = ({
           />
         </button>
         {activeTooltip === 'document' && (
-          <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+          <div className={`absolute -top-8 left-1/2 transform -translate-x-1/2 ${isDarkMode ? 'bg-gray-700 text-gray-100' : 'bg-gray-800 text-white'} text-xs px-2 py-1 rounded whitespace-nowrap`}>
             {getTooltipText('document')}
           </div>
         )}
       </div>
 
       {/* File summary */}
-      <div className="text-sm flex-1 text-gray-600">
+      <div className={`text-sm flex-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
         {isRecording ? (
           <span className="text-red-500 flex items-center gap-2">
             <span className="inline-block w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>

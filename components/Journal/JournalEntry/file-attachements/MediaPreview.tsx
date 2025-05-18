@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, RefreshCw, FileText, Image, Music, Video, Loader } from 'lucide-react';
 import { MediaFile } from '../../types';
 import AudioAnalyzer from '../AudioAnalyzer';
+import { useTheme } from '@/utilities/context/ThemeContext';
 
 interface MediaPreviewProps {
   mediaFiles: MediaFile[];
@@ -27,6 +28,9 @@ interface AnalysisResults {
 }
 
 const MediaPreview: React.FC<MediaPreviewProps> = ({ mediaFiles, onRemove, isUploading }) => {
+  // Get theme context
+  const { currentTheme, isDarkMode } = useTheme();
+  
   // Store analysis states and results for all files
   const [analyzingFiles, setAnalyzingFiles] = useState<{[key: string]: boolean}>({});
   const [analysisResults, setAnalysisResults] = useState<{[key: string]: AnalysisResults}>({});
@@ -68,6 +72,8 @@ const MediaPreview: React.FC<MediaPreviewProps> = ({ mediaFiles, onRemove, isUpl
             analysisResults={analysisResults}
             onStartAnalysis={handleStartAnalysis}
             onAnalysisComplete={handleAnalysisComplete}
+            currentTheme={currentTheme}
+            isDarkMode={isDarkMode}
           />
         )}
         
@@ -81,6 +87,8 @@ const MediaPreview: React.FC<MediaPreviewProps> = ({ mediaFiles, onRemove, isUpl
             analysisResults={analysisResults}
             onStartAnalysis={handleStartAnalysis}
             onAnalysisComplete={handleAnalysisComplete}
+            currentTheme={currentTheme}
+            isDarkMode={isDarkMode}
           />
         )}
         
@@ -94,6 +102,8 @@ const MediaPreview: React.FC<MediaPreviewProps> = ({ mediaFiles, onRemove, isUpl
             analysisResults={analysisResults}
             onStartAnalysis={handleStartAnalysis}
             onAnalysisComplete={handleAnalysisComplete}
+            currentTheme={currentTheme}
+            isDarkMode={isDarkMode}
           />
         )}
         
@@ -107,6 +117,8 @@ const MediaPreview: React.FC<MediaPreviewProps> = ({ mediaFiles, onRemove, isUpl
             analysisResults={analysisResults}
             onStartAnalysis={handleStartAnalysis}
             onAnalysisComplete={handleAnalysisComplete}
+            currentTheme={currentTheme}
+            isDarkMode={isDarkMode}
           />
         )}
       </>
@@ -129,6 +141,8 @@ interface PreviewSectionProps {
   analysisResults: {[key: string]: AnalysisResults};
   onStartAnalysis: (fileId: string) => void;
   onAnalysisComplete: (fileId: string, results: AnalysisResults) => void;
+  currentTheme: any;
+  isDarkMode: boolean;
 }
 
 const PreviewSection: React.FC<PreviewSectionProps> = ({ 
@@ -139,19 +153,21 @@ const PreviewSection: React.FC<PreviewSectionProps> = ({
   analyzingFiles, 
   analysisResults, 
   onStartAnalysis, 
-  onAnalysisComplete 
+  onAnalysisComplete,
+  currentTheme,
+  isDarkMode
 }) => {
   
   const getMediaTypeIcon = (type: string) => {
     switch (type) {
       case 'image':
-        return <Image size={16} className="mr-1" />;
+        return <Image size={16} className="mr-1" style={{ color: currentTheme.primary }} />;
       case 'audio':
-        return <Music size={16} className="mr-1" />;
+        return <Music size={16} className="mr-1" style={{ color: currentTheme.primary }} />;
       case 'video':
-        return <Video size={16} className="mr-1" />;
+        return <Video size={16} className="mr-1" style={{ color: currentTheme.primary }} />;
       case 'document':
-        return <FileText size={16} className="mr-1" />;
+        return <FileText size={16} className="mr-1" style={{ color: currentTheme.primary }} />;
       default:
         return null;
     }
@@ -161,16 +177,19 @@ const PreviewSection: React.FC<PreviewSectionProps> = ({
     const results = analysisResults[fileId];
     if (!results) return null;
     
-    // Display AudioAnalyzer results based on the actual structure
+    const bgColor = isDarkMode ? 'bg-gray-800' : 'bg-gray-50';
+    const borderColor = isDarkMode ? 'border-gray-700' : 'border-gray-200';
+    const textColor = isDarkMode ? 'text-gray-300' : 'text-gray-700';
+    
     return (
-      <div className="mt-3 text-xs bg-gray-50 p-3 rounded border border-gray-200">
+      <div className={`mt-3 text-xs ${bgColor} p-3 rounded border ${borderColor}`}>
         <div className="font-semibold mb-2">Analysis Results:</div>
         {results.linguistics && (
           <div className="space-y-2">
             {results.linguistics.transcript && (
               <div>
                 <span className="font-medium">Transcript:</span>
-                <p className="mt-1 text-gray-700">{results.linguistics.transcript.length > 100 
+                <p className={`mt-1 ${textColor}`}>{results.linguistics.transcript.length > 100 
                   ? `${results.linguistics.transcript.substring(0, 100)}...` 
                   : results.linguistics.transcript}
                 </p>
@@ -178,18 +197,18 @@ const PreviewSection: React.FC<PreviewSectionProps> = ({
             )}
             <div>
               <span className="font-medium">Summary:</span>
-              <p className="mt-1 text-gray-700">{results.linguistics.summary}</p>
+              <p className={`mt-1 ${textColor}`}>{results.linguistics.summary}</p>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <span className="font-medium">Sentiment:</span>
-                <p className="text-gray-700">{results.linguistics.sentiment.overall} 
+                <p className={textColor}>{results.linguistics.sentiment.overall} 
                   ({results.linguistics.sentiment.score?.toFixed(2)})
                 </p>
               </div>
               <div>
                 <span className="font-medium">Confidence:</span>
-                <p className="text-gray-700">{(results.linguistics.confidence * 100).toFixed(0)}%</p>
+                <p className={textColor}>{(results.linguistics.confidence * 100).toFixed(0)}%</p>
               </div>
             </div>
             {results.linguistics.topics.length > 0 && (
@@ -197,7 +216,14 @@ const PreviewSection: React.FC<PreviewSectionProps> = ({
                 <span className="font-medium">Topics:</span>
                 <div className="flex flex-wrap gap-1 mt-1">
                   {results.linguistics.topics.map((topic, i) => (
-                    <span key={i} className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs">
+                    <span 
+                      key={i} 
+                      className="px-2 py-0.5 rounded-full text-xs"
+                      style={{ 
+                        backgroundColor: currentTheme.light,
+                        color: currentTheme.active
+                      }}
+                    >
                       {topic}
                     </span>
                   ))}
@@ -223,13 +249,19 @@ const PreviewSection: React.FC<PreviewSectionProps> = ({
     const isAnalyzing = analyzingFiles[file.id] || false;
     const hasResults = !!analysisResults[file.id];
     
+    // Theme-based colors
+    const bgCardColor = isDarkMode ? 'bg-gray-800' : 'bg-white';
+    const borderColor = isDarkMode ? 'border-gray-700' : 'border-gray-200';
+    const textColor = isDarkMode ? 'text-gray-200' : 'text-gray-700';
+    const secondaryTextColor = isDarkMode ? 'text-gray-400' : 'text-gray-500';
+    
     switch (file.type) {
       case 'image':
         return (
           <div className="relative">
             <div className="flex items-center mb-1">
               {getMediaTypeIcon('image')}
-              <div className="text-xs font-medium truncate">{file.file.name}</div>
+              <div className={`text-xs font-medium truncate ${textColor}`}>{file.file.name}</div>
             </div>
             <img 
               src={file.url || URL.createObjectURL(file.file)} 
@@ -239,7 +271,11 @@ const PreviewSection: React.FC<PreviewSectionProps> = ({
             {renderUploadStatus(file)}
             <div className="mt-2">
               <button
-                className="text-xs bg-gray-200 px-2 py-1 rounded flex items-center justify-center w-full"
+                className="text-xs px-2 py-1 rounded flex items-center justify-center w-full"
+                style={{ 
+                  backgroundColor: isDarkMode ? '#374151' : '#E5E7EB',
+                  color: isDarkMode ? '#D1D5DB' : '#4B5563'
+                }}
                 disabled={true}
               >
                 Analysis features coming soon
@@ -252,7 +288,7 @@ const PreviewSection: React.FC<PreviewSectionProps> = ({
           <div className="relative">
             <div className="flex items-center mb-1">
               {getMediaTypeIcon('audio')}
-              <div className="text-xs font-medium truncate">{file.file.name}</div>
+              <div className={`text-xs font-medium truncate ${textColor}`}>{file.file.name}</div>
             </div>
             <audio 
               controls 
@@ -262,13 +298,19 @@ const PreviewSection: React.FC<PreviewSectionProps> = ({
             {renderUploadStatus(file)}
             <div className="mt-2">
               <button
-                className={`text-xs px-2 py-1 rounded flex items-center justify-center w-full ${
-                  isAnalyzing 
-                    ? 'bg-blue-100 text-blue-700' 
+                className={`text-xs px-2 py-1 rounded flex items-center justify-center w-full`}
+                style={{ 
+                  backgroundColor: isAnalyzing 
+                    ? currentTheme.light
                     : hasResults 
-                      ? 'bg-green-100 text-green-700' 
-                      : 'bg-blue-500 text-white'
-                }`}
+                      ? isDarkMode ? 'rgba(74, 222, 128, 0.2)' : 'rgba(74, 222, 128, 0.1)'
+                      : currentTheme.primary,
+                  color: isAnalyzing 
+                    ? currentTheme.active
+                    : hasResults 
+                      ? isDarkMode ? '#4ADE80' : '#166534'
+                      : '#FFFFFF'
+                }}
                 onClick={() => onStartAnalysis(file.id)}
                 disabled={isAnalyzing}
               >
@@ -300,7 +342,7 @@ const PreviewSection: React.FC<PreviewSectionProps> = ({
           <div className="relative">
             <div className="flex items-center mb-1">
               {getMediaTypeIcon('video')}
-              <div className="text-xs font-medium truncate">{file.file.name}</div>
+              <div className={`text-xs font-medium truncate ${textColor}`}>{file.file.name}</div>
             </div>
             <video 
               controls 
@@ -310,7 +352,11 @@ const PreviewSection: React.FC<PreviewSectionProps> = ({
             {renderUploadStatus(file)}
             <div className="mt-2">
               <button
-                className="text-xs bg-gray-200 px-2 py-1 rounded flex items-center justify-center w-full"
+                className="text-xs px-2 py-1 rounded flex items-center justify-center w-full"
+                style={{ 
+                  backgroundColor: isDarkMode ? '#374151' : '#E5E7EB',
+                  color: isDarkMode ? '#D1D5DB' : '#4B5563'
+                }}
                 disabled={true}
               >
                 Analysis features coming soon
@@ -323,15 +369,19 @@ const PreviewSection: React.FC<PreviewSectionProps> = ({
           <div className="flex flex-col">
             <div className="flex items-center mb-1">
               {getMediaTypeIcon('document')}
-              <div className="text-xs font-medium truncate">{file.file.name}</div>
+              <div className={`text-xs font-medium truncate ${textColor}`}>{file.file.name}</div>
             </div>
-            <div className="text-xs text-gray-500">
+            <div className={`text-xs ${secondaryTextColor}`}>
               {(file.file.size / 1024).toFixed(2)} KB
             </div>
             {renderUploadStatus(file)}
             <div className="mt-2">
               <button
-                className="text-xs bg-gray-200 px-2 py-1 rounded flex items-center justify-center w-full"
+                className="text-xs px-2 py-1 rounded flex items-center justify-center w-full"
+                style={{ 
+                  backgroundColor: isDarkMode ? '#374151' : '#E5E7EB',
+                  color: isDarkMode ? '#D1D5DB' : '#4B5563'
+                }}
                 disabled={true}
               >
                 Analysis features coming soon
@@ -343,16 +393,21 @@ const PreviewSection: React.FC<PreviewSectionProps> = ({
   };
 
   const renderUploadStatus = (file: MediaFile) => {
+    const secondaryTextColor = isDarkMode ? 'text-gray-400' : 'text-gray-500';
+    
     if (file.status === 'uploading') {
       return (
         <div className="mt-2">
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-in-out" 
-              style={{ width: `${file.progress}%` }}
+              className="h-2 rounded-full transition-all duration-300 ease-in-out" 
+              style={{ 
+                width: `${file.progress}%`,
+                backgroundColor: currentTheme.primary
+              }}
             ></div>
           </div>
-          <div className="text-xs text-gray-500 mt-1 flex items-center">
+          <div className={`text-xs ${secondaryTextColor} mt-1 flex items-center`}>
             <RefreshCw size={12} className="mr-1 animate-spin" />
             {file.progress}% uploaded
           </div>
@@ -360,28 +415,41 @@ const PreviewSection: React.FC<PreviewSectionProps> = ({
       );
     } else if (file.status === 'success') {
       return (
-        <div className="text-xs text-green-600 mt-2">Upload complete</div>
+        <div className="text-xs mt-2" style={{ color: isDarkMode ? '#4ADE80' : '#16A34A' }}>Upload complete</div>
       );
     } else if (file.status === 'error') {
       return (
-        <div className="text-xs text-red-600 mt-2">Upload failed</div>
+        <div className="text-xs mt-2" style={{ color: isDarkMode ? '#F87171' : '#DC2626' }}>Upload failed</div>
       );
     }
     return null;
   };
 
+  const bgCardColor = isDarkMode ? 'bg-gray-800' : 'bg-white';
+  const borderColor = isDarkMode ? 'border-gray-700' : 'border-gray-200';
+  const textColor = isDarkMode ? 'text-gray-200' : 'text-gray-700';
+  const shadowClass = isDarkMode ? 'shadow-gray-900' : 'shadow-sm';
+
   return (
-    <div className="border rounded-lg p-3 bg-white shadow-sm">
-      <h3 className="font-medium mb-3 flex items-center">
+    <div className={`border rounded-lg p-3 ${bgCardColor} ${shadowClass}`} style={{ borderColor: isDarkMode ? '#374151' : '#E5E7EB' }}>
+      <h3 className={`font-medium mb-3 flex items-center ${textColor}`}>
         {getMediaTypeIcon(files[0].type)}
         {title} ({files.length})
       </h3>
       <div className={`grid ${files[0].type === 'image' ? 'grid-cols-2 md:grid-cols-3' : 'grid-cols-1'} gap-4`}>
         {files.map((file) => (
-          <div key={file.id} className="relative border rounded p-3 hover:shadow-md transition-shadow duration-200">
+          <div 
+            key={file.id} 
+            className="relative border rounded p-3 transition-shadow duration-200"
+            style={{ 
+              borderColor: isDarkMode ? '#374151' : '#E5E7EB',
+              backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF'
+            }}
+          >
             {!isUploading && file.status !== 'uploading' && (
               <button 
-                className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 rounded-full p-1 z-10 transition-colors duration-200"
+                className="absolute top-2 right-2 rounded-full p-1 z-10 transition-colors duration-200"
+                style={{ backgroundColor: '#EF4444' }}
                 onClick={() => onRemove(file.id)}
                 aria-label="Remove file"
               >
