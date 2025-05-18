@@ -26,19 +26,19 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        source: '/api/aitopia/:path*',
-        destination: 'https://extensions.aitopia.ai/:path*',
+      source: '/api/aitopia/:path*',
+      destination: 'https://extensions.aitopia.ai/:path*',
       },
       {
-        source: '/api/sentiment/:path*',
-        destination: 'http://127.0.0.1:8000/:path*',
-        has: [
-          {
-            type: 'header',
-            key: 'content-type',
-            value: '(.*?)',
-          },
-        ],
+      source: '/api/sentiment/:path*',
+      destination: `${process.env.SA_MODEL_LINK || 'http://127.0.0.1:8000'}/:path*`,
+      has: [
+        {
+        type: 'header',
+        key: 'content-type',
+        value: '(.*?)',
+        },
+      ],
       },
     ];
   },

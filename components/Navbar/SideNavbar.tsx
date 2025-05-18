@@ -374,7 +374,7 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            className="fixed inset-0  bg-opacity-30 z-30 backdrop-blur-sm"
+            className="fixed inset-0  bg-opacity-30 z-30 "
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

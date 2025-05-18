@@ -203,18 +203,16 @@ export function AudioVisualizations({ analysisResults }: AudioVisualizationsProp
 
   // New charts
   const sentimentData = {
-    labels: ['Positive', 'Neutral', 'Negative'],
+    labels: ['Sentiment Score'],
     datasets: [
       {
         data: [
-          analysisResults.deepgram.sentiment.positive * 100,
-          analysisResults.deepgram.sentiment.neutral * 100,
-          analysisResults.deepgram.sentiment.negative * 100
+          analysisResults.deepgram.sentiment.score * 100
         ],
         backgroundColor: [
-          'rgba(34, 197, 94, 0.8)',  // green
-          'rgba(59, 130, 246, 0.8)', // blue
-          'rgba(239, 68, 68, 0.8)',  // red
+          analysisResults.deepgram.sentiment.overall === 'positive' ? 'rgba(34, 197, 94, 0.8)' : // green
+          analysisResults.deepgram.sentiment.overall === 'neutral' ? 'rgba(59, 130, 246, 0.8)' : // blue
+          'rgba(239, 68, 68, 0.8)',  // red for negative
         ],
         borderColor: [
           'rgb(34, 197, 94)',

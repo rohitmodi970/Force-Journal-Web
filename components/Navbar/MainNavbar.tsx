@@ -119,18 +119,6 @@ const MainNavbar = () => {
       name: 'AI Tools',
       href: '/user/ai-tools',
       icon: 'HiOutlineChip',
-      subItems: [
-        {
-          name: 'AI Tools Home',
-          href: '/user/ai-tools',
-          icon: 'HiOutlineChip',
-        },
-        {
-          name: 'OCR',
-          href: '/user/ocr',
-          icon: 'HiDocumentSearch',
-        },
-      ],
     },
   ], [session]);
 

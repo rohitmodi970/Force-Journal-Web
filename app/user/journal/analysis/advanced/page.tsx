@@ -4,10 +4,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Layout from "@/components/layout/Layout";
 import { getAllJournalEntries } from "@/utilities/journal-data";
 import { JournalEntry } from "@/components/Journal/types";
-import SideNavbar from "@/components/Navbar/SideNavbar";
-import { useTheme } from "@/utilities/context/ThemeContext";
-import { useSession } from "next-auth/react";
-import { usePathname } from "next/navigation";
 import AdvancedAnalysisDashboard from "@/components/Journal/Advanced/AdvancedAnalysisDashboard";
 
 const AdvancedAnalysisPage = () => {
@@ -15,73 +11,6 @@ const AdvancedAnalysisPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // SideNavbar context
-  const { currentTheme, isDarkMode, toggleDarkMode } = useTheme();
-  const { data: session } = useSession();
-  const pathname = usePathname();
-
-  // SideNavbar menu items (reuse from analysis page)
-  const sideNavMenuItems = useMemo(() => [
-    {
-      name: 'Home',
-      href: session ? '/user/dashboard' : '/',
-      icon: 'HiHome',
-    },
-    {
-      name: 'Journals',
-      href: '/user/journal',
-      icon: 'GiNotebook',
-      subItems: [
-        {
-          name: 'New Entry',
-          href: '/user/journal-entry/',
-          icon: 'HiPencilAlt',
-        },
-        {
-          name: 'Analysis',
-          href: '/user/journal/analysis',
-          icon: 'HiChartBar',
-        },
-        {
-          name: 'Journal Gallery',
-          href: '/user/journal/journal-gallery',
-          icon: 'HiPhotograph',
-        },
-        {
-          name: 'Quilted Gallery',
-          href: '/user/journal/quilted-gallery',
-          icon: 'HiViewGrid',
-        },
-      ],
-    },
-    {
-      name: 'Advanced Analysis',
-      href: '/user/journal/analysis/advanced',
-      icon: 'HiOutlineChip',
-    },
-    {
-      name: 'Profile',
-      href: '/user/profile',
-      icon: 'HiUser',
-      subItems: [
-        {
-          name: 'Profile Settings',
-          href: '/user/profile',
-          icon: 'HiUser',
-        },
-        {
-          name: 'Preferences',
-          href: '/user/settings',
-          icon: 'HiCog',
-        },
-      ],
-    },
-    {
-      name: 'AI Tools',
-      href: '/user/ai-tools',
-      icon: 'HiOutlineChip',
-    },
-  ], [session]);
 
   useEffect(() => {
     async function loadJournalEntries() {
@@ -101,14 +30,7 @@ const AdvancedAnalysisPage = () => {
 
   return (
     <div className="flex">
-      <SideNavbar
-        currentTheme={currentTheme}
-        isDarkMode={isDarkMode}
-        toggleDarkMode={toggleDarkMode}
-        session={session}
-        pathname={pathname}
-        menuItems={sideNavMenuItems}
-      />
+      
       <div className="flex-1">
         <Layout>
           <div className="max-w-7xl mx-auto px-4 py-8">
