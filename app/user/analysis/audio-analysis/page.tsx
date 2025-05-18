@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useTheme } from "@/utilities/context/ThemeContext";
 import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
-import SideNavbar from "@/components/Navbar/SideNavbar";
+// import SideNavbar from "@/components/Navbar/SideNavbar";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -152,14 +152,14 @@ const AudioAnalysisPage = () => {
 
   return (
     <div className="flex">
-      <SideNavbar
+      {/* <SideNavbar
         currentTheme={currentTheme}
         isDarkMode={isDarkMode}
         toggleDarkMode={toggleDarkMode}
         session={session}
         pathname={pathname}
         menuItems={[]}
-      />
+      /> */}
       <div className="flex-1">
         <Layout>
           <div className="max-w-7xl mx-auto px-4 py-8">
