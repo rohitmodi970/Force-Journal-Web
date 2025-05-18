@@ -23,11 +23,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn, signOut } from "next-auth/react";
 import { JSX } from "react/jsx-runtime";
-import { motion, AnimatePresence, useMotionValue } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { GiNotebook } from "react-icons/gi";
 import LogoutButton from "../LogoutButton";
 import { GrUserSettings } from "react-icons/gr";
 import { ColorOption } from "../../utilities/context/ThemeContext";
+import DockItem from "./DockItem";
+
 
 // Define props interface for side navbar
 interface SideNavbarProps {
@@ -48,16 +50,7 @@ interface SideNavbarProps {
   }[];
 }
 
-// Create a separate component for dock items to avoid hook violations
-interface DockItemProps {
-  icon: JSX.Element;
-  label: string;
-  isActive: boolean;
-  onClick: () => void;
-  currentTheme: ColorOption;
-  isDarkMode: boolean;
-  hasSubItems?: boolean;
-}
+
 
 // Pre-calculate icon components
 const ICON_MAP = {
@@ -81,77 +74,13 @@ const getIcon = (iconName: string, size = 24) => {
   return ICON_MAP[iconName as keyof typeof ICON_MAP]?.(size) || <HiHome size={size} />;
 };
 
-const DockItem: React.FC<DockItemProps> = ({ 
-  icon, 
-  label, 
-  isActive, 
-  onClick, 
-  currentTheme, 
-  isDarkMode,
-  hasSubItems 
-}) => {
-  const [isHovered, setIsHovered] = useState(false);
-  
-  // Dynamic background for active items
-  const bgColor = isDarkMode 
-    ? isActive ? "rgba(255, 255, 255, 0.1)" : "transparent"
-    : isActive ? "rgba(0, 0, 0, 0.06)" : "transparent";
-  
-  // Dynamic text color
-  const textColor = isActive 
-    ? currentTheme.primary 
-    : (isDarkMode ? "#f3f4f6" : "#111827");
-  
-  return (
-    <motion.div
-      onClick={onClick}
-      className="flex items-center justify-center rounded-full transition-all w-12 h-12"
-      style={{
-        color: textColor,
-        backgroundColor: bgColor
-      }}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      initial={{ opacity: 0, scale: 0 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0 }}
-      transition={{ duration: 0.1 }}
-      onHoverStart={() => setIsHovered(true)}
-      onHoverEnd={() => setIsHovered(false)}
-    >
-      {icon}
-      
-      {/* Tooltip label */}
-      <AnimatePresence>
-        {isHovered && (
-          <motion.div
-            className={`absolute left-full ml-3 px-2 py-1 text-xs rounded-md whitespace-nowrap z-50 shadow-lg ${
-              isDarkMode ? "bg-gray-700 text-white" : "bg-gray-800 text-white"
-            }`}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -10 }}
-            transition={{ duration: 0.1 }}
-          >
-            {label}
-            {hasSubItems && (
-              <span className="ml-1 text-xs">▶</span>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-      
-      {/* Active indicator dot */}
-      {isActive && (
-        <motion.div
-          className="absolute right-0 mr-[-4px] w-2 h-2 rounded-full"
-          style={{ backgroundColor: currentTheme.primary }}
-          layoutId="activeIndicator"
-        />
-      )}
-    </motion.div>
-  );
-};
+
+
+
+
+
+
+
 
 // Create a submenu item component
 interface SubMenuItemProps {
@@ -163,9 +92,10 @@ interface SubMenuItemProps {
   isActive: boolean;
   currentTheme: ColorOption;
   isDarkMode: boolean;
+  onClick?: () => void;
 }
 
-const SubMenuItem: React.FC<SubMenuItemProps> = ({ item, isActive, currentTheme, isDarkMode }) => {
+const SubMenuItem: React.FC<SubMenuItemProps> = ({ item, isActive, currentTheme, isDarkMode, onClick }) => {
   const bgColor = isDarkMode
     ? isActive ? "bg-gray-700" : "hover:bg-gray-700/70"
     : isActive ? "bg-gray-100" : "hover:bg-gray-100/80";
@@ -184,7 +114,10 @@ const SubMenuItem: React.FC<SubMenuItemProps> = ({ item, isActive, currentTheme,
         initial={{ opacity: 0, y: -5 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -5 }}
-        transition={{ duration: 0.1 }}
+        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+        onClick={onClick}
+        role="menuitem"
+        aria-current={isActive ? "page" : undefined}
       >
         <span className={textColor}>{getIcon(item.icon, 18)}</span>
         <span className={`ml-2 ${textColor}`}>{item.name}</span>
@@ -205,10 +138,37 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
   const [showAllIcons, setShowAllIcons] = useState<boolean>(false);
   const [expandedMenus, setExpandedMenus] = useState<{ [key: string]: boolean }>({});
   const router = useRouter();
-  const mouseY = useMotionValue(Infinity);
   const navbarRef = useRef<HTMLDivElement>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const touchStartRef = useRef<number | null>(null);
+
+  // Set up expanded menus based on active paths on initial render
+  useEffect(() => {
+    if (pathname) {
+      const initialExpandedMenus = {} as { [key: string]: boolean };
+      
+      menuItems.forEach(item => {
+        if (item.subItems?.some(subItem => pathname.startsWith(subItem.href))) {
+          initialExpandedMenus[item.name] = true;
+        }
+      });
+      
+      setExpandedMenus(initialExpandedMenus);
+    }
+  }, [pathname, menuItems]);
+
+  // Close drawer on resize to mobile
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 640 && isOpen) {
+        setIsOpen(false);
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isOpen]);
 
   // Toggle submenu expansion - memoized
   const toggleSubMenu = useCallback((name: string) => {
@@ -218,16 +178,21 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
     }));
   }, []);
 
-  // Check if menu item is active
+  // Check if menu item is active - improved logic
   const isItemActive = useCallback((href: string) => {
+    if (!pathname) return false;
     if (href === "/" && pathname === "/") return true;
-    if (pathname?.startsWith(href) && href !== "/") return true;
-    return pathname === href;
+    if (href !== "/" && pathname.startsWith(href)) return true;
+    return false;
   }, [pathname]);
 
   // Navigate without full page refresh
   const navigateTo = useCallback((href: string) => {
     router.push(href);
+    // Close drawer on navigation on mobile devices
+    if (window.innerWidth < 640) {
+      setIsOpen(false);
+    }
   }, [router]);
 
   // Create dock items from menuItems for collapsed state
@@ -235,7 +200,7 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
     icon: getIcon(item.icon),
     label: item.name,
     onClick: () => {
-      if (item.subItems) {
+      if (item.subItems?.length) {
         setIsOpen(true);
         setTimeout(() => toggleSubMenu(item.name), 50);
       } else {
@@ -290,7 +255,7 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
     }
     timeoutRef.current = setTimeout(() => {
       setShowAllIcons(false);
-    }, 1000);
+    }, 1000); // 1 second delay before hiding
   }, []);
 
   // Text gradient style for logo text
@@ -309,7 +274,8 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
   // Handle clicks outside the drawer to close it
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
-      if (isOpen && drawerRef.current && !drawerRef.current.contains(event.target as Node)) {
+      if (isOpen && drawerRef.current && !drawerRef.current.contains(event.target as Node) &&
+          navbarRef.current && !navbarRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
@@ -325,6 +291,46 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
       }
     };
   }, [isOpen]);
+
+  // Add keyboard navigation handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
+  // Handle touch gestures for mobile devices
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartRef.current = e.touches[0].clientX;
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    
+    const touchX = e.touches[0].clientX;
+    const diff = touchStartRef.current - touchX;
+    
+    // Swipe left (close drawer)
+    if (diff > 50 && isOpen) {
+      setIsOpen(false);
+      touchStartRef.current = null;
+    }
+    
+    // Swipe right (open drawer)
+    if (diff < -50 && !isOpen) {
+      setIsOpen(true);
+      touchStartRef.current = null;
+    }
+  }, [isOpen]);
+
+  const handleTouchEnd = useCallback(() => {
+    touchStartRef.current = null;
+  }, []);
 
   // Filter items to show in dock view
   const visibleItems = useMemo(() => showAllIcons 
@@ -356,7 +362,7 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
     : "text-gray-500",
   [isDarkMode]);
 
-  // Pre-compute drawer and backdrop variants
+  // Pre-compute drawer variants
   const drawerVariants = {
     closed: {
       x: "-100%",
@@ -368,18 +374,33 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
     }
   };
 
+  // Framer motion transition with spring physics
+  const springTransition = {
+    type: "spring",
+    stiffness: 300,
+    damping: 30,
+    mass: 1
+  };
+
+  // Optimized fade transition
+  const fadeTransition = { 
+    duration: 0.2, 
+    ease: "easeInOut" 
+  };
+
   return (
     <>
       {/* Backdrop overlay */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            className="fixed inset-0  bg-opacity-30 z-30 "
+            className="fixed inset-0  bg-opacity-30 z-30"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
+            transition={fadeTransition}
             onClick={() => setIsOpen(false)}
+            role="presentation"
           />
         )}
       </AnimatePresence>
@@ -390,25 +411,33 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
         className={`fixed left-6 top-1/2 -translate-y-1/2 h-auto rounded-2xl z-40 transition-all duration-200 ${dockBgColor} shadow-lg shadow-black/5 w-16 overflow-visible`}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        initial={{ opacity: 0.9 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.2 }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={springTransition}
+        role="navigation"
+        aria-label="Quick navigation"
       >
         <div className="flex flex-col items-center justify-center py-6 space-y-6">
           {/* Menu toggle button */}
           <motion.button
             onClick={() => setIsOpen(!isOpen)}
-            className={`p-3 rounded-full ${
+            className={`p-3 rounded-full transition-all ${
               isDarkMode ? "hover:bg-gray-800 text-gray-300" : "hover:bg-gray-200 text-gray-700"
             }`}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
+            aria-expanded={isOpen}
+            aria-label="Toggle navigation menu"
+            aria-controls="sidebar-drawer"
           >
             <IoMenu className="w-6 h-6" />
           </motion.button>
           
           {/* Dock items */}
-          <AnimatePresence>
+          <AnimatePresence mode="popLayout">
             {visibleItems.map((item, index) => (
               <DockItem
                 key={`dock-${index}`}
@@ -428,11 +457,18 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
       {/* Drawer sidebar */}
       <motion.div
         ref={drawerRef}
+        id="sidebar-drawer"
         className={`fixed top-0 left-0 z-40 h-screen p-4 overflow-y-auto w-72 ${drawerBgColor} ${textColor}`}
         variants={drawerVariants}
         initial="closed"
         animate={isOpen ? "open" : "closed"}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        transition={springTransition}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navigation sidebar"
       >
         {/* Drawer header */}
         <div className="flex justify-between items-center mb-6">
@@ -450,6 +486,7 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
             className={`text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg p-1.5`}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
+            aria-label="Close navigation menu"
           >
             <IoClose className="w-6 h-6" />
           </motion.button>
@@ -457,7 +494,12 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
 
         {/* User profile section if logged in */}
         {session && (
-          <div className="flex items-center mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
+          <motion.div 
+            className="flex items-center mb-6 pb-6 border-b border-gray-200 dark:border-gray-700"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
             <div 
               className="w-10 h-10 rounded-full flex items-center justify-center text-white"
               style={{ background: `linear-gradient(135deg, ${currentTheme.primary}, ${currentTheme.hover})` }}
@@ -468,12 +510,12 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
               <p className="font-medium">{session.user?.name || "User"}</p>
               <p className={`text-sm ${secondaryTextColor}`}>{session.user?.email}</p>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* Menu items */}
         <div className="py-4 overflow-y-auto">
-          <ul className="space-y-2 font-medium">
+          <ul className="space-y-2 font-medium" role="menu">
             {menuItems.map((item, index) => {
               const isActive = isItemActive(item.href) || 
                 (item.subItems?.some(subItem => isItemActive(subItem.href)) ?? false);
@@ -485,6 +527,7 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.03 }}
+                  role="none"
                 >
                   {item.subItems ? (
                     <>
@@ -499,12 +542,15 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
                         whileHover={{ x: 2 }}
                         whileTap={{ scale: 0.98 }}
                         style={isActive ? { color: currentTheme.primary } : {}}
+                        aria-expanded={!!isExpanded}
+                        aria-controls={`submenu-${index}`}
+                        role="menuitem"
                       >
                         <span className="mr-3">{getIcon(item.icon)}</span>
                         <span className="flex-1 text-left">{item.name}</span>
                         <motion.span
                           animate={{ rotate: isExpanded ? 90 : 0 }}
-                          transition={{ duration: 0.1 }}
+                          transition={{ duration: 0.2 }}
                         >
                           <HiChevronRight className="w-5 h-5" />
                         </motion.span>
@@ -513,11 +559,13 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
                       <AnimatePresence>
                         {isExpanded && (
                           <motion.div
+                            id={`submenu-${index}`}
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: "auto", opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.15 }}
+                            transition={{ duration: 0.2, ease: "easeInOut" }}
                             className="overflow-hidden"
+                            role="menu"
                           >
                             <div className="py-2 space-y-1">
                               {item.subItems.map((subItem, subIndex) => (
@@ -527,6 +575,12 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
                                   isActive={isItemActive(subItem.href)}
                                   currentTheme={currentTheme}
                                   isDarkMode={isDarkMode}
+                                  onClick={() => {
+                                    // Close drawer on mobile
+                                    if (window.innerWidth < 640) {
+                                      setTimeout(() => setIsOpen(false), 150);
+                                    }
+                                  }}
                                 />
                               ))}
                             </div>
@@ -545,6 +599,14 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
                         style={isActive ? { color: currentTheme.primary } : {}}
                         whileHover={{ x: 5 }}
                         whileTap={{ scale: 0.98 }}
+                        role="menuitem"
+                        aria-current={isActive ? "page" : undefined}
+                        onClick={() => {
+                          // Close drawer on mobile
+                          if (window.innerWidth < 640) {
+                            setTimeout(() => setIsOpen(false), 150);
+                          }
+                        }}
                       >
                         <span className="mr-3">{getIcon(item.icon)}</span>
                         <span>{item.name}</span>
@@ -558,7 +620,12 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
         </div>
         
         {/* Footer actions */}
-        <div className="mt-8 space-y-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+        <motion.div 
+          className="mt-8 space-y-4 border-t border-gray-200 dark:border-gray-700 pt-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+        >
           {/* Theme toggle */}
           <motion.button
             onClick={toggleDarkMode}
@@ -567,6 +634,7 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
             }`}
             whileHover={{ x: 5 }}
             whileTap={{ scale: 0.98 }}
+            aria-label={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
           >
             {isDarkMode ? <HiSun className="w-5 h-5 mr-3" /> : <HiMoon className="w-5 h-5 mr-3" />}
             <span>{isDarkMode ? "Light Mode" : "Dark Mode"}</span>
@@ -592,7 +660,7 @@ const SideNavbar: React.FC<SideNavbarProps> = ({
               Login / Signup
             </motion.button>
           )}
-        </div>
+        </motion.div>
       </motion.div>
     </>
   );

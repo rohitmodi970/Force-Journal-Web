@@ -50,16 +50,6 @@ const MainNavbar = () => {
           icon: 'HiPencilAlt',
         },
         {
-          name: 'Analysis',
-          href: '/user/journal/analysis',
-          icon: 'HiChartBar',
-        },
-        {
-          name: 'Advanced Analysis',
-          href: '/user/journal/analysis/advanced',
-          icon: 'HiOutlineChip',
-        },
-        {
           name: 'Journal Gallery',
           href: '/user/journal/journal-gallery',
           icon: 'HiPhotograph',
@@ -77,11 +67,6 @@ const MainNavbar = () => {
       icon: 'HiChartPie',
       subItems: [
         {
-          name: 'General Analysis',
-          href: '/user/analysis',
-          icon: 'HiChartBar',
-        },
-        {
           name: 'Sentiment Analysis',
           href: '/user/analysis/sentiment-analysis',
           icon: 'HiEmojiHappy',
@@ -96,6 +81,11 @@ const MainNavbar = () => {
           href: '/user/analysis/audio-analysis',
           icon: 'HiMusicNote',
         },
+        {
+          name: 'Advanced Analysis',
+          href: '/user/journal/analysis/advanced',
+          icon: 'HiOutlineChip',
+        },
       ],
     },
     {
@@ -103,11 +93,6 @@ const MainNavbar = () => {
       href: '/user/profile',
       icon: 'HiUser',
       subItems: [
-        {
-          name: 'Profile Settings',
-          href: '/user/profile',
-          icon: 'HiUser',
-        },
         {
           name: 'Preferences',
           href: '/user/settings',
@@ -133,9 +118,8 @@ const MainNavbar = () => {
     { name: "Dashboard", href: "/user/dashboard", icon: "HiHome" },
     { name: "New Entry", href: "/user/journal-entry", icon: "GiNotebook" },
     { name: "Journal", href: "/user/journal", icon: "HiDocumentText" },
-    { name: "Analysis", href: "/user/analysis", icon: "HiOutlineChip" },
-    { name: "Advanced Analysis", href: "/user/journal/analysis/advanced", icon: "HiOutlineChip" },
-    { name: "Profile", href: "/user/profile", icon: "HiOutlineChip" },
+    { name: "Analysis", href: "/user/analysis", icon: "HiChartPie" },
+    { name: "Profile", href: "/user/profile", icon: "HiUser" },
   ], []);
 
   // Function to determine if we should show the navbar at all
