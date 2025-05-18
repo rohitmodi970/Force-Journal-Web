@@ -341,7 +341,7 @@ const JournalPage = () => {
         </button>
 
         <Link
-          href="/journal/journal-gallery"
+          href="/user/journal/journal-gallery"
           className="flex items-center gap-2 bg-amber-800 hover:bg-amber-700 text-white px-4 py-2 rounded-full shadow-lg transition-colors"
         >
           <BookOpen className="w-5 h-5" />
