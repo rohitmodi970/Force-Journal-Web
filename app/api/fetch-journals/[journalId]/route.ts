@@ -6,9 +6,11 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/utilities/auth';
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { journalId: string } }
+  request: NextRequest
 ) {
+  const url = new URL(request.url);
+  const pathParts = url.pathname.split('/');
+  const journalId = pathParts[pathParts.length - 1];
   try {
     await connectDB();
 
@@ -24,7 +26,7 @@ export async function GET(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const journalId = params.journalId;
+    const journalId = pathParts[pathParts.length - 1];
 
     const journal = await Journal.findOne({
       journalId,
