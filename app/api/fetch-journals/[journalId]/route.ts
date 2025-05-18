@@ -7,7 +7,7 @@ import { authOptions } from '@/utilities/auth';
 
 export async function GET(
   request: NextRequest,
-  context: { params: { journalId: string } }
+  { params }: { params: { journalId: string } }
 ) {
   try {
     await connectDB();
@@ -24,7 +24,7 @@ export async function GET(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const journalId = context.params.journalId;
+    const journalId = params.journalId;
 
     const journal = await Journal.findOne({
       journalId,
