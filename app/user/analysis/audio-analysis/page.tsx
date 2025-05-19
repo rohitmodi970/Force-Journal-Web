@@ -591,13 +591,13 @@ const AudioAnalysisPage = () => {
                         <ul className="divide-y divide-gray-200">
                           {history.map((entry) => (
                             <li key={entry.id} className="py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                              <div>
+                              <div className="flex-1">
                                 <div className="font-semibold text-blue-700">{entry.filename}</div>
                                 <div className="text-xs text-gray-500">{new Date(entry.date).toLocaleString()}</div>
                                 <div className="text-sm text-gray-700 mt-1 line-clamp-2">{entry.summary}</div>
                               </div>
                               <button
-                                className="bg-blue-600 text-white px-4 py-2 rounded font-semibold text-sm hover:bg-blue-700 transition"
+                                className="bg-blue-600 text-white px-4 py-2 rounded font-semibold text-sm hover:bg-blue-700 transition w-32 flex-shrink-0"
                                 onClick={() => handleLoadHistory(entry)}
                               >
                                 Load Analysis
