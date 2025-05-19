@@ -1,3 +1,4 @@
+// app\user\analysis\entries-analysis\page.tsx
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -300,7 +301,7 @@ const AnalysisPage: React.FC = () => {
                   className="flex items-center gap-2"
                   asChild
                 >
-                  <a href="/user/journal/analysis/advanced">
+                  <a href="/user/analysis/advanced">
                     Advanced Analysis
                     <ArrowRight className="h-4 w-4 ml-1" />
                   </a>

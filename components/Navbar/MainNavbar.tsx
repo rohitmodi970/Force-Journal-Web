@@ -35,76 +35,73 @@ const MainNavbar = () => {
   // Memoize menu items to prevent unnecessary re-renders
   const sideNavMenuItems = useMemo(() => [
     {
-      name: 'Home',
+      name: 'Dashboard',
       href: session ? '/user/dashboard' : '/',
       icon: 'HiHome',
     },
     {
-      name: 'Journals',
+      name: 'Journal',
       href: '/user/journal',
       icon: 'GiNotebook',
       subItems: [
         {
-          name: 'New Entry',
+          name: 'Create Entry',
           href: '/user/journal-entry/',
           icon: 'HiPencilAlt',
         },
         {
-          name: 'Journal Analysis',
-          href: '/user/journal/analysis/entries-analysis',
-          icon: 'HiDocumentSearch',
-        },
-        {
-          name: 'Advanced Analysis',
-          href: '/user/journal/analysis/advanced',
-          icon: 'HiDocumentReport',
-        },
-        {
-          name: 'My Diary',
+          name: 'Diary View',
           href: '/user/journal/my-diary',
           icon: 'HiCollection',
         },
         {
-          name: 'Journal Entries',
+          name: 'All Entries',
           href: '/user/journal/journal-gallery',
           icon: 'HiDocumentText',
         },
         {
-          name: 'Photo Gallery',
+          name: 'Media Gallery',
           href: '/user/journal/quilted-gallery',
           icon: 'HiPhotograph',
         },
       ],
     },
     {
-      name: 'Analysis',
+      name: 'Insights',
       href: '/user/analysis',
       icon: 'HiChartPie',
       subItems: [
-        
-        
-        
         {
-          name: 'Audio Analysis',
+          name: 'Entry Analysis',
+          href: '/user/analysis/entries-analysis',
+          icon: 'HiDocumentSearch',
+        },
+        {
+          name: 'Voice Analytics',
           href: '/user/analysis/audio-analysis',
           icon: 'HiVolumeUp',
+        },
+        {
+          name: 'Deep Analysis',
+          href: '/user/analysis/advanced',
+          icon: 'HiDocumentReport',
         },
       ],
     },
     {
-      name: 'Profile',
+      name: 'Account',
       href: '/user/profile',
       icon: 'HiUser',
       subItems: [
         {
-          name: 'Preferences',
+          name: 'Settings',
           href: '/user/settings',
           icon: 'HiAdjustments',
         },
       ],
     },
     {
-      name: "What's Next",
+      name: 'Upcoming',
       href: '/user/whats-next',
       icon: 'HiOutlineChip',
     },

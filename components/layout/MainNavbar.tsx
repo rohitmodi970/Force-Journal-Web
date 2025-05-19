@@ -14,7 +14,7 @@ const MainNavbar = () => {
     },
     {
       name: "Analysis",
-      href: "/user/journal/analysis/entries-analysis",
+      href: "/user//analysis/entries-analysis",
     },
     {
       name: "Settings",
