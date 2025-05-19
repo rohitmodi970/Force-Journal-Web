@@ -26,7 +26,7 @@ const FloatingActionButton = () => {
   };
 
   const handleJournal = () => {
-    router.push('/user/journal');
+    router.push('/user/journal/my-diary');
     setExpanded(false);
   };
 

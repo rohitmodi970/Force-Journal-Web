@@ -90,7 +90,7 @@ const RecentEntries: React.FC = () => {
   };
 
   const handleViewAll = () => {
-    router.push('/user/journal');
+    router.push('/user/journal/my-diary');
   };
 
   // Define button styles based on theme

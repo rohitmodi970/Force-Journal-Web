@@ -101,7 +101,7 @@ const JournalPage = () => {
         <div className="bg-yellow-50 p-6 rounded-lg border border-yellow-200 max-w-lg">
           <h2 className="text-xl font-bold text-yellow-700 mb-2">Journal Not Found</h2>
           <p className="text-yellow-600">The requested journal entry could not be found.</p>
-          <Link href="/user/journal" className="mt-4 inline-block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+          <Link href="/user/journal/my-diary" className="mt-4 inline-block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
             Back to Journals
           </Link>
         </div>
@@ -121,7 +121,7 @@ const JournalPage = () => {
       {/* Journal Header */}
       <div className="mb-8">
         <div className="flex items-center mb-4">
-          <Link href="/user/journal" className="mr-4 text-blue-500 hover:text-blue-700">
+          <Link href="/user/journal/my-diary" className="mr-4 text-blue-500 hover:text-blue-700">
             &larr; Back to Journals
           </Link>
           <div 

@@ -52,6 +52,9 @@ interface AnalysisResults {
       actionableSteps: string[];
       mindsetShifts: string[];
     };
+    textAnalysis?: {
+      coreValues: any;
+    };
     visualizationData: {
       emotionDistribution: {
         labels: string[];
@@ -73,6 +76,9 @@ interface AnalysisResults {
         labels: string[];
         values: number[];
       };
+      mindMap?: any;
+      energyPatterns?: any;
+      growthInsights?: any;
     };
   };
 }
@@ -574,8 +580,45 @@ const AudioAnalysisPage = () => {
                 <TabsContent value="visual">
                   {analysisResults.gemini?.visualizationData?.mindMap &&
                    analysisResults.gemini?.visualizationData?.energyPatterns &&
-                   analysisResults.gemini?.visualizationData?.growthInsights && (
-                    <AudioVisualizations analysisResults={analysisResults} />
+                   analysisResults.gemini?.visualizationData?.growthInsights ? (
+                    <AudioVisualizations 
+                      analysisResults={{
+                        deepgram: {
+                          confidence: analysisResults.deepgram.confidence,
+                          sentiment: {
+                            overall: analysisResults.deepgram.sentiment.overall,
+                            score: analysisResults.deepgram.sentiment.score
+                          }
+                        },
+                        gemini: {
+                          emotions: {
+                            intensity: analysisResults.gemini.emotions.intensity
+                          },
+                          speechPatterns: {
+                            clarity: analysisResults.gemini.speechPatterns.clarity,
+                            confidence: analysisResults.gemini.speechPatterns.confidence
+                          },
+                          visualizationData: {
+                            emotionDistribution: analysisResults.gemini.visualizationData.emotionDistribution,
+                            topicRelevance: analysisResults.gemini.visualizationData.topicRelevance,
+                            speechMetrics: analysisResults.gemini.visualizationData.speechMetrics,
+                            insightCategories: analysisResults.gemini.visualizationData.insightCategories,
+                            recommendationPriority: analysisResults.gemini.visualizationData.recommendationPriority,
+                            mindMap: analysisResults.gemini.visualizationData.mindMap,
+                            energyPatterns: analysisResults.gemini.visualizationData.energyPatterns,
+                            growthInsights: analysisResults.gemini.visualizationData.growthInsights
+                          }
+                        }
+                      }} 
+                    />
+                  ) : (
+                    <Card className="p-6">
+                      <CardContent>
+                        <p className="text-center text-gray-500">
+                          Visualization data is incomplete or not available for this analysis.
+                        </p>
+                      </CardContent>
+                    </Card>
                   )}
                 </TabsContent>
 
