@@ -622,7 +622,7 @@ const AnalysisPage: React.FC = () => {
                                   className="text-xs" 
                                   asChild
                                 >
-                                  <a href={`/user/journal/entry/${entry.journalId}`}>
+                                  <a href={`/user/journal/${entry.journalId}`}>
                                     View Entry
                                   </a>
                                 </Button>

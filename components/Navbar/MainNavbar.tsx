@@ -60,7 +60,7 @@ const MainNavbar = () => {
           icon: 'HiDocumentText',
         },
         {
-          name: 'Media Gallery',
+          name: 'Gallery',
           href: '/user/journal/quilted-gallery',
           icon: 'HiPhotograph',
         },
@@ -72,6 +72,11 @@ const MainNavbar = () => {
       icon: 'HiChartPie',
       subItems: [
         {
+          name: 'Deep Analysis',
+          href: '/user/analysis/advanced',
+          icon: 'HiDocumentReport',
+        },
+        {
           name: 'Entry Analysis',
           href: '/user/analysis/entries-analysis',
           icon: 'HiDocumentSearch',
@@ -80,11 +85,6 @@ const MainNavbar = () => {
           name: 'Voice Analytics',
           href: '/user/analysis/audio-analysis',
           icon: 'HiVolumeUp',
-        },
-        {
-          name: 'Deep Analysis',
-          href: '/user/analysis/advanced',
-          icon: 'HiDocumentReport',
         },
       ],
     },
