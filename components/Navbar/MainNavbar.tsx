@@ -104,8 +104,8 @@ const MainNavbar = () => {
       ],
     },
     {
-      name: 'AI Tools',
-      href: '/user/ai-tools',
+      name: "What's Next",
+      href: '/user/whats-next',
       icon: 'HiOutlineChip',
     },
   ], [session]);
