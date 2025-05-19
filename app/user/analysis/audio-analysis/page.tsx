@@ -1,9 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
-import { useTheme } from "@/utilities/context/ThemeContext";
-import { useSession } from "next-auth/react";
-import { usePathname } from "next/navigation";
+import React, { useState, useEffect } from 'react';
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +9,7 @@ import { Upload, Music, FileText, BarChart2 } from "lucide-react";
 import axios from 'axios';
 import { AudioVisualizations } from "@/components/audio-analysis/AudioVisualizations";
 import { AudioRecorder } from "@/components/audio-analysis/AudioRecorder";
+import TextAnalysisTabs from '@/components/audio-analysis/TextAnalysisTabs';
 
 interface AnalysisResults {
   metadata: {
@@ -79,16 +77,42 @@ interface AnalysisResults {
   };
 }
 
+interface AnalysisHistoryEntry {
+  id: string;
+  date: string;
+  filename: string;
+  summary: string;
+  analysis: AnalysisResults;
+}
+
 const AudioAnalysisPage = () => {
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [analysisResults, setAnalysisResults] = useState<AnalysisResults | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [history, setHistory] = useState<AnalysisHistoryEntry[]>([]);
 
-  // Theme and session context
-  const { currentTheme, isDarkMode, toggleDarkMode } = useTheme();
-  const { data: session } = useSession();
-  const pathname = usePathname();
+  // Load history from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('audioAnalysisHistory');
+    if (saved) {
+      setHistory(JSON.parse(saved));
+    }
+  }, []);
+
+  // Save a new analysis to history
+  const saveToHistory = (result: AnalysisResults) => {
+    const entry: AnalysisHistoryEntry = {
+      id: `${result.metadata.filename}-${result.metadata.timestamp}`,
+      date: result.metadata.timestamp,
+      filename: result.metadata.filename,
+      summary: result.gemini.summary,
+      analysis: result
+    };
+    const updated = [entry, ...history].slice(0, 20); // keep last 20
+    setHistory(updated);
+    localStorage.setItem('audioAnalysisHistory', JSON.stringify(updated));
+  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -118,6 +142,7 @@ const AudioAnalysisPage = () => {
       });
 
       setAnalysisResults(response.data);
+      saveToHistory(response.data);
     } catch (err) {
       setError('Failed to analyze audio file. Please try again.');
       console.error('Analysis error:', err);
@@ -141,12 +166,19 @@ const AudioAnalysisPage = () => {
       });
 
       setAnalysisResults(response.data);
+      saveToHistory(response.data);
     } catch (err) {
       setError('Failed to analyze audio recording. Please try again.');
       console.error('Analysis error:', err);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Load a history entry as the current analysis
+  const handleLoadHistory = (entry: AnalysisHistoryEntry) => {
+    setAnalysisResults(entry.analysis);
+    setError(null);
   };
 
   return (
@@ -229,7 +261,7 @@ const AudioAnalysisPage = () => {
 
             {analysisResults && (
               <Tabs defaultValue="text" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 mb-8">
+                <TabsList className="grid w-full grid-cols-4 mb-8">
                   <TabsTrigger value="text" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
                     <FileText className="w-4 h-4 mr-2" />
                     Text Analysis
@@ -241,6 +273,10 @@ const AudioAnalysisPage = () => {
                   <TabsTrigger value="visual" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">
                     <BarChart2 className="w-4 h-4 mr-2" />
                     Visualization
+                  </TabsTrigger>
+                  <TabsTrigger value="history" className="data-[state=active]:bg-gray-600 data-[state=active]:text-white">
+                    <Upload className="w-4 h-4 mr-2" />
+                    History
                   </TabsTrigger>
                 </TabsList>
 
@@ -392,6 +428,9 @@ const AudioAnalysisPage = () => {
                       </div>
                     </CardContent>
                   </Card>
+                  {analysisResults.gemini?.textAnalysis?.coreValues && (
+                    <TextAnalysisTabs coreValues={analysisResults.gemini.textAnalysis.coreValues} />
+                  )}
                 </TabsContent>
 
                 <TabsContent value="features">
@@ -533,7 +572,42 @@ const AudioAnalysisPage = () => {
                 </TabsContent>
 
                 <TabsContent value="visual">
-                  <AudioVisualizations analysisResults={analysisResults} />
+                  {analysisResults.gemini?.visualizationData?.mindMap &&
+                   analysisResults.gemini?.visualizationData?.energyPatterns &&
+                   analysisResults.gemini?.visualizationData?.growthInsights && (
+                    <AudioVisualizations analysisResults={analysisResults} />
+                  )}
+                </TabsContent>
+
+                <TabsContent value="history">
+                  <Card className="hover:shadow-lg transition-shadow duration-300">
+                    <CardHeader>
+                      <CardTitle className="text-2xl font-semibold">Analysis History</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {history.length === 0 ? (
+                        <div className="text-gray-500">No previous analyses found.</div>
+                      ) : (
+                        <ul className="divide-y divide-gray-200">
+                          {history.map((entry) => (
+                            <li key={entry.id} className="py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                              <div>
+                                <div className="font-semibold text-blue-700">{entry.filename}</div>
+                                <div className="text-xs text-gray-500">{new Date(entry.date).toLocaleString()}</div>
+                                <div className="text-sm text-gray-700 mt-1 line-clamp-2">{entry.summary}</div>
+                              </div>
+                              <button
+                                className="bg-blue-600 text-white px-4 py-2 rounded font-semibold text-sm hover:bg-blue-700 transition"
+                                onClick={() => handleLoadHistory(entry)}
+                              >
+                                Load Analysis
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </CardContent>
+                  </Card>
                 </TabsContent>
               </Tabs>
             )}
