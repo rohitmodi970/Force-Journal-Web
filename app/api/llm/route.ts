@@ -117,13 +117,14 @@ async function getGeminiResponse(prompt: string, options: LLMOptions): Promise<L
 
 // Format prompt specifically for journal analysis with Gemini
 function formatJournalPromptForGemini(prompt: string, options: LLMOptions): string {
-  // Base analysis instructions
   const structuredPrompt = `
-You are a professional journal analyzer. Analyze the following journal entries and provide insights:
+You are a professional journal analyzer. Analyze the following journal entries and provide both advanced visual and textual insights:
 
 ${prompt}
 
 Please provide the following analysis:
+
+// --- Visual Analysis (as before) ---
 1. Extract keywords for a word cloud (array of strings, most important first)
 2. For each entry, estimate energy (1-10) and productivity (1-10)
 3. List top mood influencers (array of {influencer, impact})
@@ -136,6 +137,25 @@ Please provide the following analysis:
    - Create edges showing relationships between factors and emotions
 7. For each entry, estimate health metrics: sentiment (0-100), physicalWellness (0-100), mentalResilience (0-100)
 8. Progress metrics (object: health, resilience, academic, research, 0-100)
+9. Analyze the overall journal for:
+   a. Happiness sources (array of {source, strength, moments, quote, color})
+   b. Tense usage (object: present, past, future, each as percentage)
+   c. Word choice categories (array of {category, percentage})
+10. Provide a brief, actionable insight (2-3 sentences) summarizing the user's health and wellness trends, strengths, and areas for improvement, based on the metrics above.
+
+// --- Textual Analysis ---
+11. Emotional Triggers: Link mood shifts to specific events and note stressors (e.g., Holi celebration → "joy" in late March, "adjusting" in early March).
+12. Energy-Level Tracking: For each time block in the daily rhythm, rate energy/mood (1–5 scale) and note correlations (e.g., late-night creativity and energy/burnout).
+13. Goal Progress Metrics: Track mentions of goals and document milestones or setbacks.
+14. Social Interaction Impact: Analyze how family/professional interactions affect mood.
+15. Sleep & Rest Analysis: Monitor sleep duration/quality and its correlation with productivity.
+16. Creative Output Log: Record creative work output during late-night sessions.
+17. Stress Indicators: Flag stress-related terms and contextualize with events.
+18. Gratitude Tracking: Highlight moments of gratitude to assess positivity trends.
+19. Vocabulary Shifts Over Time: Summarize shifts in language and provide an insight about the progression (see example below).
+20. Major Milestones: List key achievements and provide an insight about their holistic impact (see example below).
+21. Daily Rhythm Patterns: Summarize productive work, self-care, creative exploration, and opportunities for growth (see example below).
+22. For each of the above, provide structured data for tables/lists and a brief insight/summary as shown in the reference images.
 
 Format your response as JSON with the following structure:
 {
@@ -165,7 +185,58 @@ Format your response as JSON with the following structure:
     ]
   },
   "healthMetrics": {"sentiment": number, "physicalWellness": number, "mentalResilience": number}[],
-  "progressMetrics": {"health": number, "resilience": number, "academic": number, "research": number}
+  "progressMetrics": {"health": number, "resilience": number, "academic": number, "research": number},
+  "happinessSources": [
+    {"source": string, "strength": number, "moments": string[], "quote": string, "color": string}
+  ],
+  "tenseUsage": {"present": number, "past": number, "future": number},
+  "wordChoiceCategories": [
+    {"category": string, "percentage": number}
+  ],
+  "healthWellnessInsight": string,
+  // --- Textual Analysis ---
+  "emotionalTriggers": [
+    { "event": string, "mood": string, "timeframe": string, "note": string }
+  ],
+  "energyLevelTracking": [
+    { "timeBlock": string, "energy": number, "mood": string, "correlation": string }
+  ],
+  "goalProgressMetrics": [
+    { "goal": string, "status": string, "milestone": string, "setback": string }
+  ],
+  "socialInteractionImpact": [
+    { "interaction": string, "moodImpact": string, "note": string }
+  ],
+  "sleepRestAnalysis": [
+    { "date": string, "duration": string, "quality": string, "productivityCorrelation": string }
+  ],
+  "creativeOutputLog": [
+    { "date": string, "output": string, "timeBlock": string }
+  ],
+  "stressIndicators": [
+    { "term": string, "context": string, "event": string }
+  ],
+  "gratitudeTracking": [
+    { "moment": string, "positivityTrend": string }
+  ],
+  "vocabularyShifts": {
+    "phases": [
+      { "phase": string, "words": string[], "mood": string }
+    ],
+    "insight": string
+  },
+  "majorMilestones": {
+    "milestones": [
+      { "date": string, "title": string, "description": string, "insight": string }
+    ],
+    "insight": string
+  },
+  "dailyRhythmPatterns": {
+    "blocks": [
+      { "block": string, "activities": string[], "note": string }
+    ],
+    "insight": string
+  }
 }
 Return ONLY valid JSON.
 `;

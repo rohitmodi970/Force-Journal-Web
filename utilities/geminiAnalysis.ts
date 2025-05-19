@@ -28,6 +28,30 @@ export interface GeminiAnalytics {
   flowData: FlowData;
   healthMetrics: { sentiment: number; physicalWellness: number; mentalResilience: number }[];
   progressMetrics: { health: number; resilience: number; academic: number; research: number };
+  happinessSources: { source: string; strength: number; moments: string[]; quote: string; color: string }[];
+  tenseUsage: { present: number; past: number; future: number };
+  wordChoiceCategories: { category: string; percentage: number }[];
+  healthWellnessInsight: string;
+  emotionalTriggers: { event: string; mood: string; timeframe: string; note: string }[];
+  energyLevelTracking: { timeBlock: string; energy: number; mood: string; correlation: string }[];
+  goalProgressMetrics: { goal: string; status: string; milestone: string; setback: string }[];
+  socialInteractionImpact: { interaction: string; moodImpact: string; note: string }[];
+  sleepRestAnalysis: { date: string; duration: string; quality: string; productivityCorrelation: string }[];
+  creativeOutputLog: { date: string; output: string; timeBlock: string }[];
+  stressIndicators: { term: string; context: string; event: string }[];
+  gratitudeTracking: { moment: string; positivityTrend: string }[];
+  vocabularyShifts: {
+    phases: { phase: string; words: string[]; mood: string }[];
+    insight: string;
+  };
+  majorMilestones: {
+    milestones: { date: string; title: string; description: string; insight: string }[];
+    insight: string;
+  };
+  dailyRhythmPatterns: {
+    blocks: { block: string; activities: string[]; note: string }[];
+    insight: string;
+  };
 }
 
 function transformTextToFlowData(text: string): FlowData {
@@ -171,6 +195,21 @@ export async function fetchGeminiAnalytics(entries: JournalEntry[]): Promise<Gem
       flowData,
       healthMetrics: analyticsRaw.healthMetrics,
       progressMetrics: analyticsRaw.progressMetrics,
+      happinessSources: analyticsRaw.happinessSources || [],
+      tenseUsage: analyticsRaw.tenseUsage || { present: 0, past: 0, future: 0 },
+      wordChoiceCategories: analyticsRaw.wordChoiceCategories || [],
+      healthWellnessInsight: analyticsRaw.healthWellnessInsight || '',
+      emotionalTriggers: analyticsRaw.emotionalTriggers || [],
+      energyLevelTracking: analyticsRaw.energyLevelTracking || [],
+      goalProgressMetrics: analyticsRaw.goalProgressMetrics || [],
+      socialInteractionImpact: analyticsRaw.socialInteractionImpact || [],
+      sleepRestAnalysis: analyticsRaw.sleepRestAnalysis || [],
+      creativeOutputLog: analyticsRaw.creativeOutputLog || [],
+      stressIndicators: analyticsRaw.stressIndicators || [],
+      gratitudeTracking: analyticsRaw.gratitudeTracking || [],
+      vocabularyShifts: analyticsRaw.vocabularyShifts || { phases: [], insight: '' },
+      majorMilestones: analyticsRaw.majorMilestones || { milestones: [], insight: '' },
+      dailyRhythmPatterns: analyticsRaw.dailyRhythmPatterns || { blocks: [], insight: '' },
     };
   } catch (error) {
     console.error('Error fetching Gemini analytics:', error);
