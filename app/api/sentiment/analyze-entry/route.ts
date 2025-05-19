@@ -1,47 +1,17 @@
 import { NextResponse } from 'next/server';
-import axios from 'axios';
-
-// Define the response type from your model
-interface ModelResponse {
-  sentiment_score: number;
-  sentiment_label: string;
-  emotion_scores: {
-    joy: number;
-    sadness: number;
-    anger: number;
-    fear: number;
-    surprise: number;
-  };
-  key_phrases: string[];
-  roberta_sentiment?: string;
-  primary_emotion?: string;
-  secondary_emotions?: string[];
-}
-
-// Define the request payload type
-interface ModelRequestPayload {
-  text: string;
-  image?: string; // base64 encoded image
-}
-
-// Define the error type
-interface ApiError {
-  response?: {
-    status?: number;
-    data?: {
-      error?: string;
-    };
-  };
-  message: string;
-}
 
 export async function POST(request: Request) {
   try {
+    console.log('Starting sentiment analysis request...');
     const formData = await request.formData();
     const text = formData.get('text') as string;
     const image = formData.get('image') as File | null;
 
+    console.log('Received text length:', text?.length || 0);
+    console.log('Received image:', image ? 'Yes' : 'No');
+
     if (!text) {
+      console.log('Error: No text provided');
       return NextResponse.json(
         { error: 'Text is required for sentiment analysis' },
         { status: 400 }
@@ -50,44 +20,75 @@ export async function POST(request: Request) {
 
     // Get the model URL from environment variable
     const MODEL_URL = process.env.SENTIMENT_MODEL_URL;
+    console.log('Model URL configured:', MODEL_URL ? 'Yes' : 'No');
+    
     if (!MODEL_URL) {
+      console.error('Error: SENTIMENT_MODEL_URL is not defined');
       throw new Error('SENTIMENT_MODEL_URL is not defined in environment variables');
     }
 
-    // Prepare the request payload
-    const payload: ModelRequestPayload = {
-      text: text
-    };
-
-    // If there's an image, convert it to base64 and add to payload
+    // Forward the FormData as multipart/form-data to the model
+    const forwardForm = new FormData();
+    forwardForm.append('text', text);
     if (image) {
-      const buffer = await image.arrayBuffer();
-      const base64Image = Buffer.from(buffer).toString('base64');
-      payload.image = base64Image;
+      forwardForm.append('image', image, (image as File).name);
     }
 
-    // Make request to your deployed model
-    const response = await axios.post<ModelResponse>(MODEL_URL, payload, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      timeout: 30000, // 30 second timeout
-    });
+    // Add timeout using AbortController
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000); // 30 seconds
 
-    // Return the model's response
-    return NextResponse.json(response.data);
+    console.log('Forwarding request to model at:', MODEL_URL);
+    let response;
+    try {
+      response = await fetch(MODEL_URL, {
+        method: 'POST',
+        body: forwardForm,
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
 
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.text();
+      } catch {
+        errorData = 'Unable to parse error response';
+      }
+      console.error('Model returned error:', errorData);
+      return NextResponse.json(
+        { error: 'Failed to analyze sentiment', details: errorData, status: response.status, url: MODEL_URL },
+        { status: response.status }
+      );
+    }
+
+    let result;
+    try {
+      result = await response.json();
+    } catch {
+      const textResult = await response.text();
+      console.error('Model returned non-JSON response:', textResult);
+      return NextResponse.json(
+        { error: 'Model returned non-JSON response', details: textResult },
+        { status: 500 }
+      );
+    }
+    console.log('Received response from model:', result);
+    return NextResponse.json(result);
   } catch (error: unknown) {
-    console.error('Sentiment analysis error:', error);
-    
-    const apiError = error as ApiError;
-    // Return a more detailed error response
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error('Request to model timed out');
+      return NextResponse.json(
+        { error: 'Request to model timed out' },
+        { status: 504 }
+      );
+    }
+    console.error('Detailed sentiment analysis error:', error);
     return NextResponse.json(
-      { 
-        error: 'Failed to analyze sentiment',
-        details: apiError.response?.data?.error || apiError.message
-      },
-      { status: apiError.response?.status || 500 }
+      { error: 'Failed to analyze sentiment', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
     );
   }
 } 
