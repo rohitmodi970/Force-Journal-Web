@@ -78,7 +78,7 @@ const Assistant = () => {
                 <p className="text-lg mb-6">Want to be notified when our AI Assistant launches?</p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <Link 
-                        href="/user/journal"
+                        href="/user/journal/my-diary"
                         className="bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors"
                     >
                         Go to Journal

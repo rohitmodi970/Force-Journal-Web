@@ -51,7 +51,7 @@ const MainNavbar = () => {
         },
         {
           name: 'Journal Analysis',
-          href: '/user/journal/analysis',
+          href: '/user/journal/analysis/entries-analysis',
           icon: 'HiDocumentSearch',
         },
         {
@@ -60,8 +60,8 @@ const MainNavbar = () => {
           icon: 'HiDocumentReport',
         },
         {
-          name: 'Journal Diary',
-          href: '/user/journal',
+          name: 'My Diary',
+          href: '/user/journal/my-diary',
           icon: 'HiCollection',
         },
         {
@@ -81,21 +81,9 @@ const MainNavbar = () => {
       href: '/user/analysis',
       icon: 'HiChartPie',
       subItems: [
-        {
-          name: 'Analysis',
-          href: '/user/analysis',
-          icon: 'HiPresentationChartLine',
-        },
-        {
-          name: 'Sentiment Analysis',
-          href: '/user/analysis/sentiment-analysis',
-          icon: 'HiEmojiHappy',
-        },
-        {
-          name: 'Voice Analysis',
-          href: '/user/analysis/voiceAnalysis',
-          icon: 'HiMicrophone',
-        },
+        
+        
+        
         {
           name: 'Audio Analysis',
           href: '/user/analysis/audio-analysis',
@@ -132,7 +120,7 @@ const MainNavbar = () => {
   const privateMenuItems = useMemo(() => [
     { name: "Dashboard", href: "/user/dashboard", icon: "HiHome" },
     { name: "New Entry", href: "/user/journal-entry", icon: "GiNotebook" },
-    { name: "Journal", href: "/user/journal", icon: "HiDocumentText" },
+    { name: "Journal", href: "/user/journal/my-diary", icon: "HiDocumentText" },
     { name: "Analysis", href: "/user/analysis", icon: "HiChartPie" },
     { name: "Profile", href: "/user/profile", icon: "HiUser" },
   ], []);

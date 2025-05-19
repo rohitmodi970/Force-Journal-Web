@@ -10,11 +10,11 @@ const MainNavbar = () => {
   const navItems = [
     {
       name: "Journal",
-      href: "/user/journal",
+      href: "/user/journal/my-diary",
     },
     {
       name: "Analysis",
-      href: "/user/journal/analysis",
+      href: "/user/journal/analysis/entries-analysis",
     },
     {
       name: "Settings",
