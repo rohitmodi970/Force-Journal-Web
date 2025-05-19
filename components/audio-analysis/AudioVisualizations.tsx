@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -16,6 +16,8 @@ import {
 } from 'chart.js';
 import { Line, Bar, Doughnut, Radar } from 'react-chartjs-2';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ForceGraphMethods } from 'react-force-graph-2d';
+import D3MindMap from './D3MindMap';
 
 ChartJS.register(
   CategoryScale,
@@ -68,10 +70,81 @@ interface AudioVisualizationsProps {
           labels: string[];
           values: number[];
         };
+        mindMap: {
+          nodes: {
+            id: string;
+            label: string;
+            group: string;
+            value: number;
+            details: {
+              description: string;
+              keyPoints: string[];
+              relevance: number;
+              sentiment: string;
+              connections: string[];
+              color: string;
+            };
+          }[];
+          links: {
+            source: string;
+            target: string;
+            strength: number;
+          }[];
+          insights: string;
+          actionSuggestion: string;
+        };
+        energyPatterns: {
+          segments: {
+            time: string;
+            energy: number;
+            mood: number;
+            focus: number;
+          }[];
+        };
+        growthInsights: {
+          categories: string[];
+          values: number[];
+        };
       };
     };
   };
 }
+
+// Mind Map (Force Graph) types must be defined before use
+type MindMapNode = {
+  id: string;
+  label: string;
+  group: string;
+  value: number;
+  val: number;
+  fontSize: number;
+  fontColor: string;
+  backgroundColor: string;
+  borderWidth: number;
+  borderColor: string;
+  details: {
+    description: string;
+    keyPoints: string[];
+    relevance: number;
+    sentiment: string;
+    connections: string[];
+    color: string;
+  };
+  x?: number;
+  y?: number;
+};
+type MindMapLink = {
+  source: string;
+  target: string;
+  strength: number;
+  width: number;
+  color: string;
+};
+
+// Color palette for mind map nodes
+const mindMapPalette = [
+  '#6366F1', '#10B981', '#F59E0B', '#EC4899', '#3B82F6', '#F43F5E', '#A21CAF', '#F472B6', '#FBBF24', '#22D3EE', '#84CC16', '#E11D48'
+];
 
 export function AudioVisualizations({ analysisResults }: AudioVisualizationsProps) {
   // Common chart options with enhanced styling
@@ -155,106 +228,34 @@ export function AudioVisualizations({ analysisResults }: AudioVisualizationsProp
     }
   };
 
-  // Existing chart data with enhanced styling
+  // Emotion Distribution (multi-color)
+  const emotionColors = [
+    '#4BC0C0', '#FF6384', '#FFCE56', '#36A2EB', '#9966FF', '#FF9F40', '#B2FF66', '#FF66B2', '#66B2FF', '#B266FF'
+  ];
   const emotionData = {
     labels: analysisResults.gemini.visualizationData.emotionDistribution.labels,
     datasets: [{
       label: 'Emotion Intensity',
       data: analysisResults.gemini.visualizationData.emotionDistribution.values,
-      ...colorSchemes.primary
+      backgroundColor: emotionColors.slice(0, analysisResults.gemini.visualizationData.emotionDistribution.labels.length),
+      borderColor: emotionColors.slice(0, analysisResults.gemini.visualizationData.emotionDistribution.labels.length),
+      hoverBackgroundColor: emotionColors.slice(0, analysisResults.gemini.visualizationData.emotionDistribution.labels.length)
     }]
   };
 
+  // Topic Relevance
   const topicData = {
     labels: analysisResults.gemini.visualizationData.topicRelevance.labels,
     datasets: [{
       label: 'Topic Relevance',
       data: analysisResults.gemini.visualizationData.topicRelevance.values,
-      ...colorSchemes.secondary
+      backgroundColor: colorSchemes.secondary.backgroundColor,
+      borderColor: colorSchemes.secondary.borderColor,
+      hoverBackgroundColor: colorSchemes.secondary.hoverBackgroundColor
     }]
   };
 
-  const speechData = {
-    labels: analysisResults.gemini.visualizationData.speechMetrics.labels,
-    datasets: [{
-      label: 'Speech Metrics',
-      data: analysisResults.gemini.visualizationData.speechMetrics.values,
-      ...colorSchemes.accent
-    }]
-  };
-
-  const insightData = {
-    labels: analysisResults.gemini.visualizationData.insightCategories.labels,
-    datasets: [{
-      label: 'Insight Categories',
-      data: analysisResults.gemini.visualizationData.insightCategories.values,
-      ...colorSchemes.success
-    }]
-  };
-
-  const recommendationData = {
-    labels: analysisResults.gemini.visualizationData.recommendationPriority.labels,
-    datasets: [{
-      label: 'Recommendation Priority',
-      data: analysisResults.gemini.visualizationData.recommendationPriority.values,
-      ...colorSchemes.warning
-    }]
-  };
-
-  // New charts
-  const sentimentData = {
-    labels: ['Sentiment Score'],
-    datasets: [
-      {
-        data: [
-          analysisResults.deepgram.sentiment.score * 100
-        ],
-        backgroundColor: [
-          analysisResults.deepgram.sentiment.overall === 'positive' ? 'rgba(34, 197, 94, 0.8)' : // green
-          analysisResults.deepgram.sentiment.overall === 'neutral' ? 'rgba(59, 130, 246, 0.8)' : // blue
-          'rgba(239, 68, 68, 0.8)',  // red for negative
-        ],
-        borderColor: [
-          'rgb(34, 197, 94)',
-          'rgb(59, 130, 246)',
-          'rgb(239, 68, 68)',
-        ],
-        borderWidth: 1,
-        hoverOffset: 4,
-      },
-    ],
-  };
-
-  const sentimentOptions = {
-    ...commonOptions,
-    plugins: {
-      ...commonOptions.plugins,
-      title: {
-        ...commonOptions.plugins.title,
-        text: 'Sentiment Distribution',
-      },
-      tooltip: {
-        callbacks: {
-          label: function(context: any) {
-            const value = context.raw;
-            return `${context.label}: ${value.toFixed(1)}%`;
-          }
-        }
-      }
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        max: 100,
-        ticks: {
-          callback: function(value: any) {
-            return value + '%';
-          }
-        }
-      }
-    }
-  };
-
+  // Confidence Metrics
   const confidenceData = {
     labels: ['Speech Confidence', 'Clarity', 'Emotional Intensity'],
     datasets: [{
@@ -264,13 +265,116 @@ export function AudioVisualizations({ analysisResults }: AudioVisualizationsProp
         analysisResults.gemini.speechPatterns.clarity,
         analysisResults.gemini.emotions.intensity
       ],
-      backgroundColor: 'rgba(54, 162, 235, 0.5)',
-      borderColor: 'rgb(54, 162, 235)'
+      backgroundColor: colorSchemes.success.backgroundColor,
+      borderColor: colorSchemes.success.borderColor
     }]
+  };
+
+  // Growth Insights (Radar Chart) - Modified for larger size
+  const growthInsights = analysisResults.gemini.visualizationData.growthInsights;
+  const growthInsightsData = {
+    labels: growthInsights.categories,
+    datasets: [
+      {
+        label: 'Growth Insights',
+        data: growthInsights.values,
+        backgroundColor: 'rgba(75,192,192,0.2)',
+        borderColor: 'rgba(75,192,192,1)',
+        pointBackgroundColor: 'rgba(75,192,192,1)',
+        pointBorderColor: '#fff',
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: 'rgba(75,192,192,1)',
+        pointRadius: 4,
+        pointHoverRadius: 6
+      }
+    ]
+  };
+
+  // Custom options for radar chart
+  const radarOptions = {
+    ...commonOptions,
+    scales: {
+      ...commonOptions.scales,
+      r: {
+        beginAtZero: true,
+        max: 1,
+        ticks: {
+          display: false,
+          backdropColor: 'transparent'
+        },
+        pointLabels: {
+          font: {
+            size: 12
+          }
+        },
+        grid: {
+          circular: true,
+          color: 'rgba(0, 0, 0, 0.1)'
+        }
+      }
+    },
+    maintainAspectRatio: false
+  };
+
+  const fgRef = useRef<ForceGraphMethods<MindMapNode, MindMapLink> | undefined>(undefined);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (tooltipRef.current) {
+        tooltipRef.current.style.left = `${e.clientX + 20}px`;
+        tooltipRef.current.style.top = `${e.clientY - 20}px`;
+      }
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  useEffect(() => {
+    if (fgRef.current) {
+      fgRef.current.d3Force('charge')?.strength(-180);
+      fgRef.current.d3Force('link')?.distance(180);
+    }
+  }, []);
+
+  // Energy Patterns (Line Chart) - Modified for audio duration
+  const energyPatterns = analysisResults.gemini.visualizationData.energyPatterns;
+  const energyPatternData = {
+    labels: energyPatterns.segments.map(segment => segment.time),
+    datasets: [
+      {
+        label: 'Energy',
+        data: energyPatterns.segments.map(segment => segment.energy),
+        borderColor: '#FFCE56',
+        backgroundColor: 'rgba(255, 206, 86, 0.2)',
+        tension: 0.4,
+        pointRadius: 4,
+        pointHoverRadius: 6
+      },
+      {
+        label: 'Mood',
+        data: energyPatterns.segments.map(segment => segment.mood),
+        borderColor: '#36A2EB',
+        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+        tension: 0.4,
+        pointRadius: 4,
+        pointHoverRadius: 6
+      },
+      {
+        label: 'Focus',
+        data: energyPatterns.segments.map(segment => segment.focus),
+        borderColor: '#9966FF',
+        backgroundColor: 'rgba(153, 102, 255, 0.2)',
+        tension: 0.4,
+        pointRadius: 4,
+        pointHoverRadius: 6
+      }
+    ]
   };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
+      {/* Emotion Distribution */}
       <Card className="hover:shadow-lg transition-shadow duration-300">
         <CardHeader>
           <CardTitle className="text-xl font-semibold">Emotion Distribution</CardTitle>
@@ -282,6 +386,7 @@ export function AudioVisualizations({ analysisResults }: AudioVisualizationsProp
         </CardContent>
       </Card>
 
+      {/* Topic Relevance */}
       <Card className="hover:shadow-lg transition-shadow duration-300">
         <CardHeader>
           <CardTitle className="text-xl font-semibold">Topic Relevance</CardTitle>
@@ -293,39 +398,7 @@ export function AudioVisualizations({ analysisResults }: AudioVisualizationsProp
         </CardContent>
       </Card>
 
-      <Card className="hover:shadow-lg transition-shadow duration-300">
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold">Speech Metrics</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px]">
-            <Radar data={speechData} options={commonOptions} />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="hover:shadow-lg transition-shadow duration-300">
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold">Insight Categories</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px]">
-            <Bar data={insightData} options={commonOptions} />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="hover:shadow-lg transition-shadow duration-300">
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold">Sentiment Analysis</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px]">
-            <Doughnut data={sentimentData} options={sentimentOptions} />
-          </div>
-        </CardContent>
-      </Card>
-
+      {/* Confidence Metrics */}
       <Card className="hover:shadow-lg transition-shadow duration-300">
         <CardHeader>
           <CardTitle className="text-xl font-semibold">Confidence Metrics</CardTitle>
@@ -337,13 +410,55 @@ export function AudioVisualizations({ analysisResults }: AudioVisualizationsProp
         </CardContent>
       </Card>
 
+      {/* Mind Map (D3) */}
+      {analysisResults.gemini.visualizationData.mindMap && (
+        <D3MindMap
+          nodes={analysisResults.gemini.visualizationData.mindMap.nodes.map((node, i) => ({
+            ...node,
+            color: node.color || mindMapPalette[i % mindMapPalette.length],
+          }))}
+          links={analysisResults.gemini.visualizationData.mindMap.links}
+          insights={analysisResults.gemini.visualizationData.mindMap.insights}
+          actionSuggestion={analysisResults.gemini.visualizationData.mindMap.actionSuggestion}
+        />
+      )}
+
+      {/* Energy Patterns */}
       <Card className="md:col-span-2 hover:shadow-lg transition-shadow duration-300">
         <CardHeader>
-          <CardTitle className="text-xl font-semibold">Recommendation Priority</CardTitle>
+          <CardTitle className="text-xl font-semibold">Energy Patterns Over Audio Duration</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px]">
-            <Line data={recommendationData} options={commonOptions} />
+          <div className="h-[350px] w-full">
+            <Line data={energyPatternData} options={{
+              ...commonOptions,
+              scales: {
+                ...commonOptions.scales,
+                x: {
+                  ...commonOptions.scales.x,
+                  title: {
+                    display: true,
+                    text: 'Time (minutes:seconds)',
+                    font: {
+                      family: "'Poppins', sans-serif",
+                      size: 12
+                    }
+                  }
+                }
+              }
+            }} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Growth Insights Radar Chart */}
+      <Card className="md:col-span-2 hover:shadow-lg transition-shadow duration-300">
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold">Growth Insights</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[500px] w-full">
+            <Radar data={growthInsightsData} options={radarOptions} />
           </div>
         </CardContent>
       </Card>
