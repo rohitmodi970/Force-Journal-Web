@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Upload, FileText, Check, RefreshCw, PenLine, Sparkles, Bookmark, ChevronRight, Layout, Image } from 'lucide-react';
 import { createWorker } from 'tesseract.js';
 import { motion } from 'framer-motion';
+import { useTheme } from '@/utilities/context/ThemeContext';
 
 // Define template type
 interface Template {
@@ -26,6 +27,9 @@ interface NewEntryLandingProps {
 }
 
 const NewEntryLanding: React.FC<NewEntryLandingProps> = ({ onStartNewEntry }) => {
+  // Get theme context
+  const { currentTheme, isDarkMode, elementColors, currentFont } = useTheme();
+  
   // States for OCR functionality
   const [image, setImage] = useState<string | null>(null);
   const [extractedText, setExtractedText] = useState<string>('');
@@ -144,7 +148,7 @@ const NewEntryLanding: React.FC<NewEntryLandingProps> = ({ onStartNewEntry }) =>
       setExtractedText(fullText);
       
       // Extract title from first line if possible
-    const lines: string[] = fullText.split('\n').filter((line: string) => line.trim().length > 0);
+      const lines: string[] = fullText.split('\n').filter((line: string) => line.trim().length > 0);
       if (lines.length > 0) {
         // Use the first line as title if it's not too long
         const potentialTitle = lines[0].trim();
@@ -219,23 +223,41 @@ const NewEntryLanding: React.FC<NewEntryLandingProps> = ({ onStartNewEntry }) =>
     visible: { y: 0, opacity: 1 }
   };
 
+  // Theme-based styles
+  const headerBgStyle = { backgroundColor: currentTheme.primary };
+  const activeTabStyle = { color: currentTheme.primary, borderBottomColor: currentTheme.primary };
+  const iconBgStyle = { backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : currentTheme.light };
+  const buttonStyle = { 
+    backgroundColor: elementColors.button,
+    color: isDarkMode ? '#ffffff' : '#ffffff',
+    ':hover': { backgroundColor: currentTheme.hover }
+  };
+  const selectedTemplateStyle = {
+    borderColor: currentTheme.primary,
+    backgroundColor: currentTheme.light
+  };
+  const selectedTemplateBgStyle = {
+    backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : currentTheme.light
+  };
+
   return (
-    <div className="w-full max-w-6xl mx-auto p-6">
-      <div className="bg-white rounded-xl shadow-xl overflow-hidden">
-        <div className="bg-indigo-600 px-6 py-5">
+    <div className={`w-full max-w-6xl mx-auto p-6 font-${currentFont}`}>
+      <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-xl overflow-hidden`}>
+        <div style={headerBgStyle} className="px-6 py-5">
           <h1 className="text-2xl font-bold text-white">New Journal Entry</h1>
-          <p className="text-indigo-100">Choose how you want to start your journal entry</p>
+          <p className="text-white opacity-80">Choose how you want to start your journal entry</p>
         </div>
 
         {/* Tab navigation */}
-        <div className="flex border-b">
+        <div className={`flex border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
           <button
             onClick={() => setActiveTab('blank')}
-            className={`flex-1 py-4 px-6 font-medium text-center ${
+            className={`flex-1 py-4 px-6 font-medium text-center transition-colors ${
               activeTab === 'blank' 
-                ? 'text-indigo-600 border-b-2 border-indigo-600' 
-                : 'text-gray-500 hover:text-indigo-500'
+                ? 'border-b-2' 
+                : `${isDarkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`
             }`}
+            style={activeTab === 'blank' ? activeTabStyle : undefined}
           >
             <div className="flex justify-center items-center gap-2">
               <PenLine size={18} />
@@ -244,11 +266,12 @@ const NewEntryLanding: React.FC<NewEntryLandingProps> = ({ onStartNewEntry }) =>
           </button>
           <button
             onClick={() => setActiveTab('template')}
-            className={`flex-1 py-4 px-6 font-medium text-center ${
+            className={`flex-1 py-4 px-6 font-medium text-center transition-colors ${
               activeTab === 'template' 
-                ? 'text-indigo-600 border-b-2 border-indigo-600' 
-                : 'text-gray-500 hover:text-indigo-500'
+                ? 'border-b-2' 
+                : `${isDarkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`
             }`}
+            style={activeTab === 'template' ? activeTabStyle : undefined}
           >
             <div className="flex justify-center items-center gap-2">
               <Layout size={18} />
@@ -257,11 +280,12 @@ const NewEntryLanding: React.FC<NewEntryLandingProps> = ({ onStartNewEntry }) =>
           </button>
           <button
             onClick={() => setActiveTab('ocr')}
-            className={`flex-1 py-4 px-6 font-medium text-center ${
+            className={`flex-1 py-4 px-6 font-medium text-center transition-colors ${
               activeTab === 'ocr' 
-                ? 'text-indigo-600 border-b-2 border-indigo-600' 
-                : 'text-gray-500 hover:text-indigo-500'
+                ? 'border-b-2' 
+                : `${isDarkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`
             }`}
+            style={activeTab === 'ocr' ? activeTabStyle : undefined}
           >
             <div className="flex justify-center items-center gap-2">
               <Image size={18} />
@@ -281,21 +305,22 @@ const NewEntryLanding: React.FC<NewEntryLandingProps> = ({ onStartNewEntry }) =>
               animate="visible"
             >
               <motion.div 
-                className="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center mb-6"
+                className="w-24 h-24 rounded-full flex items-center justify-center mb-6"
+                style={iconBgStyle}
                 variants={itemVariants}
               >
-                <PenLine size={40} className="text-indigo-600" />
+                <PenLine size={40} style={{ color: currentTheme.primary }} />
               </motion.div>
               <motion.h2 variants={itemVariants} className="text-xl font-bold mb-3">Start with a Blank Page</motion.h2>
-              <motion.p variants={itemVariants} className="text-gray-500 max-w-md mb-8">
+              <motion.p variants={itemVariants} className={`${isDarkMode ? 'text-gray-300' : 'text-gray-500'} max-w-md mb-8`}>
                 Begin with a clean slate and write whatever comes to mind. 
                 Perfect for free-form journaling without any constraints.
               </motion.p>
               <motion.button
                 variants={itemVariants}
                 onClick={handleStartBlankEntry}
-                className="px-8 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 
-                transition-colors flex items-center gap-2"
+                className="px-8 py-3 rounded-lg font-medium transition-colors flex items-center gap-2"
+                style={buttonStyle}
               >
                 Start Writing <ChevronRight size={18} />
               </motion.button>
@@ -317,26 +342,33 @@ const NewEntryLanding: React.FC<NewEntryLandingProps> = ({ onStartNewEntry }) =>
                     key={template.id}
                     variants={itemVariants}
                     className={`border rounded-lg p-5 cursor-pointer hover:shadow-md transition-all ${
+                      isDarkMode ? 'border-gray-700' : 'border-gray-200'
+                    } ${
                       selectedTemplate?.id === template.id 
-                        ? 'border-indigo-500 bg-indigo-50 shadow-md' 
-                        : 'border-gray-200'
+                        ? 'shadow-md' 
+                        : ''
                     }`}
+                    style={selectedTemplate?.id === template.id ? selectedTemplateStyle : undefined}
                     onClick={() => setSelectedTemplate(template)}
                   >
                     <div className="flex items-start">
-                      <div className={`p-3 rounded-full ${
-                        selectedTemplate?.id === template.id ? 'bg-indigo-100' : 'bg-gray-100'
-                      } mr-4`}>
+                      <div className="p-3 rounded-full mr-4"
+                        style={selectedTemplate?.id === template.id 
+                          ? selectedTemplateBgStyle
+                          : { backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)' }}
+                      >
                         {template.icon}
                       </div>
                       <div>
                         <h3 className="font-bold text-lg">{template.title}</h3>
-                        <p className="text-gray-500 text-sm mb-2">{template.description}</p>
+                        <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} text-sm mb-2`}>{template.description}</p>
                         <div className="flex flex-wrap gap-2">
                           {template.tags.map(tag => (
                             <span 
                               key={tag} 
-                              className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full"
+                              className={`text-xs px-2 py-1 rounded-full ${
+                                isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
+                              }`}
                             >
                               {tag}
                             </span>
@@ -353,10 +385,12 @@ const NewEntryLanding: React.FC<NewEntryLandingProps> = ({ onStartNewEntry }) =>
                   onClick={handleStartWithTemplate}
                   disabled={!selectedTemplate}
                   className={`px-8 py-3 rounded-lg font-medium flex items-center gap-2 ${
-                    selectedTemplate 
-                      ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
-                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    !selectedTemplate && 'opacity-50 cursor-not-allowed'
                   } transition-colors`}
+                  style={selectedTemplate ? buttonStyle : {
+                    backgroundColor: isDarkMode ? '#4B5563' : '#E5E7EB',
+                    color: isDarkMode ? '#9CA3AF' : '#9CA3AF'
+                  }}
                 >
                   Use Selected Template <ChevronRight size={18} />
                 </button>
@@ -373,7 +407,7 @@ const NewEntryLanding: React.FC<NewEntryLandingProps> = ({ onStartNewEntry }) =>
               animate="visible"
             >
               <motion.h2 variants={itemVariants} className="text-xl font-bold mb-2">Extract Text from Image</motion.h2>
-              <motion.p variants={itemVariants} className="text-gray-500 mb-6">
+              <motion.p variants={itemVariants} className={`${isDarkMode ? 'text-gray-300' : 'text-gray-500'} mb-6`}>
                 Upload an image of handwritten or printed text and we'll extract the content for your journal entry
               </motion.p>
               
@@ -389,20 +423,25 @@ const NewEntryLanding: React.FC<NewEntryLandingProps> = ({ onStartNewEntry }) =>
                 <div 
                   onClick={triggerFileInput}
                   className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                    image ? 'border-green-400 bg-green-50' : 'border-gray-300 hover:border-indigo-400 hover:bg-indigo-50'
+                    image 
+                      ? `${isDarkMode ? 'border-green-600 bg-green-900 bg-opacity-20' : 'border-green-400 bg-green-50'}`
+                      : `${isDarkMode 
+                          ? 'border-gray-600 hover:border-gray-400 hover:bg-gray-800' 
+                          : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                        }`
                   }`}
                 >
                   {image ? (
                     <div className="flex flex-col items-center">
-                      <Check className="h-12 w-12 text-green-500 mb-2" />
-                      <p className="text-green-600 font-medium">Image uploaded successfully</p>
-                      <p className="text-sm text-gray-500 mt-1">Click to change image</p>
+                      <Check className={`h-12 w-12 ${isDarkMode ? 'text-green-400' : 'text-green-500'} mb-2`} />
+                      <p className={`${isDarkMode ? 'text-green-400' : 'text-green-600'} font-medium`}>Image uploaded successfully</p>
+                      <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mt-1`}>Click to change image</p>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center">
-                      <Upload className="h-12 w-12 text-gray-400 mb-2" />
-                      <p className="text-gray-600 font-medium">Click to upload an image</p>
-                      <p className="text-sm text-gray-500 mt-1">Supports JPG, PNG, GIF</p>
+                      <Upload className={`h-12 w-12 ${isDarkMode ? 'text-gray-400' : 'text-gray-400'} mb-2`} />
+                      <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'} font-medium`}>Click to upload an image</p>
+                      <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mt-1`}>Supports JPG, PNG, GIF</p>
                     </div>
                   )}
                 </div>
@@ -412,15 +451,15 @@ const NewEntryLanding: React.FC<NewEntryLandingProps> = ({ onStartNewEntry }) =>
                 <motion.div variants={containerVariants}>
                   <motion.div variants={itemVariants} className="mb-6">
                     <div className="flex justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">Preview</span>
+                      <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Preview</span>
                       <button
                         onClick={resetOcr}
-                        className="text-sm text-red-500 hover:text-red-700"
+                        className={`text-sm ${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-500 hover:text-red-700'}`}
                       >
                         Remove
                       </button>
                     </div>
-                    <div className="bg-gray-100 rounded-lg p-2 flex justify-center">
+                    <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'} rounded-lg p-2 flex justify-center`}>
                       <img
                         src={image}
                         alt="Uploaded"
@@ -434,8 +473,9 @@ const NewEntryLanding: React.FC<NewEntryLandingProps> = ({ onStartNewEntry }) =>
                       onClick={recognizeText}
                       disabled={isProcessing || !workerReady}
                       className={`flex items-center justify-center px-4 py-2 rounded-md text-white font-medium flex-1 ${
-                        isProcessing || !workerReady ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'
+                        isProcessing || !workerReady ? 'bg-gray-400 cursor-not-allowed' : ''
                       }`}
+                      style={isProcessing || !workerReady ? undefined : buttonStyle}
                     >
                       {isProcessing ? (
                         <>
@@ -458,21 +498,35 @@ const NewEntryLanding: React.FC<NewEntryLandingProps> = ({ onStartNewEntry }) =>
 
                   {extractedText && (
                     <motion.div variants={itemVariants}>
-                      <h3 className="text-lg font-medium text-gray-800 mb-2">Extracted Text</h3>
+                      <h3 className={`text-lg font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-800'} mb-2`}>Extracted Text</h3>
                       
                       <div className="mb-6">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                        <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>Title</label>
                         <input 
                           type="text"
                           value={ocrTitle}
                           onChange={(e) => setOcrTitle(e.target.value)}
                           placeholder="Journal Entry Title"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                          className={`w-full px-4 py-2 rounded-md focus:outline-none focus:ring-2 ${
+                            isDarkMode 
+                              ? 'bg-gray-700 border-gray-600 text-white focus:ring-opacity-50' 
+                              : 'border border-gray-300 focus:ring-opacity-50'
+                          }`}
+                          style={{ 
+                            borderColor: isDarkMode ? '#4B5563' : '#D1D5DB',
+                            '--focus-ring-color': currentTheme.primary
+                          } as React.CSSProperties}
                         />
                       </div>
                       
-                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
-                        <pre className="whitespace-pre-wrap font-mono text-sm text-gray-700 max-h-60 overflow-y-auto">
+                      <div className={`${
+                        isDarkMode 
+                        ? 'bg-gray-800 border-gray-700' 
+                        : 'bg-gray-50 border-gray-200'
+                      } border rounded-lg p-4 mb-6`}>
+                        <pre className={`whitespace-pre-wrap font-mono text-sm ${
+                          isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                        } max-h-60 overflow-y-auto`}>
                           {extractedText}
                         </pre>
                       </div>
@@ -480,8 +534,8 @@ const NewEntryLanding: React.FC<NewEntryLandingProps> = ({ onStartNewEntry }) =>
                       <div className="flex justify-center">
                         <button
                           onClick={handleStartWithOcr}
-                          className="px-8 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 
-                          transition-colors flex items-center gap-2"
+                          className="px-8 py-3 rounded-lg font-medium transition-colors flex items-center gap-2"
+                          style={buttonStyle}
                         >
                           Continue with Extracted Text <ChevronRight size={18} />
                         </button>

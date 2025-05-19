@@ -1,6 +1,6 @@
 "use client"
 import JournalEntry from '@/components/Journal/JournalEntry/JournalEntry'
-import NewEntryLanding from '@/components/NewEntryLanding';
+import NewEntryLanding from '@/components/Journal/JournalEntry/NewEntryLanding';
 import React, { useState } from 'react'
 interface EntryData {
   title: string;
