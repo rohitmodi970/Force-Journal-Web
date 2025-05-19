@@ -86,7 +86,10 @@ export default function D3MindMap({ nodes, links, insights, actionSuggestion }: 
       })
       .style('fill', 'none')
       .style('stroke', '#a5b4fc')
-      .style('stroke-width', d => Math.max(2, d.target.data.value / 18))
+      .style('stroke-width', d => {
+        const target = d.target as d3.HierarchyPointNode<{value: number}>;
+        return Math.max(2, target.data.value / 18);
+      })
       .style('filter', 'url(#link-glow)');
 
     // Add SVG filter for glowing links
@@ -110,11 +113,11 @@ export default function D3MindMap({ nodes, links, insights, actionSuggestion }: 
       })
       .on('click', (event, d) => {
         event.stopPropagation();
-        setSelectedNode(d.data);
+        setSelectedNode(d.data as MindMapNode);
       });
 
     node.append('circle')
-      .attr('r', d => Math.max(18, d.data.value / 4))
+      .attr('r', d => Math.max(18, (d.data as MindMapNode).value / 4))
       .style('fill', (d, i) => palette[i % palette.length])
       .style('stroke', '#fff')
       .style('stroke-width', 3)
@@ -127,11 +130,11 @@ export default function D3MindMap({ nodes, links, insights, actionSuggestion }: 
           .attr('r', 38)
           .style('filter', 'drop-shadow(0 0 24px #6366f1)');
       })
-      .on('mouseout', function (d) {
+      .on('mouseout', function (event, d) {
         d3.select(this)
           .transition()
           .duration(200)
-          .attr('r', d => Math.max(18, d.__data__.data.value / 4))
+          .attr('r', () => Math.max(18, (d.data as MindMapNode).value / 4))
           .style('filter', 'drop-shadow(0 0 12px #818cf8)');
       });
 
@@ -139,7 +142,7 @@ export default function D3MindMap({ nodes, links, insights, actionSuggestion }: 
       .attr('dy', d => d.x < 180 ? '1.5em' : '-0.5em')
       .attr('dx', d => d.x < 180 ? 16 : -16)
       .attr('text-anchor', d => d.x < 180 ? 'start' : 'end')
-      .text(d => d.data.label)
+      .text(d => (d.data as MindMapNode).label)
       .style('font-size', '1.1em')
       .style('font-family', 'Poppins, sans-serif')
       .style('font-weight', 600)

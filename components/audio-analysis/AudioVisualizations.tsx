@@ -415,7 +415,7 @@ export function AudioVisualizations({ analysisResults }: AudioVisualizationsProp
         <D3MindMap
           nodes={analysisResults.gemini.visualizationData.mindMap.nodes.map((node, i) => ({
             ...node,
-            color: node.color || mindMapPalette[i % mindMapPalette.length],
+            color: node.details.color || mindMapPalette[i % mindMapPalette.length],
           }))}
           links={analysisResults.gemini.visualizationData.mindMap.links}
           insights={analysisResults.gemini.visualizationData.mindMap.insights}
