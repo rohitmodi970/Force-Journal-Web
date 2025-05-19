@@ -131,7 +131,7 @@ const RegisterForm = () => {
   // Handle Google Sign In
   const handleGoogleSignIn = () => {
     setIsSubmitting(true);
-    signIn('google', { callbackUrl: '/' });
+    signIn('google', { callbackUrl: '/user/dashboard' });
   };
 
   // Handle phone input with country code
