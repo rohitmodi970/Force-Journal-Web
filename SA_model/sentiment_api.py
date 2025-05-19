@@ -1,5 +1,6 @@
 import sys
 import os
+import nltk
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +10,12 @@ import numpy as np
 from PIL import Image
 import io
 from sentiment_analysis_copy import analyze_sentiment
+
+# Download required NLTK data at startup
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('vader_lexicon')
+nltk.download('punkt_tab')
 
 app = FastAPI()
 
