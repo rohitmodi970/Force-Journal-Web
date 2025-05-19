@@ -55,7 +55,7 @@ const LoginForm = () => {
       }
 
       // Redirect to dashboard on successful login
-      router.push('/');
+      router.push('/user/dashboard');
     } catch (err) {
       setError('An error occurred during login');
       setIsLoading(false);
@@ -65,7 +65,7 @@ const LoginForm = () => {
 
   const handleGoogleSignIn = () => {
     setIsLoading(true);
-    signIn('google', { callbackUrl: '/' });
+    signIn('google', { callbackUrl: '/user/dashboard' });
   };
   
   return (

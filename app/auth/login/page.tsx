@@ -7,7 +7,7 @@ const Login: React.FC = () => {
   const router = useRouter();
   const redirectToDashboard = () => {
     if (session) {
-      router.push('/');
+      router.push('/user/dashboard');
     }
   };
   redirectToDashboard();

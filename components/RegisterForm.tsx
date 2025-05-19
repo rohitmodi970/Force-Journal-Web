@@ -119,7 +119,7 @@ const RegisterForm = () => {
       resetForm();
       
       // Redirect to dashboard
-      router.push('/');
+      router.push('/user/dashboard');
 
     } catch (err) {
       setError('An error occurred during registration');
