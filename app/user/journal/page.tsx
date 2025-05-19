@@ -7,7 +7,7 @@ import { getAllJournalEntries } from "@/utilities/journal-data";
 import Link from "next/link";
 import { BookOpen, Palette, Image as ImageIcon, Plus } from "lucide-react";
 import { JournalEntry } from "@/components/Journal/types";
-
+import ThemeSidebar from "@/components/Navbar/ThemeSidebar";
 // Define types for background options
 type GradientBackground = {
   type: "gradient";
@@ -305,8 +305,11 @@ const JournalPage = () => {
         : ""}
       backgroundStyle={getBackgroundStyle()}
     >
+
+      {/* Main content */}
       <div className="max-w-7xl mx-auto">
         <div className="mb-8 text-center">
+      
           <h1 className="text-4xl font-bold font-journal mb-2">My Journal</h1>
           <p className="text-muted-foreground font-handwriting text-xl">
             A collection of Journal

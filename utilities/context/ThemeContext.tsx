@@ -62,10 +62,15 @@ export { colorOptions };
 // Default values
 const defaultTheme = colorOptions[4]; // Blue
 const defaultFont = 'inter';
+
+// Default light/dark mode text colors
+const LIGHT_MODE_TEXT = '#111827';
+const DARK_MODE_TEXT = '#F9FAFB';
+
 const defaultElementColors: ElementColors = {
   button: defaultTheme.primary,
   background: defaultTheme.light,
-  text: '#111827', // Default text color (will be overridden by dark mode if needed)
+  text: LIGHT_MODE_TEXT, // Default text color for light mode
   accent: defaultTheme.medium,
 };
 
@@ -96,6 +101,8 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
   const [elementColors, setElementColors] = useState<ElementColors>({...defaultElementColors});
   const [currentFont, setCurrentFont] = useState<string>(defaultFont);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
+  // Track if text color has been manually set
+  const [isCustomTextColor, setIsCustomTextColor] = useState<boolean>(false);
 
   // Apply theme to document
   const applyTheme = (
@@ -118,7 +125,6 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
     // Set element-specific colors
     root.style.setProperty('--element-button', elements.button);
     root.style.setProperty('--element-background', elements.background);
-    root.style.setProperty('--element-text', elements.text);
     root.style.setProperty('--element-accent', elements.accent);
 
     // Set font family
@@ -142,17 +148,21 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
       root.style.setProperty('--text-secondary', '#4B5563');
     }
 
-    // Update text color based on dark mode if not custom set
-    const textColor = elements.text === defaultElementColors.text 
-      ? (darkMode ? '#F9FAFB' : '#111827')
-      : elements.text;
+    // Handle text color - use custom color if set, otherwise use dark/light mode default
+    const textColor = isCustomTextColor 
+      ? elements.text
+      : (darkMode ? DARK_MODE_TEXT : LIGHT_MODE_TEXT);
+    
     root.style.setProperty('--element-text', textColor);
 
     // Save preferences
     localStorage.setItem('appTheme', JSON.stringify({ 
       colorName: theme.name, 
       darkMode,
-      elementColors: elements,
+      elementColors: {
+        ...elements,
+        text: textColor // Save the current text color
+      },
       font
     }));
   };
@@ -171,11 +181,18 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
           setCurrentTheme(foundTheme);
           setIsDarkMode(darkMode);
           
+          // Determine if text color is custom or default
+          const defaultTextForMode = darkMode ? DARK_MODE_TEXT : LIGHT_MODE_TEXT;
+          const hasCustomTextColor = savedElements?.text && 
+                                    savedElements.text !== defaultTextForMode;
+          
+          setIsCustomTextColor(!!hasCustomTextColor);
+          
           // Load saved element colors or use defaults
           const loadedElements = {
             button: savedElements?.button || foundTheme.primary,
             background: savedElements?.background || foundTheme.light,
-            text: savedElements?.text || (darkMode ? '#F9FAFB' : '#111827'),
+            text: savedElements?.text || defaultTextForMode,
             accent: savedElements?.accent || foundTheme.medium
           };
           setElementColors(loadedElements);
@@ -198,7 +215,18 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
     loadTheme();
   }, []);
 
-  // Apply theme whenever theme or dark mode changes
+  // Handle dark mode changes specifically for text color
+  useEffect(() => {
+    if (isInitialized && !isCustomTextColor) {
+      // Only update text color when dark mode changes and text color isn't custom
+      setElementColors(prev => ({
+        ...prev,
+        text: isDarkMode ? DARK_MODE_TEXT : LIGHT_MODE_TEXT
+      }));
+    }
+  }, [isDarkMode, isInitialized, isCustomTextColor]);
+  
+  // Apply theme whenever relevant state changes
   useEffect(() => {
     if (isInitialized) {
       applyTheme(currentTheme, isDarkMode, elementColors, currentFont);
@@ -214,6 +242,11 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
   };
 
   const updateElementColor = (element: keyof ElementColors, color: string) => {
+    // Track when text color is manually changed
+    if (element === 'text') {
+      setIsCustomTextColor(true);
+    }
+    
     setElementColors(prev => ({
       ...prev,
       [element]: color
@@ -230,16 +263,18 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
       const resetElements = {
         button: currentTheme.primary,
         background: currentTheme.light,
-        text: isDarkMode ? '#F9FAFB' : '#111827',
+        text: isDarkMode ? DARK_MODE_TEXT : LIGHT_MODE_TEXT,
         accent: currentTheme.medium
       };
       setElementColors(resetElements);
+      setIsCustomTextColor(false); // Reset the custom text color flag
     } else {
       // Reset everything
       setCurrentTheme(defaultTheme);
       setIsDarkMode(false);
       setElementColors({...defaultElementColors});
       setCurrentFont(defaultFont);
+      setIsCustomTextColor(false);
     }
   };
 

@@ -1,170 +1,143 @@
+"use client"
+
 import React from 'react';
-import { Card, CardContent } from './ui/quilted-gallery/ui/card';
-import { Button } from './ui/button2';
-import { ArrowRight, Lightbulb, CalendarDays, TrendingUp } from "lucide-react";
-import AnimatedSVG from './AnimatedSVG';
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from './ui/quilted-gallery/ui/tooltip';
+import { LogOut, CalendarDays, Lightbulb, ArrowRight } from "lucide-react";
+import { Button } from '@/components/ui/button2';
+import { useRouter } from 'next/navigation';
+
+interface Stats {
+  streakCount?: number;
+  totalEntries?: number;
+  lastEntryDate?: string;
+  weeklyEntries?: number;
+}
+
+interface Theme {
+  primary: string;
+  light: string;
+}
+
+interface ElementColors {
+  button: string;
+}
 
 interface WelcomeBannerProps {
   userName: string;
-  onNewEntry: () => void;
-  streakCount?: number;
-  lastEntryDate?: Date | null;
-  journalCount?: number;
+  stats?: Stats;
+  currentTheme: Theme;
+  isDarkMode: boolean;
+  elementColors: ElementColors;
+  handleLogout: () => void;
 }
 
-const WelcomeBanner: React.FC<WelcomeBannerProps> = ({ 
+const WelcomeBanner = ({ 
   userName, 
-  onNewEntry,
-  streakCount = 0,
-  lastEntryDate = null,
-  journalCount = 0
-}) => {
-  // Get current time to personalize greeting
-  const currentHour = new Date().getHours();
-  let greeting = "Good day";
-  let timeIcon;
-  
-  if (currentHour < 12) {
-    greeting = "Good morning";
-    timeIcon = "morning";
-  } else if (currentHour < 18) {
-    greeting = "Good afternoon";
-    timeIcon = "afternoon";
-  } else {
-    greeting = "Good evening";
-    timeIcon = "evening";
-  }
-  
-  // Check if user wrote today
-  const wroteToday = lastEntryDate && new Date(lastEntryDate).toDateString() === new Date().toDateString();
-  
-  // Generate a random prompt or use a streak-related one if applicable
-  const prompts = [
-    "How are you feeling today?",
-    "What made you smile today?",
-    "What's something you're looking forward to?",
-    "Any small wins to celebrate?",
-    "What's on your mind right now?",
-    "What made today unique?",
-    "What are you grateful for today?",
-  ];
+  stats, 
+  currentTheme, 
+  isDarkMode, 
+  elementColors,
+  handleLogout
+}: WelcomeBannerProps) => {
+  const router = useRouter();
 
-  // Add streak-related prompts if applicable
-  if (streakCount > 3) {
-    prompts.push(
-      `You're on a ${streakCount}-day streak! What's keeping you motivated?`,
-      `${streakCount} days in a row! What have you learned from your journaling habit?`
-    );
-  }
-
-  if (wroteToday) {
-    prompts.push(
-      "You already wrote today. Want to add more to your entry?",
-      "How has your day evolved since your last entry?"
-    );
-  }
-
-  const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
-
-  // Get streak encouragement message
-  const getStreakMessage = () => {
-    if (streakCount === 0) return "Start your journaling streak today!";
-    if (streakCount < 3) return `${streakCount} day streak - keep going!`;
-    if (streakCount < 7) return `Great job! ${streakCount} day streak!`;
-    if (streakCount < 14) return `Amazing! ${streakCount} days in a row!`;
-    return `Incredible ${streakCount} day streak!`;
+  const handleNewEntry = () => {
+    router.push('/user/journal-entry');
   };
 
   return (
-    <Card className="border-0 shadow-none bg-gradient-to-r from-primary/10 via-primary/5 to-transparent overflow-hidden relative">
-      <div className="absolute top-0 right-0 w-full h-full overflow-hidden opacity-10">
-        <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-primary/10 animate-pulse-gentle" style={{animationDuration: "15s"}}></div>
-        <div className="absolute right-20 bottom-10 w-32 h-32 rounded-full bg-primary/10 animate-float" style={{animationDelay: "2s", animationDuration: "10s"}}></div>
+    <div 
+      className="relative overflow-hidden rounded-xl shadow-md border border-primary/10"
+      style={{
+        background: `linear-gradient(135deg, ${currentTheme.light} 0%, rgba(255,255,255,0) 70%)`,
+        borderImage: `linear-gradient(to right, ${currentTheme.primary}40, transparent) 1`
+      }}
+    >
+      <div className="absolute top-0 right-0 w-64 h-64 -mt-12 -mr-12 opacity-10">
+        <div className="w-full h-full rounded-full" style={{ backgroundColor: currentTheme.primary }}></div>
       </div>
-      <CardContent className="p-6 relative z-10">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-2 relative">
-            <div className="absolute -top-1 -left-3 opacity-30">
-              {timeIcon === "morning" && (
-                <AnimatedSVG type="morning" className="w-10 h-10" />
-              )}
-              {timeIcon === "afternoon" && (
-                <AnimatedSVG type="afternoon" className="w-10 h-10" />
-              )}
-              {timeIcon === "evening" && (
-                <AnimatedSVG type="evening" className="w-10 h-10" />
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <p className="text-lg font-medium text-muted-foreground animate-fade-in">
-                {greeting},
-              </p>
-              {streakCount > 0 && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex items-center gap-1 bg-journal-green/10 px-2 py-0.5 rounded-full text-xs text-journal-green">
-                        <TrendingUp className="h-3 w-3" />
-                        <span>{streakCount} day streak</span>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{getStreakMessage()}</p>
-                      {lastEntryDate && (
-                        <p className="mt-1 text-xs">Last entry: {new Date(lastEntryDate).toLocaleDateString()}</p>
-                      )}
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-            </div>
-            <h1 className="text-3xl font-bold text-foreground animate-fade-in" style={{animationDelay: "0.1s"}}>
-              {userName} <span className="inline-block animate-pulse-gentle">👋</span>
+      
+      <div className="relative px-6 py-8 sm:px-8 z-10">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+              Welcome back, <span style={{ color: currentTheme.primary }}>{userName}</span>!
             </h1>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-4 animate-fade-in" style={{animationDelay: "0.2s"}}>
-              <div className="flex items-center gap-2 bg-background/80 backdrop-blur-sm rounded-lg p-3 border border-border flex-grow">
-                <Lightbulb className="h-5 w-5 text-primary animate-pulse-gentle" />
-                <p className="text-sm text-muted-foreground">
-                  <span className="font-medium text-foreground">Today's prompt:</span> {randomPrompt}
-                </p>
-              </div>
-              <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
-                <div className="flex items-center gap-2 text-sm">
-                  <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
-                </div>
-                {journalCount > 0 && (
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {journalCount} {journalCount === 1 ? 'entry' : 'entries'} total
-                  </div>
+            <p className="mt-2 text-muted-foreground">
+              {stats?.streakCount ? (
+                <>
+                  You've maintained a <span className="font-semibold" style={{ color: currentTheme.primary }}>
+                    {stats.streakCount}-day
+                  </span> writing streak! {stats?.totalEntries ? `(${stats.totalEntries} total entries)` : ''}
+                </>
+              ) : (
+                "Ready to start your journal journey today?"
+              )}
+            </p>
+            <div className="flex items-center gap-2 mt-4">
+              <div className="text-xs text-muted-foreground flex items-center">
+                <CalendarDays className="h-3.5 w-3.5 mr-1" />
+                {stats?.lastEntryDate ? (
+                  <>Last entry: {new Date(stats.lastEntryDate).toLocaleDateString()}</>
+                ) : (
+                  "No entries yet"
                 )}
               </div>
             </div>
           </div>
           
-          <div className="flex-shrink-0 flex items-center gap-4">
-            <AnimatedSVG type="journal" className="hidden md:block" />
+          <div className="flex flex-col sm:items-end gap-3">
             <Button 
-              onClick={onNewEntry} 
-              className="group animate-fade-in hover:shadow-md transition-all duration-300 relative overflow-hidden"
-              style={{animationDelay: "0.3s"}}
+              onClick={handleNewEntry}
+              className="flex items-center justify-center gap-2 px-5 py-2.5"
+              style={{
+                backgroundColor: elementColors.button,
+                color: isDarkMode ? '#fff' : '#fff',
+                transition: 'all 0.2s ease'
+              }}
             >
-              <span className="relative z-10">
-                {wroteToday ? 'Add Another Entry' : 'Start Writing'}
-              </span>
-              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1 relative z-10" />
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-white transition-opacity duration-300 z-0"></div>
+              <span>Write New Entry</span>
+              <ArrowRight className="h-4 w-4" />
             </Button>
+            
+            <button 
+              onClick={handleLogout}
+              className="flex items-center text-xs text-muted-foreground hover:text-foreground hover:underline transition-colors"
+            >
+              <LogOut className="h-3 w-3 mr-1" />
+              Sign out
+            </button>
           </div>
         </div>
-      </CardContent>
-    </Card>
+        
+        {/* Streak indicator */}
+        {stats?.streakCount !== undefined && stats.streakCount > 0 && (
+          <div className="mt-4 sm:mt-6 bg-background/40 backdrop-blur-sm rounded-lg p-3 border border-primary/10 max-w-md">
+            <div className="flex items-center gap-2">
+              <div className="h-6 w-6 rounded-full bg-journal-yellow/20 flex items-center justify-center flex-shrink-0">
+                <Lightbulb className="h-3 w-3 text-journal-yellow" />
+              </div>
+              <p className="text-xs font-medium">Your writing streak</p>
+            </div>
+            
+            <div className="mt-2">
+              <div className="flex justify-between mb-1 text-xs">
+                <span>{stats.streakCount >= 7 ? `${stats.streakCount} days` : `${stats.streakCount}/7 days`}</span>
+                {stats.streakCount >= 7 && <span>Streak badge earned!</span>}
+              </div>
+              <div className="w-full bg-background/50 h-1.5 rounded-full">
+                <div 
+                  className="h-1.5 rounded-full" 
+                  style={{ 
+                    width: stats.streakCount >= 7 ? '100%' : `${(stats.streakCount / 7) * 100}%`,
+                    backgroundColor: currentTheme.primary
+                  }}
+                ></div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

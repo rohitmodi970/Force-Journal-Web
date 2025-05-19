@@ -79,15 +79,16 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: `
               default-src 'self';
-              script-src 'self' 'unsafe-inline' 'unsafe-eval';
+              script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net;
+              worker-src 'self' blob: data:;
               style-src 'self' 'unsafe-inline';
-              img-src 'self' data: blob:;
+              img-src 'self' data: blob: https://*.googleusercontent.com https://*.pixabay.com https://*.cloudinary.com https://*.vercel-storage.com https://*.unsplash.com https://drive.google.com https://letsenhance.io;
               media-src 'self' blob:;
-              connect-src 'self' ${process.env.SA_MODEL_LINK || 'http://localhost:8000'} https://extensions.aitopia.ai;
+              connect-src 'self' ${process.env.SA_MODEL_LINK || 'http://localhost:8000'} https://extensions.aitopia.ai https://cdn.jsdelivr.net https://tessdata.projectnaptha.com;
               frame-src https://drive.google.com;
-            `.replace(/\n/g, ' ').trim()
+            `.replace(/\n/g, '').replace(/\s{2,}/g, ' ').trim()
           }
-        ],
+        ]
       }
     ];
   },

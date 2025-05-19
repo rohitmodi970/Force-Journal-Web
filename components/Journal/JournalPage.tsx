@@ -78,17 +78,19 @@ const JournalPage = ({ entry, isEven, backgroundClass, backgroundStyle }: Journa
         {entry.mediaUrl?.image && entry.mediaUrl.image.length > 0 && (
           <div className="mt-6 grid grid-cols-2 gap-4">
             {entry.mediaUrl.image.map((image, index) => (
-              <div
+                <div
                 key={index}
                 className="relative rounded-lg overflow-hidden aspect-square group hover:shadow-lg transition-all duration-300 cursor-pointer"
                 onClick={() => handleOpenMedia(image, 'image')}
-              >
-                <img
-                  src={image}
-                  alt={`Image for ${entry.title}`}
-                  className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+                >
+                <iframe 
+                  src={image.replace('/view', '/preview')}
+                  className="w-full h-full border-0"
+                  title={`Image ${index + 1} for ${entry.title}`}
+                  loading="lazy"
+                  allow="autoplay"
                 />
-              </div>
+                </div>
             ))}
           </div>
         )}
@@ -98,19 +100,36 @@ const JournalPage = ({ entry, isEven, backgroundClass, backgroundStyle }: Journa
           <div className="mt-6 space-y-2">
             <h3 className="text-sm font-medium text-muted-foreground mb-2">Audio Recordings</h3>
             {entry.mediaUrl.audio.map((audio, index) => (
-              <div 
+                <div 
                 key={index}
-                className="flex items-center gap-3 p-3 bg-background/70 rounded-lg hover:bg-background/90 transition-colors cursor-pointer"
-                onClick={() => handleOpenMedia(audio, 'audio')}
-              >
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                className="flex flex-col gap-2 p-3 bg-background/70 rounded-lg hover:bg-background/90 transition-colors"
+                >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                   <Play className="h-4 w-4 text-primary" />
-                </div>
-                <div className="flex-1">
+                  </div>
+                  <div className="flex-1">
                   <p className="text-sm font-medium">Audio Recording {index + 1}</p>
                   <p className="text-xs text-muted-foreground">From {entry.title}</p>
+                  </div>
+                  <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full"
+                  onClick={() => handleOpenMedia(audio, 'audio')}
+                  >
+                  <Play className="h-4 w-4" />
+                  </Button>
                 </div>
-              </div>
+                <div className="w-full">
+                  <iframe 
+                  src={audio.replace('/view', '/preview')}
+                  className="w-full h-12 rounded border-0"
+                  allow="autoplay"
+                  title={`Audio recording ${index + 1}`}
+                  />
+                </div>
+                </div>
             ))}
           </div>
         )}
@@ -120,20 +139,23 @@ const JournalPage = ({ entry, isEven, backgroundClass, backgroundStyle }: Journa
           <div className="mt-6 space-y-3">
             <h3 className="text-sm font-medium text-muted-foreground mb-2">Videos</h3>
             {entry.mediaUrl.video.map((video, index) => (
-              <div 
+                <div 
                 key={index}
                 className="relative rounded-lg overflow-hidden aspect-video group hover:shadow-lg transition-all duration-300 cursor-pointer"
                 onClick={() => handleOpenMedia(video, 'video')}
-              >
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/30 transition-colors">
+                >
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/30 transition-colors z-10">
                   <Play className="h-12 w-12 text-white" />
                 </div>
-                <video 
-                  src={video} 
-                  className="w-full h-full object-cover"
-                  preload="metadata"
+                <iframe 
+                  src={video.replace('/view', '/preview')}
+                  className="w-full h-full border-0"
+                  title={`Video ${index + 1} for ${entry.title}`}
+                  loading="lazy"
+                  allow="autoplay"
+                  allowFullScreen
                 />
-              </div>
+                </div>
             ))}
           </div>
         )}

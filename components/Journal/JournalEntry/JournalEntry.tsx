@@ -10,7 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import MediaSelector from './file-attachements/MediaSelector';
 import MediaPreview from './file-attachements/MediaPreview';
-
+import NewEntryLanding from '@/components/NewEntryLanding';
 import Toast from '@/components/ui/toast';
 import SentimentAnalysisDashboard from '@/components/Journal/JournalEntry/SentimentAnalysis';
 import ThemeSidebar from '@/components/Navbar/ThemeSidebar';
@@ -24,15 +24,20 @@ interface MediaFile {
   driveFileId?: string;
   driveMimeType?: string;
 }
-const JournalEntry: React.FC = () => {
+const JournalEntry: React.FC<{
+  title?: string;
+  content?: string;
+  tags?: string[];
+  journalType?: string;
+}> = ({ title: initialTitle = '', content: initialContent = '', tags: initialTags = [], journalType: initialJournalType = 'personal' }) => {
   const { currentTheme, isDarkMode, colorOptions, setCurrentTheme } = useTheme();
   const currentDate = new Date().toISOString().split('T')[0];
-  const [title, setTitle] = useState<string>('');
-  const [content, setContent] = useState<string>('');
+  const [title, setTitle] = useState<string>(initialTitle);
+  const [content, setContent] = useState<string>(initialContent);
   const [date, setDate] = useState<string>(currentDate);
-  const [tags, setTags] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>(initialTags);
   const [newTag, setNewTag] = useState<string>('');
-  const [journalType, setJournalType] = useState<string>('personal');
+  const [journalType, setJournalType] = useState<string>(initialJournalType);
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<string>('writing'); // 'writing', 'preview', 'focus'
   const [showMood, setShowMood] = useState<boolean>(false);
@@ -271,262 +276,262 @@ const JournalEntry: React.FC = () => {
     [mediaFiles]
   );
 
- // Handle media upload process
-const handleUpload = async () => {
-  if (mediaFiles.length === 0 || isUploading) return;
+  // Handle media upload process
+  const handleUpload = async () => {
+    if (mediaFiles.length === 0 || isUploading) return;
 
-  setIsUploading(true);
+    setIsUploading(true);
 
-  // Get or create journalId if needed
-  let journalId = currentJournalId;
+    // Get or create journalId if needed
+    let journalId = currentJournalId;
 
-  if (!journalId) {
-    // Create new journal entry first with minimal data
-    try {
-      const newEntryData = {
-        title: title || '',
-        content: content || '',
-        date: date || new Date().toISOString(),
-        tags: tags || [],
-        mood: selectedMood || null,
-        journalType: journalType || 'general',
-        timestamp: new Date().toISOString(),
-        media: { image: [], audio: [], video: [], document: [] }
-      };
-
-      const response = await fetch('/api/journal-entry', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newEntryData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create journal entry');
-      }
-
-      const result = await response.json();
-      journalId = result.entry.journalId;
-      setCurrentJournalId(journalId);
-
-    } catch (error) {
-      console.error('Error creating entry before upload:', error);
-      setIsUploading(false);
-      showMessage('Failed to create journal before upload', true);
-      return;
-    }
-  }
-
-  const uploadPromises = mediaFiles
-    .filter((media) => media.status === 'idle')
-    .map(async (media) => {
+    if (!journalId) {
+      // Create new journal entry first with minimal data
       try {
-        // Update status to uploading
-        setMediaFiles((prev) =>
-          prev.map((m) =>
-            m.id === media.id ? { ...m, status: 'uploading' } : m
-          )
-        );
-
-        // Create FormData for the file upload
-        const formData = new FormData();
-        formData.append('file', media.file);
-        formData.append('journalId', journalId as string);
-        formData.append('mediaType', media.type);
-        formData.append('fileName', media.file.name);
-        formData.append('fileSize', media.file.size.toString());
-
-        // Upload to media API endpoint which handles Google Drive uploads
-        const uploadResponse = await axios.post<{
-          url: string;
-          fileId: string;
-          mimeType: string;
-        }>('/api/media/upload', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-          // @ts-expect-error: onUploadProgress is not recognized by axios types
-          onUploadProgress: (progressEvent) => {
-            if (progressEvent.total && progressEvent.loaded) {
-              const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-              setMediaFiles((prev) =>
-                prev.map((m) =>
-                  m.id === media.id ? { ...m, progress: percentCompleted } : m
-                )
-              );
-            }
-          },
-        });
-
-        const response = uploadResponse.data;
-
-        // Update mediaFiles state with the Drive response
-        const updatedMedia: MediaFile = {
-          ...media,
-          status: 'success' as const,
-          progress: 100,
-          url: response.url,
-          driveFileId: response.fileId,
-          driveMimeType: response.mimeType
+        const newEntryData = {
+          title: title || '',
+          content: content || '',
+          date: date || new Date().toISOString(),
+          tags: tags || [],
+          mood: selectedMood || null,
+          journalType: journalType || 'general',
+          timestamp: new Date().toISOString(),
+          media: { image: [], audio: [], video: [], document: [] }
         };
 
-        setMediaFiles((prev) =>
-          prev.map((m) => (m.id === media.id ? updatedMedia : m))
-        );
-
-        // Add media to journal in database using the PATCH endpoint
-        await fetch('/api/journal-entry', {
-          method: 'PATCH',
+        const response = await fetch('/api/journal-entry', {
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            journalId,
-            operation: 'add',
-            mediaType: media.type,
-            mediaData: {
-              url: response.url,
-              driveFileId: response.fileId,
-              driveMimeType: response.mimeType,
-              fileName: media.file.name,
-              fileSize: media.file.size
-            }
-          }),
+          body: JSON.stringify(newEntryData),
         });
 
-        return updatedMedia;
+        if (!response.ok) {
+          throw new Error('Failed to create journal entry');
+        }
+
+        const result = await response.json();
+        journalId = result.entry.journalId;
+        setCurrentJournalId(journalId);
+
       } catch (error) {
-        console.error('Upload error:', error);
-
-        // Update status to error
-        setMediaFiles((prev) =>
-          prev.map((m) =>
-            m.id === media.id ? { ...m, status: 'error' } : m
-          )
-        );
-
-        return null;
+        console.error('Error creating entry before upload:', error);
+        setIsUploading(false);
+        showMessage('Failed to create journal before upload', true);
+        return;
       }
-    });
-
-  const results = await Promise.all(uploadPromises);
-  setIsUploading(false);
-
-  // Update journalMedia state with successful uploads
-  const successfulUploads = results.filter(Boolean) as MediaFile[];
-  if (successfulUploads.length > 0) {
-    // Convert MediaFile[] to Record<string, unknown>[] for handleMediaUploadComplete
-    const mediaRecords = successfulUploads.map(file => ({
-      ...file,
-      fileName: file.file.name,
-      fileSize: file.file.size
-    } as Record<string, unknown>));
-    
-    handleMediaUploadComplete(mediaRecords);
-
-    // Update any text content if needed
-    if (content || title) {
-      saveEntry();
     }
-  }
-};
 
+    const uploadPromises = mediaFiles
+      .filter((media) => media.status === 'idle')
+      .map(async (media) => {
+        try {
+          // Update status to uploading
+          setMediaFiles((prev) =>
+            prev.map((m) =>
+              m.id === media.id ? { ...m, status: 'uploading' } : m
+            )
+          );
 
-// Handle file removal
-const handleRemoveFile = async (mediaId: string) => {
-  // Find the file to be removed
-  const fileToRemove = mediaFiles.find(m => m.id === mediaId);
+          // Create FormData for the file upload
+          const formData = new FormData();
+          formData.append('file', media.file);
+          formData.append('journalId', journalId as string);
+          formData.append('mediaType', media.type);
+          formData.append('fileName', media.file.name);
+          formData.append('fileSize', media.file.size.toString());
 
-  if (fileToRemove && fileToRemove.status === 'success' && fileToRemove.driveFileId) {
-    try {
-      // Only call the API if this is a saved journal (not a temp journal)
-      if (currentJournalId && !currentJournalId.startsWith('temp_')) {
-        // Remove the file from Google Drive and database
-        await axios.delete(`/api/journal-entry?action=remove-media`, {
-          // @ts-expect-error: onUploadProgress is not recognized by axios types
-          data: {
-            journalId: currentJournalId,
-            mediaType: fileToRemove.type,
-            driveFileId: fileToRemove.driveFileId
-          },
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
+          // Upload to media API endpoint which handles Google Drive uploads
+          const uploadResponse = await axios.post<{
+            url: string;
+            fileId: string;
+            mimeType: string;
+          }>('/api/media/upload', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+            // @ts-expect-error: onUploadProgress is not recognized by axios types
+            onUploadProgress: (progressEvent) => {
+              if (progressEvent.total && progressEvent.loaded) {
+                const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                setMediaFiles((prev) =>
+                  prev.map((m) =>
+                    m.id === media.id ? { ...m, progress: percentCompleted } : m
+                  )
+                );
+              }
+            },
+          });
+
+          const response = uploadResponse.data;
+
+          // Update mediaFiles state with the Drive response
+          const updatedMedia: MediaFile = {
+            ...media,
+            status: 'success' as const,
+            progress: 100,
+            url: response.url,
+            driveFileId: response.fileId,
+            driveMimeType: response.mimeType
+          };
+
+          setMediaFiles((prev) =>
+            prev.map((m) => (m.id === media.id ? updatedMedia : m))
+          );
+
+          // Add media to journal in database using the PATCH endpoint
+          await fetch('/api/journal-entry', {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              journalId,
+              operation: 'add',
+              mediaType: media.type,
+              mediaData: {
+                url: response.url,
+                driveFileId: response.fileId,
+                driveMimeType: response.mimeType,
+                fileName: media.file.name,
+                fileSize: media.file.size
+              }
+            }),
+          });
+
+          return updatedMedia;
+        } catch (error) {
+          console.error('Upload error:', error);
+
+          // Update status to error
+          setMediaFiles((prev) =>
+            prev.map((m) =>
+              m.id === media.id ? { ...m, status: 'error' } : m
+            )
+          );
+
+          return null;
+        }
+      });
+
+    const results = await Promise.all(uploadPromises);
+    setIsUploading(false);
+
+    // Update journalMedia state with successful uploads
+    const successfulUploads = results.filter(Boolean) as MediaFile[];
+    if (successfulUploads.length > 0) {
+      // Convert MediaFile[] to Record<string, unknown>[] for handleMediaUploadComplete
+      const mediaRecords = successfulUploads.map(file => ({
+        ...file,
+        fileName: file.file.name,
+        fileSize: file.file.size
+      } as Record<string, unknown>));
+
+      handleMediaUploadComplete(mediaRecords);
+
+      // Update any text content if needed
+      if (content || title) {
+        saveEntry();
       }
-    } catch (error) {
-      console.error('Error removing file from Google Drive:', error);
-      alert('Failed to remove file. Please try again.');
+    }
+  };
+
+
+  // Handle file removal
+  const handleRemoveFile = async (mediaId: string) => {
+    // Find the file to be removed
+    const fileToRemove = mediaFiles.find(m => m.id === mediaId);
+
+    if (fileToRemove && fileToRemove.status === 'success' && fileToRemove.driveFileId) {
+      try {
+        // Only call the API if this is a saved journal (not a temp journal)
+        if (currentJournalId && !currentJournalId.startsWith('temp_')) {
+          // Remove the file from Google Drive and database
+          await axios.delete(`/api/journal-entry?action=remove-media`, {
+            // @ts-expect-error: onUploadProgress is not recognized by axios types
+            data: {
+              journalId: currentJournalId,
+              mediaType: fileToRemove.type,
+              driveFileId: fileToRemove.driveFileId
+            },
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error removing file from Google Drive:', error);
+        alert('Failed to remove file. Please try again.');
+        return;
+      }
+
+      // Also update the journalMedia state after successful deletion
+      const updatedMediaState = { ...journalMedia };
+      const mediaType = fileToRemove.type as MediaType;
+      if (mediaType === 'image' || mediaType === 'audio' || mediaType === 'video' || mediaType === 'document') {
+        updatedMediaState[mediaType] = updatedMediaState[mediaType].filter(
+          item => item.driveFileId !== fileToRemove.driveFileId
+        );
+        setJournalMedia(updatedMediaState);
+        setIsUnsaved(true); // Mark as unsaved so changes are saved
+      }
+    }
+
+    // Remove from state regardless of database operation
+    setMediaFiles((prev) => prev.filter((m) => m.id !== mediaId));
+  };
+  // Auto-save to localStorage
+  const autoSaveToLocalStorage = () => {
+    // Only save if there's something to save (either content or uploaded media)
+    const hasContent = title.trim() || content.trim();
+    const hasMedia = mediaFiles.some(m => m.status === 'success');
+
+    if (!hasContent && !hasMedia) {
       return;
     }
 
-    // Also update the journalMedia state after successful deletion
-    const updatedMediaState = { ...journalMedia };
-    const mediaType = fileToRemove.type as MediaType;
-    if (mediaType === 'image' || mediaType === 'audio' || mediaType === 'video' || mediaType === 'document') {
-      updatedMediaState[mediaType] = updatedMediaState[mediaType].filter(
-        item => item.driveFileId !== fileToRemove.driveFileId
-      );
-      setJournalMedia(updatedMediaState);
-      setIsUnsaved(true); // Mark as unsaved so changes are saved
+    let entryId = currentJournalId;
+    if (!entryId) {
+      entryId = `temp_${Date.now().toString()}`;
+      setCurrentJournalId(entryId);
     }
-  }
 
-  // Remove from state regardless of database operation
-  setMediaFiles((prev) => prev.filter((m) => m.id !== mediaId));
-};
- // Auto-save to localStorage
-const autoSaveToLocalStorage = () => {
-  // Only save if there's something to save (either content or uploaded media)
-  const hasContent = title.trim() || content.trim();
-  const hasMedia = mediaFiles.some(m => m.status === 'success');
+    const entry = {
+      journalId: entryId,
+      title,
+      content,
+      date,
+      tags,
+      mood: selectedMood,
+      journalType,
+      timestamp: new Date().toISOString(),
+      media: journalMedia
+    };
 
-  if (!hasContent && !hasMedia) {
-    return;
-  }
+    // Save to localStorage
+    localStorage.setItem(`journal_entry_${entryId}`, JSON.stringify(entry));
+    setLastAutoSaved(new Date());
+    setPendingBackendSync(true);
 
-  let entryId = currentJournalId;
-  if (!entryId) {
-    entryId = `temp_${Date.now().toString()}`;
-    setCurrentJournalId(entryId);
-  }
+    // Update savedEntries state if needed
+    const existingEntryIndex = savedEntries.findIndex(e => e.journalId === entryId);
+    if (existingEntryIndex >= 0) {
+      const updatedEntries = [...savedEntries];
+      updatedEntries[existingEntryIndex] = entry;
+      setSavedEntries(updatedEntries);
+    } else {
+      setSavedEntries([...savedEntries, entry]);
+    }
 
-  const entry = {
-    journalId: entryId,
-    title,
-    content,
-    date,
-    tags,
-    mood: selectedMood,
-    journalType,
-    timestamp: new Date().toISOString(),
-    media: journalMedia
+    // Set timer for backend sync (2 minutes)
+    if (backendSyncTimerRef.current) {
+      clearTimeout(backendSyncTimerRef.current);
+    }
+    backendSyncTimerRef.current = setTimeout(() => {
+      syncToBackend(entryId);
+    }, 120000); // 2 min
   };
-
-  // Save to localStorage
-  localStorage.setItem(`journal_entry_${entryId}`, JSON.stringify(entry));
-  setLastAutoSaved(new Date());
-  setPendingBackendSync(true);
-
-  // Update savedEntries state if needed
-  const existingEntryIndex = savedEntries.findIndex(e => e.journalId === entryId);
-  if (existingEntryIndex >= 0) {
-    const updatedEntries = [...savedEntries];
-    updatedEntries[existingEntryIndex] = entry;
-    setSavedEntries(updatedEntries);
-  } else {
-    setSavedEntries([...savedEntries, entry]);
-  }
-
-  // Set timer for backend sync (2 minutes)
-  if (backendSyncTimerRef.current) {
-    clearTimeout(backendSyncTimerRef.current);
-  }
-  backendSyncTimerRef.current = setTimeout(() => {
-    syncToBackend(entryId);
-  }, 120000); // 2 min
-};
 
 
 
@@ -634,33 +639,33 @@ const autoSaveToLocalStorage = () => {
   type MediaType = 'image' | 'audio' | 'video' | 'document';
 
   // Handle when media uploads are completed
-const handleMediaUploadComplete = (mediaFiles: Record<string, unknown>[]) => {
-  // Group media files by type and update journal media state
-  const newMediaState = { ...journalMedia };
+  const handleMediaUploadComplete = (mediaFiles: Record<string, unknown>[]) => {
+    // Group media files by type and update journal media state
+    const newMediaState = { ...journalMedia };
 
-  mediaFiles.forEach(file => {
-    if (file.url && file.driveFileId && file.type) {
-      // Convert MediaFile to format matching our schema
-      const mediaFileRecord = {
-        url: file.url as string,
-        driveFileId: file.driveFileId as string,
-        driveMimeType: file.driveMimeType as string || 'application/octet-stream',
-        fileName: file.fileName as string,
-        fileSize: file.fileSize as number,
-        uploadedAt: new Date()
-      };
+    mediaFiles.forEach(file => {
+      if (file.url && file.driveFileId && file.type) {
+        // Convert MediaFile to format matching our schema
+        const mediaFileRecord = {
+          url: file.url as string,
+          driveFileId: file.driveFileId as string,
+          driveMimeType: file.driveMimeType as string || 'application/octet-stream',
+          fileName: file.fileName as string,
+          fileSize: file.fileSize as number,
+          uploadedAt: new Date()
+        };
 
-      // Add to appropriate media type array if it's a valid media type
-      const mediaType = file.type as MediaType;
-      if (mediaType === 'image' || mediaType === 'audio' || mediaType === 'video' || mediaType === 'document') {
-        newMediaState[mediaType] = [...newMediaState[mediaType], mediaFileRecord];
+        // Add to appropriate media type array if it's a valid media type
+        const mediaType = file.type as MediaType;
+        if (mediaType === 'image' || mediaType === 'audio' || mediaType === 'video' || mediaType === 'document') {
+          newMediaState[mediaType] = [...newMediaState[mediaType], mediaFileRecord];
+        }
       }
-    }
-  });
+    });
 
-  setJournalMedia(newMediaState);
-  setIsUnsaved(true); // Mark as unsaved so it will be saved next auto-save cycle
-};
+    setJournalMedia(newMediaState);
+    setIsUnsaved(true); // Mark as unsaved so it will be saved next auto-save cycle
+  };
 
   // Show message with auto-dismiss
   const showMessage = (message: string, isError: boolean = false) => {
@@ -812,7 +817,7 @@ const handleMediaUploadComplete = (mediaFiles: Record<string, unknown>[]) => {
         const existingMediaFiles: MediaFile[] = [];
 
         // Process each media type
-       
+
 
         if (existingMediaFiles.length > 0) {
           setMediaFiles(existingMediaFiles);
@@ -833,7 +838,7 @@ const handleMediaUploadComplete = (mediaFiles: Record<string, unknown>[]) => {
     try {
       const formData = new FormData();
       formData.append("text", content);
-      
+
       // Find the first successful image upload
       const imageFile = mediaFiles.find(m => m.type === 'image' && m.status === 'success');
       if (imageFile && imageFile.file) {
@@ -885,22 +890,39 @@ const handleMediaUploadComplete = (mediaFiles: Record<string, unknown>[]) => {
       showMessage("Failed to analyze sentiment. Please try again.", true);
     }
   };
+interface EntryData {
+  title: string;
+  content: string;
+  tags: string[];
+  journalType: string;
+}
 
+const handleStartNewEntry = (entryData: EntryData) => {
+  // Update your journal entry states with the provided data
+  setTitle(entryData.title);
+  setContent(entryData.content);
+  setTags(entryData.tags);
+  setJournalType(entryData.journalType);
+  
+  // The entry is already showing, no need to set a state
+  // If you need navigation logic, implement it here
+}
   return (
     <div
       className="flex flex-col h-screen transition-all duration-300"
       style={{ backgroundColor: styles.bgPage }}
     >
-      <ThemeSidebar/>
+      <ThemeSidebar />
       {/* Success Message Toast */}
       {successMessage && (
         <Toast message={successMessage} type="success" visible={true} duration={3000} />
       )}
-      
+
       {/* Error Message Toast */}
       {errorMessage && (
         <Toast message={errorMessage} type="error" visible={true} duration={2000} />
       )}
+     
       {/* Journal Header */}
       <JournalHeader
         title={title}
@@ -1163,15 +1185,14 @@ const handleMediaUploadComplete = (mediaFiles: Record<string, unknown>[]) => {
 
             {/* Show Analysis Results */}
             {showAnalysis && analysisResult && (
-              <div className="mb-6">
+              <>
+                <div className="mb-6"></div>
                 <SentimentAnalysisDashboard data={analysisResult as any} />
-              </div>
+              </>
             )}
           </div>
         )}
-</motion.div>
-
-
+      </motion.div>
     </div>
   );
 };

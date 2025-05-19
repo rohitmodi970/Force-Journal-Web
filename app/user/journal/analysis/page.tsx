@@ -19,6 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/quilted-gallery/ui/tooltip';
+import ThemeSidebar from '@/components/Navbar/ThemeSidebar';
 
 // Define the JournalEntry type
 export interface JournalEntry {
@@ -271,6 +272,7 @@ const AnalysisPage: React.FC = () => {
 
   return (
     <div className="flex" style={backgroundStyle}>
+      <ThemeSidebar />
       <div className="flex-1">
         <Layout>
           <div className="max-w-7xl mx-auto px-4 py-8">
@@ -585,7 +587,7 @@ const AnalysisPage: React.FC = () => {
                               className="text-xs" 
                               asChild
                             >
-                              <a href={`/user/journal/entry/${entry.journalId}`}>
+                              <a href={`/user/journal/${entry.journalId}`}>
                                 View Entry
                               </a>
                             </Button>
@@ -692,7 +694,7 @@ const AnalysisPage: React.FC = () => {
                         Start writing in your journal to see analysis and insights.
                       </p>
                       <Button asChild style={primaryStyle}>
-                        <a href="/user/journal/create">
+                        <a href="/user/journal-entry">
                           Create Your First Entry
                         </a>
                       </Button>

@@ -27,7 +27,7 @@ interface JournalEntry {
 }
 
 const RecentEntries: React.FC = () => {
-  const { currentTheme } = useTheme();
+  const { currentTheme, isDarkMode, elementColors } = useTheme();
   const router = useRouter();
   const [entriesView, setEntriesView] = useState<'grid' | 'compact'>('grid');
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
@@ -90,7 +90,35 @@ const RecentEntries: React.FC = () => {
   };
 
   const handleViewAll = () => {
-    router.push('/user/journals');
+    router.push('/user/journal');
+  };
+
+  // Define button styles based on theme
+  const buttonStyle = {
+    backgroundColor: isDarkMode ? 'rgba(75, 85, 99, 0.4)' : 'rgba(229, 231, 235, 0.7)',
+    color: elementColors.text,
+    borderRadius: '0.375rem', // rounded-md equivalent
+    display: 'flex',
+    alignItems: 'center',
+    padding: '0.375rem 0.75rem', // px-3 py-1.5 equivalent
+    fontWeight: 500, // font-medium equivalent
+    transition: 'background-color 0.2s',
+    border: isDarkMode ? '1px solid rgba(75, 85, 99, 0.6)' : '1px solid rgba(229, 231, 235, 0.9)',
+  };
+
+  const hoverStyle = {
+    backgroundColor: isDarkMode ? 'rgba(75, 85, 99, 0.6)' : 'rgba(229, 231, 235, 0.9)',
+  };
+
+  const activeStyle = {
+    backgroundColor: currentTheme.primary,
+    color: 'white',
+  };
+
+  // Function to determine if a filter or sort option is active
+  const isActive = (option: string, type: 'filter' | 'sort') => {
+    return (type === 'filter' && filterOption === option) || 
+           (type === 'sort' && sortOption === option);
   };
 
   return (
@@ -100,77 +128,159 @@ const RecentEntries: React.FC = () => {
         <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 px-2">
+              <button 
+                style={{
+                  ...buttonStyle,
+                  background: currentTheme.light,
+                  border: `1px solid ${currentTheme.medium}`,
+                  color: isDarkMode ? 'white' : 'black',
+                }}
+                className="h-8 shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-offset-2"
+              >
                 <Filter className="h-4 w-4 mr-1" />
                 Filter
-              </Button>
+              </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel>Filter by</DropdownMenuLabel>
+            <DropdownMenuContent 
+              align="end" 
+              className="w-48"
+              style={{
+                backgroundColor: isDarkMode ? '#374151' : 'white',
+                border: isDarkMode ? '1px solid #4B5563' : '1px solid #E5E7EB',
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+              }}
+            >
+              <DropdownMenuLabel 
+                style={{ color: elementColors.text }}
+              >
+                Filter by
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
-                <DropdownMenuItem onClick={() => setFilterOption('all')}>
+                <DropdownMenuItem 
+                  onClick={() => setFilterOption('all')}
+                  style={isActive('all', 'filter') ? 
+                    { backgroundColor: currentTheme.primary, color: 'white' } : 
+                    { color: elementColors.text }}
+                >
                   All entries
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilterOption('week')}>
+                <DropdownMenuItem 
+                  onClick={() => setFilterOption('week')}
+                  style={isActive('week', 'filter') ? 
+                    { backgroundColor: currentTheme.primary, color: 'white' } : 
+                    { color: elementColors.text }}
+                >
                   This week
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setFilterOption('month')}>
+                <DropdownMenuItem 
+                  onClick={() => setFilterOption('month')}
+                  style={isActive('month', 'filter') ? 
+                    { backgroundColor: currentTheme.primary, color: 'white' } : 
+                    { color: elementColors.text }}
+                >
                   This month
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+              <DropdownMenuLabel 
+                style={{ color: elementColors.text }}
+              >
+                Sort by
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
-                <DropdownMenuItem onClick={() => setSortOption('newest')}>
+                <DropdownMenuItem 
+                  onClick={() => setSortOption('newest')}
+                  style={isActive('newest', 'sort') ? 
+                    { backgroundColor: currentTheme.primary, color: 'white' } : 
+                    { color: elementColors.text }}
+                >
                   Newest first
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortOption('oldest')}>
+                <DropdownMenuItem 
+                  onClick={() => setSortOption('oldest')}
+                  style={isActive('oldest', 'sort') ? 
+                    { backgroundColor: currentTheme.primary, color: 'white' } : 
+                    { color: elementColors.text }}
+                >
                   Oldest first
                 </DropdownMenuItem>
               </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
           
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8" 
+          <button 
+            style={{
+              ...buttonStyle,
+              background: currentTheme.light,
+              border: `1px solid ${currentTheme.medium}`,
+              color: isDarkMode ? 'white' : 'black',
+              width: '2rem',
+              height: '2rem',
+              padding: '0',
+              display: 'flex',
+              justifyContent: 'center',
+            }}
+            className="shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-offset-2"
             onClick={() => setEntriesView(entriesView === 'grid' ? 'compact' : 'grid')}
           >
             <ArrowUpDown className="h-4 w-4" />
-          </Button>
+          </button>
           
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="gap-1"
+          <button 
+            style={{
+              ...buttonStyle,
+              background: currentTheme.light,
+              border: `1px solid ${currentTheme.medium}`,
+              color: isDarkMode ? 'white' : 'black',
+            }}
+            className="gap-1 shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-offset-2"
             onClick={handleViewAll}
           >
             View All
             <ArrowRight className="ml-1 h-4 w-4" />
-          </Button>
+          </button>
         </div>
       </div>
 
       {isLoading ? (
         <div className="flex justify-center items-center py-12">
-          <Loader2 className="h-8 w-8 text-primary animate-spin" />
+          <Loader2 
+            className="h-8 w-8 animate-spin" 
+            style={{ color: currentTheme.primary }}
+          />
         </div>
       ) : error ? (
-        <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-lg text-center">
+        <div 
+          className="p-4 rounded-lg text-center"
+          style={{ 
+            backgroundColor: isDarkMode ? 'rgba(220, 38, 38, 0.1)' : 'rgba(254, 226, 226, 1)',
+            color: isDarkMode ? 'rgba(248, 113, 113, 1)' : 'rgba(185, 28, 28, 1)'
+          }}
+        >
           {error}
         </div>
       ) : journalEntries.length === 0 ? (
-        <div className="bg-muted/30 p-8 rounded-lg text-center">
-          <p className="text-muted-foreground">No journal entries yet. Start writing your first entry!</p>
-          <Button 
+        <div 
+          className="p-8 rounded-lg text-center"
+          style={{ 
+            backgroundColor: isDarkMode ? 'rgba(75, 85, 99, 0.2)' : 'rgba(243, 244, 246, 0.7)',
+          }}
+        >
+          <p style={{ color: isDarkMode ? 'rgba(156, 163, 175, 1)' : 'rgba(107, 114, 128, 1)' }}>
+            No journal entries yet. Start writing your first entry!
+          </p>
+          <button 
             onClick={() => router.push('/user/journal-entry')}
-            className="mt-4"
+            className="mt-4 px-4 py-2 rounded-md font-medium shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-offset-2"
+            style={{ 
+              backgroundColor: currentTheme.primary,
+              color: 'white',
+            }}
           >
             Create Entry
-          </Button>
+          </button>
         </div>
       ) : (
         <div className={`grid ${entriesView === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'grid-cols-1 gap-2'}`}>

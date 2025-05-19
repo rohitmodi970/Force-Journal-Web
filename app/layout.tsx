@@ -23,16 +23,7 @@ export default function RootLayout({
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <meta
-  httpEquiv="Content-Security-Policy"
-  content={`default-src 'self'; 
-            connect-src 'self' ${process.env.SA_MODEL_LINK || 'http://localhost:8000'} https://extensions.aitopia.ai; 
-            script-src 'self' 'unsafe-inline' 'unsafe-eval'; 
-            style-src 'self' 'unsafe-inline';
-            img-src 'self' data: blob:;
-            media-src 'self' blob:;
-            frame-src https://drive.google.com;`}
-/>
+    
       </head>
       <body className={inter.className} suppressHydrationWarning>
         <Providers>

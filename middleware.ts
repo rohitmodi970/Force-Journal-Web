@@ -10,12 +10,20 @@ export default withAuth(
     // Check if token exists and is valid
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
     console.log("Token:", token);
+    
+    // Redirect authenticated users from homepage to dashboard
+    if (token && req.nextUrl.pathname === '/') {
+      console.log("✅ Authenticated user visiting homepage, redirecting to dashboard");
+      return NextResponse.redirect(new URL('/user/dashboard', req.url));
+    }
+    
     // Check for expired access tokens and redirect to login if needed
     if (token?.error === "RefreshAccessTokenError") {
       console.log("❌ Token refresh error, redirecting to login");
       return NextResponse.redirect(new URL('/auth/login', req.url));
     }
     
+    // Remaining middleware logic stays the same...
     // Check Google token status for protected routes that require Google integration
     if (token && 
         token.onboardingComplete === true && 
