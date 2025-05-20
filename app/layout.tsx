@@ -5,7 +5,7 @@ import "./globals.css";
 import SessionWrapper from "@/utilities/SessionWrapper";
 import MainNavbar from "@/components/Navbar/MainNavbar";
 import { Providers } from "@/components/providers";
-
+import { Analytics } from "@vercel/analytics/next"
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
@@ -30,6 +30,7 @@ export default function RootLayout({
           <SessionWrapper>
             <MainNavbar />
             {children}
+            <Analytics />
           </SessionWrapper>
         </Providers>
       </body>
