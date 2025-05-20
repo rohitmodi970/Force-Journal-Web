@@ -5,7 +5,8 @@ import GoogleProvider from "next-auth/providers/google";
 import bcrypt from 'bcrypt';
 import connectDB from '@/db/connectDB';
 import User from '@/models/User';
-
+import mailService from '@/utilities/mailService';
+import { EmailTemplate } from '@/utilities/mailService';
 // Extend the next-auth types
 declare module "next-auth" {
   interface Session {
@@ -233,32 +234,42 @@ export const authOptions: NextAuthOptions = {
         const username = `${user.email?.split('@')[0]}_${Math.floor(Math.random() * 1000)}`;
         const userId = userCount + 1;
 
-        const newUser = await User.create({
-          userId: userId,
-          name: user.name,
-          email: user.email,
-          username: username,
-          provider: providerName,
-          providerId: providerId,
-          profileImage: user.image,
-          ip_address: await getIpAddress(),
-          new_user: true,
-          onboardingComplete: false,
-          googleAccessToken: account.access_token,
-          googleRefreshToken: account.refresh_token,
-          googleTokenExpiry: new Date(Date.now() + (account.expires_at || 3600 * 24 * 7) * 1000) // 7 days
-        });
+  const newUser = await User.create({
+    userId: userId,
+    name: user.name,
+    email: user.email,
+    username: username,
+    provider: providerName,
+    providerId: providerId,
+    profileImage: user.image,
+    ip_address: await getIpAddress(),
+    new_user: true,
+    onboardingComplete: false,
+    googleAccessToken: account.access_token,
+    googleRefreshToken: account.refresh_token,
+    googleTokenExpiry: new Date(Date.now() + (account.expires_at || 3600 * 24 * 7) * 1000) // 7 days
+  });
 
-        // Update user object
-        user.id = newUser._id.toString();
-        user.new_user = true;
-        user.onboardingComplete = false;
-        user.username = username;
-        user.userId = userId;
-        user.googleAccessToken = account.access_token;
-        user.googleRefreshToken = account.refresh_token;
-      }
+  // Send welcome email to Google-authenticated users
+  await mailService.sendTemplatedEmail(
+    EmailTemplate.WELCOME,
+    {
+      name: user.name || '',
+      email: user.email || '',
+      userId: userId,
+      username: username
+    }
+  );
 
+  // Update user object
+  user.id = newUser._id.toString();
+  user.new_user = true;
+  user.onboardingComplete = false;
+  user.username = username;
+  user.userId = userId;
+  user.googleAccessToken = account.access_token;
+  user.googleRefreshToken = account.refresh_token;
+}
       return true;
     },
     async jwt({ token, user, account, trigger, session }) {
@@ -388,29 +399,38 @@ export const authOptions: NextAuthOptions = {
       return baseUrl;
     }
   },
-  events: {
-    async signIn(message) {
-      // Additional logging for debugging
-      console.log("Sign-in event:", {
-        user: message.user.email,
-        isNewUser: message.user.new_user,
-        onboardingComplete: message.user.onboardingComplete,
-        account: message.account?.provider
-      });
-    },
-    async signOut(message) {
-      console.log("Sign-out event:", { user: message.token?.email });
-    },
-    //@ts-ignore
-    async error(message) {
-      console.error("Auth error:", message);
+events: {
+  async signIn(message) {
+    // Additional logging for debugging
+    console.log("Sign-in event:", {
+      user: message.user.email,
+      isNewUser: message.user.new_user,
+      onboardingComplete: message.user.onboardingComplete,
+      account: message.account?.provider
+    });
+
+    // Send onboarding completion email when a user completes onboarding
+    if (message.user.new_user === false && message.user.onboardingComplete === true) {
+      await mailService.sendTemplatedEmail(
+        EmailTemplate.ONBOARDING_COMPLETE,
+        {
+          name: message.user.name || '',
+          email: message.user.email || '',
+          userId: message.user.userId,
+          username: message.user.username,
+          onboardingStatus: true
+        }
+      );
     }
   },
-  pages: {
-    signIn: '/auth/login',
-    error: '/auth/error',
-    newUser: '/auth/register',
+  async signOut(message) {
+    console.log("Sign-out event:", { user: message.token?.email });
+  },
+  //@ts-ignore
+  async error(message) {
+    console.error("Auth error:", message);
   }
+}
 };
 
 // Helper function to refresh Google tokens

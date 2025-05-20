@@ -1,3 +1,4 @@
+// app\api\prompts\random\route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/utilities/auth';

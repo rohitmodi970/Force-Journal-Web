@@ -38,17 +38,17 @@ const OnboardingForm: React.FC = () => {
     currentTheme: Theme;
     isDarkMode: boolean;
   };
-  
+
   const { data: session, status, update: updateSession } = useSession() as {
     data: SessionData | null;
     status: 'loading' | 'authenticated' | 'unauthenticated';
     update: (data: Partial<SessionData>) => Promise<SessionData | null>;
   };
-  
+
   const [formData, setFormData] = useState<FormData>({
     goal: ''
   });
-  
+
   const [currentSection, setCurrentSection] = useState<number>(1);
   const [audioURL, setAudioURL] = useState<string | null>(null);
   const [photoURL, setPhotoURL] = useState<string | null>(null);
@@ -81,7 +81,7 @@ const OnboardingForm: React.FC = () => {
             const canvas = document.createElement('canvas');
             const MAX_WIDTH = 1200;
             const MAX_HEIGHT = 1200;
-            
+
             // Calculate new dimensions
             let width = img.width;
             let height = img.height;
@@ -96,7 +96,7 @@ const OnboardingForm: React.FC = () => {
                 height = MAX_HEIGHT;
               }
             }
-            
+
             canvas.width = width;
             canvas.height = height;
             const ctx = canvas.getContext('2d');
@@ -105,7 +105,7 @@ const OnboardingForm: React.FC = () => {
               return;
             }
             ctx.drawImage(img, 0, 0, width, height);
-            
+
             // Convert to Blob with reduced quality
             canvas.toBlob((blob) => {
               if (!blob) {
@@ -122,7 +122,7 @@ const OnboardingForm: React.FC = () => {
           };
         }
       };
-      
+
       reader.onerror = () => {
         reject(new Error('Failed to read file'));
       };
@@ -141,7 +141,7 @@ const OnboardingForm: React.FC = () => {
       setError(`Audio file is too large. Maximum size is ${MAX_AUDIO_SIZE / (1024 * 1024)}MB.`);
       return;
     }
-    
+
     setAudioURL(url);
     setFormData(prev => ({ ...prev, feelingAudio: file }));
   };
@@ -154,16 +154,16 @@ const OnboardingForm: React.FC = () => {
         setError(`Photo file is too large. Maximum size is ${MAX_PHOTO_SIZE / (1024 * 1024) * 2}MB before compression.`);
         return;
       }
-      
+
       // Compress the image
       const compressedFile = await compressImage(file);
-      
+
       // Check if compression was effective enough
       if (compressedFile.size > MAX_PHOTO_SIZE) {
         setError(`Photo is still too large after compression. Please choose a smaller image.`);
         return;
       }
-      
+
       // Use the compressed file
       const compressedURL = URL.createObjectURL(compressedFile);
       setPhotoURL(compressedURL);
@@ -178,7 +178,7 @@ const OnboardingForm: React.FC = () => {
   const goToNextSection = (): void => {
     // Clear any previous errors
     setError(null);
-    
+
     if (currentSection < 3) {
       setCurrentSection(prev => prev + 1);
     } else {
@@ -197,16 +197,16 @@ const OnboardingForm: React.FC = () => {
   const handleSessionUpdateAndRedirect = async (): Promise<void> => {
     try {
       console.log('Updating session and preparing to redirect...');
-      
+
       // Update the session with onboarding complete
       await updateSession({
         onboardingComplete: true,
         new_user: false
       });
-      
+
       // Wait for session changes to propagate
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
+
       // Use window.location for a hard redirect instead of router.push
       window.location.href = '/user/dashboard';
     } catch (error) {
@@ -224,36 +224,36 @@ const OnboardingForm: React.FC = () => {
       console.log('Submission already in progress, ignoring additional submit attempt');
       return;
     }
-    
+
     // Validate form data before submission
     if (!formData.goal || formData.goal.trim() === '') {
       setError('Please enter your goal before continuing.');
       return;
     }
-    
+
     setIsSubmitting(true);
     setError(null);
     setSubmissionInProgress(true);
-    
+
     try {
       // Make sure user is authenticated
       if (!session || !session.user) {
         throw new Error('You must be signed in to complete onboarding');
       }
-      
+
       const formDataToSubmit = new FormData();
       formDataToSubmit.append('goal', formData.goal);
-      
+
       if (formData.feelingAudio) {
         formDataToSubmit.append('feelingAudio', formData.feelingAudio);
       }
-      
+
       if (formData.prettyPhoto) {
         formDataToSubmit.append('prettyPhoto', formData.prettyPhoto);
       }
-      
+
       console.log('Submitting form data...');
-      
+
       const response = await fetch('/api/user/onboarding', {
         method: 'POST',
         body: formDataToSubmit,
@@ -261,29 +261,29 @@ const OnboardingForm: React.FC = () => {
           'Accept': 'application/json',
         },
       });
-      
+
       console.log('Response status:', response.status);
-      
+
       const contentType = response.headers.get('content-type');
       console.log('Response content type:', contentType);
-      
+
       if (contentType && contentType.includes('application/json')) {
         const data = await response.json();
         console.log('Response data:', data);
-        
+
         if (!response.ok) {
           const errorMessage = data.error || data.message || 'Failed to submit onboarding data';
           throw new Error(errorMessage);
         }
-        
+
         // Call the improved redirect function
         await handleSessionUpdateAndRedirect();
-        
+
       } else {
         // For non-JSON responses
         const textResponse = await response.text();
         console.log('Received non-JSON response:', textResponse);
-        
+
         if (response.ok) {
           // Call the improved redirect function
           await handleSessionUpdateAndRedirect();
@@ -321,28 +321,28 @@ const OnboardingForm: React.FC = () => {
           <h1 className={`text-3xl font-bold ${headingTextColor} transition-colors duration-300`}>
             Welcome to Force
           </h1>
-          <p className={`mt-2 ${subTextColor} transition-colors duration-300`}> 
-            Let's personalize your experience with a few quick questions 
-          </p> 
-           
-          {/* Progress indicator */} 
-          <div className="flex justify-center mt-6"> 
-            {[1, 2, 3].map((step) => ( 
-              <div 
-                key={step} 
-                className="h-2 w-16 mx-1 rounded-full transition-all duration-300" 
+          <p className={`mt-2 ${subTextColor} transition-colors duration-300`}>
+            Let's personalize your experience with a few quick questions
+          </p>
+
+          {/* Progress indicator */}
+          <div className="flex justify-center mt-6">
+            {[1, 2, 3].map((step) => (
+              <div
+                key={step}
+                className="h-2 w-16 mx-1 rounded-full transition-all duration-300"
                 style={{
-                  backgroundColor: step === currentSection 
+                  backgroundColor: step === currentSection
                     ? currentTheme.primary
-                    : step < currentSection 
-                      ? currentTheme.medium 
+                    : step < currentSection
+                      ? currentTheme.medium
                       : isDarkMode ? '#374151' : '#E5E7EB'
                 }}
               />
             ))}
           </div>
         </div>
-        
+
         <motion.div
           className={`shadow-xl rounded-2xl p-6 md:p-8 ${cardBgColor} transition-colors duration-300 relative`}
           style={{
@@ -358,7 +358,7 @@ const OnboardingForm: React.FC = () => {
               {error}
             </div>
           )}
-          
+
           {isSubmitting && (
             <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-2xl z-10">
               <div className={`${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'} p-5 rounded-lg flex flex-col items-center transition-colors duration-300`}>
@@ -367,18 +367,18 @@ const OnboardingForm: React.FC = () => {
               </div>
             </div>
           )}
-          
+
           <AnimatePresence mode="wait">
             {currentSection === 1 && (
-              <Question1 
+              <Question1
                 value={formData.goal}
-                handleInputChange={(value: string) => handleInputChange('goal', value)}
+                handleInputChange={(value) => handleInputChange('goal', value)}
                 goToNextSection={goToNextSection}
               />
             )}
-            
+
             {currentSection === 2 && (
-              <Question2 
+              <Question2
                 audioFile={formData.feelingAudio}
                 audioURL={audioURL}
                 handleAudioRecording={handleAudioRecording}
@@ -386,9 +386,9 @@ const OnboardingForm: React.FC = () => {
                 goToPrevSection={goToPrevSection}
               />
             )}
-            
+
             {currentSection === 3 && (
-              <Question3 
+              <Question3
                 photoFile={formData.prettyPhoto}
                 photoURL={photoURL}
                 handlePhotoUpload={handlePhotoUpload}
