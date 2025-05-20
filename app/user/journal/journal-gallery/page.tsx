@@ -5,7 +5,7 @@ import Layout from "@/components/layout/Layout";
 import { getAllJournalEntries } from "@/utilities/journal-data";
 import JournalGallery from "@/components/Journal/JournalGallery";
 import Link from "next/link";
-import { NotebookPen, Sparkles } from "lucide-react";
+import { NotebookPen } from "lucide-react";
 import { JournalEntry } from "@/components/Journal/types";
 
 const JournalGalleryPage = () => {
@@ -29,12 +29,10 @@ const JournalGalleryPage = () => {
 
         loadJournalEntries();
     }, []);
-    console.log(entries)
+
     return (
         <Layout>
             <div className="max-w-7xl mx-auto">
-                
-
                 {isLoading ? (
                     <div className="text-center py-8">
                         <p>Loading your journal entries...</p>
@@ -51,20 +49,13 @@ const JournalGalleryPage = () => {
                     <JournalGallery entries={entries} />
                 )}
             </div>
-            <div className="fixed bottom-8 right-8 z-50 flex gap-4">
-                <Link
-                    href="/user/analysis/entries-analysis"
-                    className="flex items-center gap-2 bg-primary hover:bg-primary/90 bg-amber-700 text-white px-4 py-2 rounded-full shadow-lg transition-colors"
-                >
-                    <Sparkles className="w-5 h-5" />
-                    <span>Analyze</span>
-                </Link>
+            <div className="fixed bottom-8 right-8 z-50">
                 <Link
                     href="/user/journal/my-diary"
                     className="flex items-center gap-2 bg-amber-800 hover:bg-primary/90 text-white px-4 py-2 rounded-full shadow-lg transition-colors"
                 >
                     <NotebookPen className="w-5 h-5" />
-                    <span>Diary</span>
+                    <span>New Entry</span>
                 </Link>
             </div>
         </Layout>

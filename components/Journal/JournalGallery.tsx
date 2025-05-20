@@ -1,12 +1,64 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import JournalEditor from "./GalleryComponent/JournalEditor";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/quilted-gallery/ui/tabs";
 import { useTheme } from "@/utilities/context/ThemeContext";
 import { JournalEntry } from "./types";
 import JournalCalendar from "./JournalCalendar";
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend,
+} from 'recharts';
 
 interface JournalGalleryProps {
   entries: JournalEntry[];
+}
+
+interface Emotion {
+  emotion: string;
+  frequency: number;
+  intensity: number;
+}
+interface MoodPattern {
+  pattern: string;
+  significance: string;
+  recommendation: string;
+}
+interface Topic {
+  topic: string;
+  frequency?: number;
+  context?: string[];
+  sentiment?: number;
+}
+interface KeyInsight {
+  insight: string;
+  evidence?: string[];
+  significance?: string;
+}
+interface SentimentAnalysisResults {
+  overallSentiment?: { label: string; score: number; confidence: number };
+  emotionalPatterns?: {
+    primaryEmotions?: Emotion[];
+    secondaryEmotions?: Emotion[];
+  };
+  insights?: {
+    moodPatterns?: MoodPattern[];
+  };
+  sentimentTrends?: { date: string; sentiment: number }[];
+}
+interface TextualAnalysisResults {
+  topics?: Topic[];
+  keyInsights?: KeyInsight[];
+}
+interface AnalysisResults extends SentimentAnalysisResults, TextualAnalysisResults {
+  error?: string;
+}
+
+// Add a type for history entries
+interface AnalysisHistoryEntry {
+  id: string;
+  date: string;
+  type: 'sentiment' | 'textual';
+  range: string;
+  results: AnalysisResults;
 }
 
 const formatDate = (date: Date): string => {
@@ -26,6 +78,28 @@ const getFormattedDisplayDate = (date: Date): string => {
   return date.toLocaleDateString('en-US', options);
 };
 
+// Add a custom useLocalStorage hook:
+function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T) => void] {
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    if (typeof window === 'undefined') return initialValue;
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? (JSON.parse(item) as T) : initialValue;
+    } catch (error) {
+      return initialValue;
+    }
+  });
+
+  const setValue = useCallback((value: T) => {
+    setStoredValue(value);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(key, JSON.stringify(value));
+    }
+  }, [key]);
+
+  return [storedValue, setValue];
+}
+
 const JournalGallery: React.FC<JournalGalleryProps> = ({ entries }) => {
   const { currentTheme, isDarkMode, elementColors } = useTheme();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -39,6 +113,14 @@ const JournalGallery: React.FC<JournalGalleryProps> = ({ entries }) => {
     endDate: null,
     selectedDates: []
   });
+  const [analysisType, setAnalysisType] = useState<'sentiment' | 'textual'>('sentiment');
+  const [analysisResults, setAnalysisResults] = useState<AnalysisResults | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [tab, setTab] = useState<'analyze' | 'history'>('analyze');
+  const [history, setHistory] = useLocalStorage<AnalysisHistoryEntry[]>(
+    'journal-analysis-history',
+    []
+  );
   
   // Generate dates for the date scroller (past 30 days and future 7 days)
   const generateDateRange = () => {
@@ -118,11 +200,6 @@ const JournalGallery: React.FC<JournalGalleryProps> = ({ entries }) => {
     color: elementColors.text
   };
 
-  const secondaryContainerStyle = {
-    backgroundColor: isDarkMode ? '#374151' : '#FFFFFF',
-    borderColor: isDarkMode ? '#4A5568' : '#E2E8F0',
-  };
-
   const getDateButtonClass = (date: Date) => {
     const isSelected = formatDate(date) === formatDate(selectedDate);
     const hasJournalEntries = hasEntries(date);
@@ -173,15 +250,91 @@ const JournalGallery: React.FC<JournalGalleryProps> = ({ entries }) => {
   };
 
   // Handle calendar analysis date selection
-  const handleAnalyzeDates = (startDate: Date, endDate: Date | null, selectedDates: Date[]): void => {
-    setAnalysisDateRange({
-      startDate,
-      endDate,
-      selectedDates
-    });
-    
-    console.log("Analyzing dates:", { startDate, endDate, selectedDates });
-    // Here you would trigger your analysis functionality with the selected dates
+  const handleAnalyzeDates = async (
+    startDate: Date,
+    endDate: Date | null,
+    selectedDates: Date[],
+    type: 'sentiment' | 'textual'
+  ) => {
+    setAnalysisType(type);
+    setAnalysisDateRange({ startDate, endDate, selectedDates });
+    setIsAnalyzing(true);
+    setAnalysisResults(null);
+    // Filter entries by selected dates
+    let filteredEntries: JournalEntry[] = [];
+    if (selectedDates.length > 0) {
+      const selectedStrs = selectedDates.map(d => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      });
+      filteredEntries = entries.filter(e => selectedStrs.includes(e.date));
+    } else if (startDate) {
+      const start = new Date(startDate);
+      const end = endDate ? new Date(endDate) : start;
+      filteredEntries = entries.filter(e => {
+        const d = new Date(e.date);
+        return d >= start && d <= end;
+      });
+    }
+    if (filteredEntries.length === 0) {
+      setAnalysisResults({ error: 'No entries found in the selected date(s).' });
+      setIsAnalyzing(false);
+      return;
+    }
+    try {
+      const response = await fetch('/api/journal/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          entries: filteredEntries,
+          analysisType: type,
+          dateRange: {
+            start: startDate?.toISOString(),
+            end: endDate?.toISOString(),
+          },
+        }),
+      });
+      if (!response.ok) throw new Error('Analysis failed');
+      const data = await response.json();
+      setAnalysisResults(data.data);
+    } catch {
+      setAnalysisResults({ error: 'Failed to analyze entries.' });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  // Function to save current analysis to history
+  const saveAnalysisToHistory = () => {
+    if (!analysisResults || isAnalyzing) return;
+    const range = (() => {
+      if (analysisDateRange.selectedDates && analysisDateRange.selectedDates.length > 0) {
+        return analysisDateRange.selectedDates.map(d => d.toLocaleDateString()).join(' - ');
+      }
+      if (analysisDateRange.startDate && analysisDateRange.startDate.getTime() !== 0) {
+        return `${analysisDateRange.startDate.toLocaleDateString()}${analysisDateRange.endDate ? ` to ${analysisDateRange.endDate.toLocaleDateString()}` : ''}`;
+      }
+      return 'Recent';
+    })();
+    setHistory([
+      {
+        id: Date.now().toString(),
+        date: new Date().toLocaleString(),
+        type: analysisType,
+        range,
+        results: analysisResults,
+      },
+      ...history,
+    ]);
+  };
+
+  // Function to load a history entry
+  const loadHistoryEntry = (entry: AnalysisHistoryEntry) => {
+    setAnalysisType(entry.type);
+    setAnalysisResults(entry.results);
+    // Optionally set the date range UI
   };
 
   return (
@@ -276,7 +429,7 @@ const JournalGallery: React.FC<JournalGalleryProps> = ({ entries }) => {
         <Tabs defaultValue="write" className="w-full">
           <TabsList 
             className="mb-4 w-full max-w-md"
-            //@ts-ignore
+            //@ts-expect-error shadcn TabsTrigger style prop: style is not in shadcn TabsTrigger types
             style={{ 
               backgroundColor: isDarkMode ? '#374151' : '#F1F5F9',
             }}
@@ -284,7 +437,7 @@ const JournalGallery: React.FC<JournalGalleryProps> = ({ entries }) => {
             <TabsTrigger 
               value="write" 
               className="flex-1 data-[state=active]:text-white"
-              //@ts-ignore
+              //@ts-expect-error shadcn TabsTrigger style prop: style is not in shadcn TabsTrigger types
               style={{ 
                 color: elementColors.text,
                 backgroundColor: 'transparent',
@@ -296,7 +449,7 @@ const JournalGallery: React.FC<JournalGalleryProps> = ({ entries }) => {
             <TabsTrigger 
               value="analyze" 
               className="flex-1 data-[state=active]:text-white"
-              //@ts-ignore
+              //@ts-expect-error shadcn TabsTrigger style prop: style is not in shadcn TabsTrigger types
               style={{ 
                 color: elementColors.text,
                 backgroundColor: 'transparent', 
@@ -305,6 +458,7 @@ const JournalGallery: React.FC<JournalGalleryProps> = ({ entries }) => {
             >
               Analyze
             </TabsTrigger>
+            <TabsTrigger value="history" className="flex-1 data-[state=active]:text-white" onClick={() => setTab('history')}>History</TabsTrigger>
           </TabsList>
           
           <TabsContent value="write" className="mt-0">
@@ -325,78 +479,153 @@ const JournalGallery: React.FC<JournalGalleryProps> = ({ entries }) => {
                   style={containerStyle}
                 >
                   <h3 className="text-lg font-medium mb-4" style={{ color: elementColors.text }}>
-                    {analysisDateRange.startDate ? 
-                      `Analysis for ${analysisDateRange.startDate.toLocaleDateString()} ${analysisDateRange.endDate ? `to ${analysisDateRange.endDate.toLocaleDateString()}` : ''}` :
-                      analysisDateRange.selectedDates.length > 0 ? 
-                        `Analysis for ${analysisDateRange.selectedDates.length} selected dates` :
-                        "Recent Insights"
-                    }
+                    {(() => {
+                      // If selectedDates are used (multiple mode)
+                      if (analysisDateRange.selectedDates && analysisDateRange.selectedDates.length > 0) {
+                        return `Analysis for ${analysisDateRange.selectedDates.map(d => d.toLocaleDateString()).join(' - ')}`;
+                      }
+                      // If a valid range is used (range mode)
+                      if (
+                        analysisDateRange.startDate &&
+                        analysisDateRange.startDate.getTime() !== 0 // not epoch
+                      ) {
+                        return `Analysis for ${analysisDateRange.startDate.toLocaleDateString()}${analysisDateRange.endDate ? ` to ${analysisDateRange.endDate.toLocaleDateString()}` : ''}`;
+                      }
+                      // Fallback
+                      return "Recent Insights";
+                    })()}
                   </h3>
-                  
                   <div className="space-y-4">
-                    <div 
-                      className="p-4 rounded-lg transition-colors"
-                      style={{ 
-                        backgroundColor: isDarkMode ? '#374151' : '#F8FAFC',
-                        color: elementColors.text
-                      }}
-                    >
-                      <p>
-                        {entries.length > 0 ? 
-                          analysisDateRange.startDate || analysisDateRange.selectedDates.length > 0 ?
-                            "Analyzing your selected journal entries. The most frequent topics during this period were work (35%), relationships (22%), and health (15%)." :
-                            "Your journals this week show a pattern of increased anxiety around work-related topics. Try incorporating some mindfulness practices into your daily routine." :
-                          "Start journaling to see insights about your writing patterns and mood trends."}
-                      </p>
-                    </div>
-                    
-                    <div className="grid grid-cols-3 gap-4">
-                      <div 
-                        className="rounded-lg p-4 transition-colors"
-                        style={{ 
-                          backgroundColor: isDarkMode ? `${currentTheme.active}30` : `${currentTheme.light}`,
-                          color: currentTheme.primary
-                        }}
-                      >
-                        <div className="text-3xl font-bold">25%</div>
-                        <div className="text-sm">anxiety</div>
+                    {isAnalyzing ? (
+                      <div className="p-4 rounded-lg text-center" style={{ backgroundColor: isDarkMode ? '#374151' : '#F8FAFC', color: elementColors.text }}>
+                        <p>Analyzing your journal entries...</p>
                       </div>
-                      <div 
-                        className="rounded-lg p-4 transition-colors"
-                        style={{ 
-                          backgroundColor: isDarkMode ? 'rgba(217, 119, 6, 0.2)' : 'rgba(251, 191, 36, 0.1)',
-                          color: isDarkMode ? 'rgb(245, 158, 11)' : 'rgb(180, 83, 9)'
-                        }}
-                      >
-                        <div className="text-3xl font-bold">18%</div>
-                        <div className="text-sm">excitement</div>
+                    ) : analysisResults && !analysisResults.error ? (
+                      <div className="p-4 rounded-lg transition-colors" style={{ backgroundColor: isDarkMode ? '#374151' : '#F8FAFC', color: elementColors.text }}>
+                        {analysisType === 'sentiment' ? (
+                          <>
+                            <h4 className="font-semibold mb-2">Sentiment Analysis</h4>
+                            {/* Sentiment Trend Chart */}
+                            {analysisResults.sentimentTrends && Array.isArray(analysisResults.sentimentTrends) && analysisResults.sentimentTrends.length > 0 && (
+                              <div className="mb-4">
+                                <h5 className="font-medium mb-1">Sentiment Trend</h5>
+                                <ResponsiveContainer width="100%" height={200}>
+                                  <LineChart data={analysisResults.sentimentTrends}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="date" />
+                                    <YAxis domain={[-1, 1]} />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Line type="monotone" dataKey="sentiment" stroke="#8884d8" name="Sentiment" />
+                                  </LineChart>
+                                </ResponsiveContainer>
+                              </div>
+                            )}
+                            {/* Emotions Bar Chart */}
+                            {analysisResults.emotionalPatterns && analysisResults.emotionalPatterns.primaryEmotions && analysisResults.emotionalPatterns.primaryEmotions.length > 0 && (
+                              <div className="mb-4">
+                                <h5 className="font-medium mb-1">Primary Emotions</h5>
+                                <ResponsiveContainer width="100%" height={200}>
+                                  <BarChart data={analysisResults.emotionalPatterns.primaryEmotions}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="emotion" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Bar dataKey="frequency" fill="#82ca9d" name="Frequency" />
+                                    <Bar dataKey="intensity" fill="#8884d8" name="Intensity" />
+                                  </BarChart>
+                                </ResponsiveContainer>
+                              </div>
+                            )}
+                            {analysisResults.overallSentiment && (
+                              <div className="mb-2">
+                                <div><strong>Overall Sentiment:</strong> {analysisResults.overallSentiment.label} ({analysisResults.overallSentiment.score})</div>
+                                <div><strong>Confidence:</strong> {Math.round(analysisResults.overallSentiment.confidence * 100)}%</div>
+                              </div>
+                            )}
+                            {analysisResults.emotionalPatterns && analysisResults.emotionalPatterns.secondaryEmotions && (
+                              <div className="mb-2">
+                                <div className="font-medium">Secondary Emotions:</div>
+                                <ul className="list-disc pl-5">
+                                  {analysisResults.emotionalPatterns.secondaryEmotions.map((em: Emotion, idx: number) => (
+                                    <li key={idx}>{em.emotion} (Frequency: {em.frequency}, Intensity: {em.intensity})</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {analysisResults.insights && analysisResults.insights.moodPatterns && (
+                              <div className="mb-2">
+                                <div className="font-medium">Mood Patterns:</div>
+                                <ul className="list-disc pl-5">
+                                  {analysisResults.insights.moodPatterns.map((mp: MoodPattern, idx: number) => (
+                                    <li key={idx}>{mp.pattern} - {mp.significance} <br/> <span className="text-xs">{mp.recommendation}</span></li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <h4 className="font-semibold mb-2">Textual Analysis</h4>
+                            {/* Topic Frequency Bar Chart */}
+                            {analysisResults.topics && Array.isArray(analysisResults.topics) && analysisResults.topics.length > 0 && (
+                              <div className="mb-4">
+                                <h5 className="font-medium mb-1">Topic Frequencies</h5>
+                                <ResponsiveContainer width="100%" height={200}>
+                                  <BarChart data={analysisResults.topics}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="topic" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Bar dataKey="frequency" fill="#8884d8" name="Frequency" />
+                                  </BarChart>
+                                </ResponsiveContainer>
+                              </div>
+                            )}
+                            {analysisResults.topics && Array.isArray(analysisResults.topics) && (
+                              <div className="mt-2">
+                                <h5 className="font-medium mb-1">Topics:</h5>
+                                <ul className="list-disc pl-5">
+                                  {analysisResults.topics.map((topic: Topic, idx: number) => (
+                                    <li key={idx}>
+                                      <strong>{topic.topic}</strong>
+                                      {typeof topic.frequency !== 'undefined' && <> (Frequency: {topic.frequency})</>}
+                                      {topic.context && Array.isArray(topic.context) && topic.context.length > 0 && (
+                                        <div className="text-xs opacity-70">Context: {topic.context.join(', ')}</div>
+                                      )}
+                                      {typeof topic.sentiment !== 'undefined' && (
+                                        <div className="text-xs opacity-70">Sentiment: {topic.sentiment}</div>
+                                      )}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {analysisResults.keyInsights && Array.isArray(analysisResults.keyInsights) && analysisResults.keyInsights.length > 0 && (
+                              <div className="mt-4">
+                                <h5 className="font-medium mb-1">Key Insights:</h5>
+                                <ul className="list-disc pl-5">
+                                  {analysisResults.keyInsights.map((insight: KeyInsight, idx: number) => (
+                                    <li key={idx}>{insight.insight}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </>
+                        )}
                       </div>
-                      <div 
-                        className="rounded-lg p-4 transition-colors"
-                        style={{ 
-                          backgroundColor: isDarkMode ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.1)',
-                          color: isDarkMode ? 'rgb(5, 150, 105)' : 'rgb(4, 120, 87)'
-                        }}
-                      >
-                        <div className="text-3xl font-bold">12%</div>
-                        <div className="text-sm">gratitude</div>
+                    ) : analysisResults && analysisResults.error ? (
+                      <div className="p-4 rounded-lg text-center text-red-500" style={{ backgroundColor: isDarkMode ? '#374151' : '#F8FAFC' }}>
+                        <p>{analysisResults.error}</p>
                       </div>
-                    </div>
-                    
-                    {(analysisDateRange.startDate || analysisDateRange.selectedDates.length > 0) && (
-                      <div 
-                        className="p-4 rounded-lg mt-4 transition-colors"
-                        style={{ 
-                          backgroundColor: isDarkMode ? '#374151' : '#F8FAFC',
-                          color: elementColors.text
-                        }}
-                      >
-                        <h4 className="font-medium mb-2">Key Trends</h4>
-                        <ul className="space-y-2 pl-4 list-disc">
-                          <li>You mentioned "work" 15 times in selected entries</li>
-                          <li>Your mood tends to improve on weekends</li>
-                          <li>Morning entries are generally more positive than evening ones</li>
-                        </ul>
+                    ) : (
+                      // Catchy CTA instead of hardcoded fallback
+                      <div className="p-6 rounded-lg text-center bg-gradient-to-r from-blue-50 to-amber-50 border border-dashed border-blue-300 shadow-sm">
+                        <h3 className="text-xl font-bold mb-2 text-blue-800">Discover Insights from Your Journals!</h3>
+                        <p className="text-md text-blue-700 mb-2">Select a date range or specific dates and click <span className="font-semibold text-amber-700">Analyze Journal Entries</span> to unlock trends, emotions, and patterns in your writing. Visualize your growth and get personalized insights instantly!</p>
+                        <p className="text-sm text-gray-500">Try it now and see your story in a whole new light.</p>
                       </div>
                     )}
                   </div>
@@ -436,6 +665,41 @@ const JournalGallery: React.FC<JournalGalleryProps> = ({ entries }) => {
                   </div>
                 </div>
               </div>
+            </div>
+            {analysisResults && !analysisResults.error && !isAnalyzing && (
+              <button
+                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                onClick={saveAnalysisToHistory}
+              >
+                Save Analysis to History
+              </button>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="history" className="mt-0">
+            <div className="p-4">
+              <h3 className="text-lg font-bold mb-4">Analysis History</h3>
+              {history.length === 0 ? (
+                <div className="text-gray-500">No past analyses saved yet.</div>
+              ) : (
+                <ul className="space-y-4">
+                  {history.map(entry => (
+                    <li key={entry.id} className="border rounded p-3 hover:bg-blue-50 cursor-pointer" onClick={() => loadHistoryEntry(entry)}>
+                      <div className="font-semibold">{entry.type.charAt(0).toUpperCase() + entry.type.slice(1)} Analysis</div>
+                      <div className="text-xs text-gray-500">{entry.range} • {entry.date}</div>
+                      <div className="text-sm mt-1 truncate">
+                        {entry.type === 'sentiment' && entry.results.overallSentiment ? (
+                          <>Sentiment: <b>{entry.results.overallSentiment.label}</b> ({entry.results.overallSentiment.score})</>
+                        ) : entry.type === 'textual' && entry.results.keyInsights && entry.results.keyInsights.length > 0 ? (
+                          <>Insight: <b>{entry.results.keyInsights[0].insight}</b></>
+                        ) : (
+                          <>No summary available.</>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </TabsContent>
         </Tabs>
