@@ -19,6 +19,7 @@ import DailyPrompt from '@/components/DailyPrompt';
 import AIInsightsCard from '@/components/AIInsightsCard';
 import WeeklySummary from '@/components/WeeklySummary';
 import StreakChallengeCard from '@/components/StreakChallengeCard';
+import AISuggestions from '@/components/AISuggestions';
 
 interface JournalStats {
   totalEntries: number;
@@ -28,6 +29,29 @@ interface JournalStats {
   averageMood: string;
   mostProductiveDay: string;
   topTopics: { name: string; count: number }[];
+}
+
+interface PromptData {
+  prompt: {
+    text: string;
+    explanation: string;
+  };
+  suggestions: {
+    moodTrends: {
+      primaryMood: string;
+      trend: string;
+      intensity: number;
+    };
+    aiNudge: {
+      theme: string;
+      suggestion: string;
+      action: string;
+    };
+    patternInsight: {
+      pattern: string;
+      exploration: string;
+    };
+  };
 }
 
 export default function Dashboard() {
@@ -43,9 +67,27 @@ export default function Dashboard() {
   const [showToast, setShowToast] = useState(false);
   const [stats, setStats] = useState<JournalStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [prompt, setPrompt] = useState({
-    text: "What's something you're looking forward to?",
-    explanation: "Taking a moment to anticipate positive events can boost your mood and give you something to look forward to."
+  const [promptData, setPromptData] = useState<PromptData>({
+    prompt: {
+      text: "What's on your mind today?",
+      explanation: "Start your journaling journey by sharing your thoughts and feelings."
+    },
+    suggestions: {
+      moodTrends: {
+        primaryMood: "neutral",
+        trend: "starting",
+        intensity: 0.5
+      },
+      aiNudge: {
+        theme: "Getting Started",
+        suggestion: "Begin your journaling journey by writing about your day",
+        action: "Try writing for 5 minutes about what made you smile today"
+      },
+      patternInsight: {
+        pattern: "New to journaling",
+        exploration: "Explore different writing styles and find what works best for you"
+      }
+    }
   });
 
   // Fetch journal stats on component mount
@@ -71,11 +113,17 @@ export default function Dashboard() {
 
   const fetchRandomPrompt = async () => {
     try {
-      const response = await fetch('/api/prompts/random');
-      const data = await response.json();
-      setPrompt(data);
+      console.log('Fetching personalized prompt and suggestions...');
+      const response = await fetch('/api/prompts/personalized');
+      if (!response.ok) {
+        throw new Error('Failed to fetch prompt');
+      }
+      const data: PromptData = await response.json();
+      console.log('Received prompt data:', data);
+      setPromptData(data);
     } catch (error) {
-      console.error("Failed to fetch prompt:", error);
+      console.error('Error fetching prompt:', error);
+      // Keep the default prompt data if fetch fails
     }
   };
 
@@ -175,8 +223,11 @@ export default function Dashboard() {
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
           <div className="md:col-span-2 space-y-4 lg:space-y-6">
-            {/* Daily Prompt Component */}
-            <DailyPrompt prompt={prompt} />
+            {/* Daily Prompt and AI Suggestions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <DailyPrompt prompt={promptData.prompt} />
+              <AISuggestions suggestions={promptData.suggestions} />
+            </div>
             
             <RecentEntries />
           </div>
