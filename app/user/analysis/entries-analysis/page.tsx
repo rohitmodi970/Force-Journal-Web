@@ -6,11 +6,9 @@ import Layout from "@/components/layout/Layout";
 import { getAllJournalEntries } from "@/utilities/journal-data";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/quilted-gallery/ui/card';
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Calendar, Loader2, BarChart2, Book, ArrowRight } from "lucide-react";
+import { Sparkles, Calendar, Loader2, BarChart2, Book, ArrowRight, History } from "lucide-react";
 import AnalysisCharts from "@/components/Journal/AnalysisCharts";
 import { useTheme } from "@/utilities/context/ThemeContext";
-import { useSession } from "next-auth/react";
-import { usePathname } from "next/navigation";
 import { Button } from '@/components/ui/button2';
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/quilted-gallery/ui/tabs';
@@ -21,6 +19,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/quilted-gallery/ui/tooltip';
 import ThemeSidebar from '@/components/Navbar/ThemeSidebar';
+import AnalysisHistory from "@/components/Journal/AnalysisHistory";
 
 // Define the JournalEntry type
 export interface JournalEntry {
@@ -64,18 +63,19 @@ interface AnalyzedEntry {
   analysis: AnalysisResult;
 }
 
-// Define theme context types
-interface ThemeContextType {
-  currentTheme: {
-    primary: string;
-    secondary?: string;
-  } | {
-    primary: string;
-  };
-  isDarkMode: boolean;
-  elementColors: {
-    accent: string;
-    [key: string]: string;
+// Add AnalysisHistoryEntry interface
+interface AnalysisHistoryEntry {
+  id: string;
+  date: string;
+  title: string;
+  summary: string;
+  analysis: {
+    entryId: string;
+    sentiment_score: number;
+    sentiment_label: string;
+    primary_emotion: string | null;
+    secondary_emotions: string[];
+    key_phrases: string[];
   };
 }
 
@@ -85,11 +85,10 @@ const AnalysisPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [processingEntries, setProcessingEntries] = useState<Record<string, boolean>>({});
+  const [history, setHistory] = useState<AnalysisHistoryEntry<'entries'>[]>([]);
 
   // Theme context
-  const { currentTheme, isDarkMode, elementColors } = useTheme() ;
-  const { data: session } = useSession();
-  const pathname = usePathname();
+  const { currentTheme, isDarkMode } = useTheme();
 
   useEffect(() => {
     async function loadJournalEntries() {
@@ -108,6 +107,55 @@ const AnalysisPage: React.FC = () => {
     loadJournalEntries();
   }, []);
 
+  // Load history from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('entriesAnalysisHistory');
+    if (saved) {
+      setHistory(JSON.parse(saved));
+    }
+  }, []);
+
+  // Save analysis to history
+  const saveToHistory = (entry: JournalEntry, analysis: AnalysisResult) => {
+    const historyEntry: AnalysisHistoryEntry = {
+      id: `${entry.journalId}-${Date.now()}`,
+      date: new Date().toISOString(),
+      title: `Analysis of "${entry.title}"`,
+      summary: `Sentiment: ${analysis.sentiment_label}, Primary Emotion: ${analysis.primary_emotion || 'None'}`,
+      analysis: {
+        entryId: entry.journalId,
+        sentiment_score: analysis.sentiment_score,
+        sentiment_label: analysis.sentiment_label,
+        primary_emotion: analysis.primary_emotion,
+        secondary_emotions: analysis.secondary_emotions,
+        key_phrases: analysis.key_phrases
+      }
+    };
+    const updated = [historyEntry, ...history].slice(0, 20); // keep last 20
+    setHistory(updated);
+    localStorage.setItem('entriesAnalysisHistory', JSON.stringify(updated));
+  };
+
+  // Load a history entry as the current analysis
+  const handleLoadHistory = (entry: AnalysisHistoryEntry) => {
+    // Update the analysis results for the specific entry
+    setAnalysisResults(prev => ({
+      ...prev,
+      [entry.analysis.entryId]: {
+        sentiment_score: entry.analysis.sentiment_score,
+        sentiment_label: entry.analysis.sentiment_label,
+        magnitude: 0, // These fields are not stored in history
+        confidence: 0, // These fields are not stored in history
+        probabilities: { positive: 0, neutral: 0, negative: 0 }, // These fields are not stored in history
+        primary_emotion: entry.analysis.primary_emotion,
+        secondary_emotions: entry.analysis.secondary_emotions,
+        emotion_scores: {}, // This field is not stored in history
+        key_phrases: entry.analysis.key_phrases
+      }
+    }));
+  };
+
+  // Modify analyzeEntry to save to history
   const analyzeEntry = async (entry: JournalEntry): Promise<AnalysisResult | undefined> => {
     try {
       setProcessingEntries(prev => ({ ...prev, [entry.journalId]: true }));
@@ -115,7 +163,6 @@ const AnalysisPage: React.FC = () => {
       const formData = new FormData();
       formData.append("text", entry.content || "");
       
-      // Add image if available
       if (entry.mediaUrl?.image?.[0]) {
         const imageResponse = await fetch(entry.mediaUrl.image[0]);
         const imageBlob = await imageResponse.blob();
@@ -136,6 +183,9 @@ const AnalysisPage: React.FC = () => {
         ...prev,
         [entry.journalId]: result
       }));
+
+      // Save to history
+      saveToHistory(entry, result);
 
       return result;
     } catch (error) {
@@ -260,10 +310,6 @@ const AnalysisPage: React.FC = () => {
   const backgroundStyle: React.CSSProperties = {
     backgroundColor: isDarkMode ? '#1F2937' : '#F7F9FC',
     color: isDarkMode ? '#F9FAFB' : '#111827',
-  };
-
-  const accentStyle: React.CSSProperties = {
-    backgroundColor: elementColors.accent,
   };
 
   const primaryStyle: React.CSSProperties = {
@@ -464,10 +510,20 @@ const AnalysisPage: React.FC = () => {
                 )}
 
                 {/* Tabs for different views */}
-                <Tabs defaultValue="grid" className="mt-8">
-                  <TabsList>
-                    <TabsTrigger value="grid">Grid View</TabsTrigger>
-                    <TabsTrigger value="list">List View</TabsTrigger>
+                <Tabs defaultValue="grid" className="w-full">
+                  <TabsList className="grid w-full grid-cols-3 mb-8">
+                    <TabsTrigger value="grid" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+                      <BarChart2 className="w-4 h-4 mr-2" />
+                      Grid View
+                    </TabsTrigger>
+                    <TabsTrigger value="list" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+                      <Book className="w-4 h-4 mr-2" />
+                      List View
+                    </TabsTrigger>
+                    <TabsTrigger value="history" className="data-[state=active]:bg-gray-600 data-[state=active]:text-white">
+                      <History className="w-4 h-4 mr-2" />
+                      History
+                    </TabsTrigger>
                   </TabsList>
 
                   {/* Grid View */}
@@ -682,6 +738,14 @@ const AnalysisPage: React.FC = () => {
                         </Card>
                       ))}
                     </div>
+                  </TabsContent>
+
+                  <TabsContent value="history">
+                    <AnalysisHistory
+                      history={history}
+                      onLoadHistory={handleLoadHistory}
+                      type="entries"
+                    />
                   </TabsContent>
                 </Tabs>
 

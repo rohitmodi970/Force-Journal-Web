@@ -127,9 +127,43 @@ const COLORS = {
   default: '#CBD5E1'   // slate
 };
 
-const SentimentAnalysisDashboard = ({ data = dummyData }) => {
+interface SentimentAnalysisDashboardProps {
+  data?: EmotionEntry[];
+  onAnalysisComplete?: (analysis: {
+    sentiment_score: number;
+    sentiment_label: string;
+    primary_emotion?: string;
+    secondary_emotions?: string[];
+    topics?: string[];
+    summary?: string;
+  }, title: string, summary: string) => void;
+  currentAnalysis?: {
+    sentiment_score: number;
+    sentiment_label: string;
+    primary_emotion?: string;
+    secondary_emotions?: string[];
+    topics?: string[];
+    summary?: string;
+  } | null;
+}
+
+const SentimentAnalysisDashboard: React.FC<SentimentAnalysisDashboardProps> = ({ 
+  data = dummyData,
+  onAnalysisComplete,
+  currentAnalysis 
+}) => {
   const { theme } = useTheme();
-  const [selectedEntry, setSelectedEntry] = useState<EmotionEntry | null>(data[data.length - 1]);
+  const [selectedEntry, setSelectedEntry] = useState<EmotionEntry | null>(currentAnalysis ? {
+    ...data[data.length - 1],
+    roberta_sentiment: currentAnalysis.sentiment_label,
+    primary_emotion: currentAnalysis.primary_emotion || '',
+    secondary_emotions: currentAnalysis.secondary_emotions || [],
+    emotion_scores: {
+      positive: currentAnalysis.sentiment_score > 0 ? currentAnalysis.sentiment_score : 0,
+      negative: currentAnalysis.sentiment_score < 0 ? -currentAnalysis.sentiment_score : 0,
+      neutral: Math.abs(currentAnalysis.sentiment_score) < 0.1 ? 1 : 0
+    }
+  } : data[data.length - 1]);
   const [chartData, setChartData] = useState(prepareChartData(data));
   const [emotionData, setEmotionData] = useState(prepareEmotionData(data));
   
@@ -140,9 +174,41 @@ const SentimentAnalysisDashboard = ({ data = dummyData }) => {
   const borderColor = isDarkTheme ? 'border-gray-700' : 'border-gray-200';
   
   useEffect(() => {
-    setChartData(prepareChartData(data));
-    setEmotionData(prepareEmotionData(data));
-  }, [data]);
+    if (currentAnalysis) {
+      const updatedEntry = {
+        ...data[data.length - 1],
+        roberta_sentiment: currentAnalysis.sentiment_label,
+        primary_emotion: currentAnalysis.primary_emotion || '',
+        secondary_emotions: currentAnalysis.secondary_emotions || [],
+        emotion_scores: {
+          positive: currentAnalysis.sentiment_score > 0 ? currentAnalysis.sentiment_score : 0,
+          negative: currentAnalysis.sentiment_score < 0 ? -currentAnalysis.sentiment_score : 0,
+          neutral: Math.abs(currentAnalysis.sentiment_score) < 0.1 ? 1 : 0
+        }
+      };
+      setSelectedEntry(updatedEntry);
+      setChartData(prepareChartData([...data.slice(0, -1), updatedEntry]));
+      setEmotionData(prepareEmotionData([...data.slice(0, -1), updatedEntry]));
+    } else {
+      setChartData(prepareChartData(data));
+      setEmotionData(prepareEmotionData(data));
+    }
+  }, [data, currentAnalysis]);
+
+  // Call onAnalysisComplete when a new entry is selected
+  useEffect(() => {
+    if (selectedEntry && onAnalysisComplete) {
+      const analysis = {
+        sentiment_score: selectedEntry.emotion_scores.positive - selectedEntry.emotion_scores.negative,
+        sentiment_label: selectedEntry.roberta_sentiment,
+        primary_emotion: selectedEntry.primary_emotion,
+        secondary_emotions: selectedEntry.secondary_emotions,
+        topics: [], // Add topics if available
+        summary: `Analysis of entry from ${formatDate(selectedEntry.timestamp)}`
+      };
+      onAnalysisComplete(analysis, `Entry Analysis - ${formatDate(selectedEntry.timestamp)}`, analysis.summary);
+    }
+  }, [selectedEntry, onAnalysisComplete]);
 
   const getSentimentIcon = (sentiment: string) => {
     if (sentiment === 'positive') return <Smile className="w-6 h-6 text-green-500" />;
