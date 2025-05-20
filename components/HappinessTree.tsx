@@ -96,8 +96,17 @@ const clusterPositions = [
 const HappinessTree = ({ sources }: { sources?: HappinessSource[] }) => {
   const happinessSources = sources && sources.length > 0 ? sources : defaultSources;
 
+  // Interface for TreeLeaf component props
+  interface TreeLeafProps {
+    x: number;
+    y: number;
+    color: string;
+    rotation: number;
+    pulse: boolean;
+  }
+
   // Custom tree leaf component
-  const TreeLeaf = ({ x, y, color, rotation, pulse }) => (
+  const TreeLeaf = ({ x, y, color, rotation, pulse }: TreeLeafProps) => (
     <g transform={`translate(${x}, ${y}) rotate(${rotation})`}>
       <path
         d="M0,0 C5,-10 15,-10 20,0 C25,10 15,20 0,20 C-15,20 -25,10 -20,0 C-15,-10 -5,-10 0,0"
@@ -141,9 +150,9 @@ const HappinessTree = ({ sources }: { sources?: HappinessSource[] }) => {
             return (
               <g key={source.source}>
                 <TreeLeaf x={pos.x} y={pos.y} color={source.color} rotation={pos.rotation} pulse={true} />
-                <TreeLeaf x={pos.x + 20} y={pos.y - 20} color={source.color} rotation={pos.rotation + 20} />
-                <TreeLeaf x={pos.x - 20} y={pos.y - 20} color={source.color} rotation={pos.rotation - 20} />
-                <TreeLeaf x={pos.x} y={pos.y - 40} color={source.color} rotation={pos.rotation} />
+                <TreeLeaf x={pos.x + 20} y={pos.y - 20} color={source.color} rotation={pos.rotation + 20} pulse={false} />
+                <TreeLeaf x={pos.x - 20} y={pos.y - 20} color={source.color} rotation={pos.rotation - 20} pulse={false} />
+                <TreeLeaf x={pos.x} y={pos.y - 40} color={source.color} rotation={pos.rotation} pulse={false} />
                 <text x={pos.labelX} y={pos.labelY} textAnchor={pos.anchor} fill={source.color} fontWeight="bold">{source.source}</text>
               </g>
             );
