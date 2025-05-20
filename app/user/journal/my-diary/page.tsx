@@ -5,9 +5,8 @@ import Layout from "@/components/layout/Layout";
 import PageFlipBook from "@/components/Journal/PageFlipBook";
 import { getAllJournalEntries } from "@/utilities/journal-data";
 import Link from "next/link";
-import { BookOpen, Palette, Image as ImageIcon, Plus } from "lucide-react";
+import { BookOpen, Palette } from "lucide-react";
 import { JournalEntry } from "@/components/Journal/types";
-import ThemeSidebar from "@/components/Navbar/ThemeSidebar";
 // Define types for background options
 type GradientBackground = {
   type: "gradient";
@@ -49,33 +48,9 @@ type BackgroundOption =
 const backgroundOptions: BackgroundOption[] = [
   {
     type: "gradient",
-    name: "Default",
-    value: "linear-gradient(to bottom right, #fffbeb, #fef3c7)", // CSS gradient value
-    className: "bg-gradient-to-br from-amber-50 to-amber-100"    // Tailwind class for the Layout
-  },
-  {
-    type: "gradient",
     name: "Sunset",
     value: "linear-gradient(to bottom right, #fed7aa, #fda4af)",
     className: "bg-gradient-to-br from-orange-200 to-rose-300"
-  },
-  {
-    type: "gradient",
-    name: "Ocean",
-    value: "linear-gradient(to bottom right, #bae6fd, #cffafe)",
-    className: "bg-gradient-to-br from-blue-200 to-cyan-100"
-  },
-  {
-    type: "gradient",
-    name: "Forest",
-    value: "linear-gradient(to bottom right, #dcfce7, #a7f3d0)",
-    className: "bg-gradient-to-br from-green-100 to-emerald-200"
-  },
-  {
-    type: "gradient",
-    name: "Lavender",
-    value: "linear-gradient(to bottom right, #f3e8ff, #f5d0fe)",
-    className: "bg-gradient-to-br from-purple-100 to-fuchsia-200"
   },
   {
     type: "image",
@@ -92,23 +67,27 @@ const backgroundOptions: BackgroundOption[] = [
     name: "Rainbow Blur 3",
     value: "https://images.unsplash.com/photo-1729601648807-3c45ee96343d?q=80&w=2532&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
   },
+  {
+    type: "image",
+    name: "Risograph 1",
+    value: "/Risograph1.png"
+  },
+  {
+    type: "image",
+    name: "Risograph 2",
+    value: "/Risograph2.png"
+  },
+  {
+    type: "image",
+    name: "Risograph 3",
+    value: "/Risograph3.png"
+  },
+  {
+    type: "image",
+    name: "Risograph 4",
+    value: "/Risograph4.png"
+  },
 ];
-
-// Helper function to convert CSS direction to Tailwind direction
-const cssToTailwindDirection = (cssDirection: string): string => {
-  const directionMap: { [key: string]: string } = {
-    "to right": "to-r",
-    "to left": "to-l",
-    "to top": "to-t",
-    "to bottom": "to-b",
-    "to top right": "to-tr",
-    "to top left": "to-tl",
-    "to bottom right": "to-br",
-    "to bottom left": "to-bl"
-  };
-
-  return directionMap[cssDirection] || "to-r";
-};
 
 // Helper function to convert Tailwind direction to CSS direction
 const tailwindToCssDirection = (tailwindDirection: string): string => {
@@ -226,13 +205,6 @@ const JournalPage = () => {
   };
 
   // Create background style based on selection
-  const getBackgroundClass = () => {
-    if (selectedBackground.type === "gradient" && "className" in selectedBackground) {
-      return selectedBackground.className;
-    }
-    return "";
-  };
-
   const getBackgroundStyle = () => {
     if (selectedBackground.type === "image") {
       return {

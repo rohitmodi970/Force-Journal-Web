@@ -152,7 +152,7 @@ const HappinessTree = ({ sources }: { sources?: HappinessSource[] }) => {
           <ellipse cx="300" cy="435" rx="200" ry="20" fill="#A1887F" opacity="0.5" />
           {/* Your roots text */}
           <text x="300" y="470" textAnchor="middle" className="text-lg font-medium">
-            Your Happiness Tree - Rooted in Balance
+            Your Happiness Tree
           </text>
         </svg>
       </div>

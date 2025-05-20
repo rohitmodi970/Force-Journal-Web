@@ -15,14 +15,25 @@ import TextualAnalysisTab from './TextualAnalysisTab';
 
 interface AdvancedAnalysisDashboardProps {
   entries: JournalEntry[];
+  onAnalysisComplete?: (analysis: GeminiAnalytics, title: string, summary: string) => void;
+  currentAnalysis?: GeminiAnalytics | null;
 }
 
-const AdvancedAnalysisDashboard: React.FC<AdvancedAnalysisDashboardProps> = ({ entries }) => {
-  const [analytics, setAnalytics] = useState<GeminiAnalytics | null>(null);
+const AdvancedAnalysisDashboard: React.FC<AdvancedAnalysisDashboardProps> = ({ 
+  entries, 
+  onAnalysisComplete,
+  currentAnalysis 
+}) => {
+  const [analytics, setAnalytics] = useState<GeminiAnalytics | null>(currentAnalysis || null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (currentAnalysis) {
+      setAnalytics(currentAnalysis);
+      return;
+    }
+
     if (!entries || entries.length === 0) return;
     const fetchData = async () => {
       setLoading(true);
@@ -31,6 +42,12 @@ const AdvancedAnalysisDashboard: React.FC<AdvancedAnalysisDashboardProps> = ({ e
         const data = await fetchGeminiAnalytics(entries);
         if (data) {
           setAnalytics(data);
+          // Call the callback with the analysis results
+          if (onAnalysisComplete) {
+            const title = `Analysis of ${entries.length} entries`;
+            const summary = data.healthWellnessInsight || 'Advanced analysis completed';
+            onAnalysisComplete(data, title, summary);
+          }
         } else {
           setError('Failed to fetch analytics data');
         }
@@ -42,7 +59,7 @@ const AdvancedAnalysisDashboard: React.FC<AdvancedAnalysisDashboardProps> = ({ e
       }
     };
     fetchData();
-  }, [entries]);
+  }, [entries, currentAnalysis, onAnalysisComplete]);
 
   if (loading) {
     return (
