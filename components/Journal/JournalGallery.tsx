@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import JournalEditor from "./GalleryComponent/JournalEditor";
-import JournalAnalysis from "./GalleryComponent/JournalAnalysis";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/quilted-gallery/ui/tabs";
 import { useTheme } from "@/utilities/context/ThemeContext";
 import { JournalEntry } from "./types";
+import JournalCalendar from "./JournalCalendar";
 
 interface JournalGalleryProps {
   entries: JournalEntry[];
@@ -30,6 +30,15 @@ const JournalGallery: React.FC<JournalGalleryProps> = ({ entries }) => {
   const { currentTheme, isDarkMode, elementColors } = useTheme();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const dateScrollerRef = useRef<HTMLDivElement>(null);
+  const [analysisDateRange, setAnalysisDateRange] = useState<{
+    startDate: Date | null;
+    endDate: Date | null;
+    selectedDates: Date[];
+  }>({
+    startDate: null,
+    endDate: null,
+    selectedDates: []
+  });
   
   // Generate dates for the date scroller (past 30 days and future 7 days)
   const generateDateRange = () => {
@@ -161,6 +170,18 @@ const JournalGallery: React.FC<JournalGalleryProps> = ({ entries }) => {
   const handleEntrySave = (newEntry: boolean): void => {
     // Here you would typically refresh the entries from the parent component
     console.log("Entry saved, refreshing entries...", newEntry ? "New entry created" : "Entry updated");
+  };
+
+  // Handle calendar analysis date selection
+  const handleAnalyzeDates = (startDate: Date, endDate: Date | null, selectedDates: Date[]): void => {
+    setAnalysisDateRange({
+      startDate,
+      endDate,
+      selectedDates
+    });
+    
+    console.log("Analyzing dates:", { startDate, endDate, selectedDates });
+    // Here you would trigger your analysis functionality with the selected dates
   };
 
   return (
@@ -303,7 +324,14 @@ const JournalGallery: React.FC<JournalGalleryProps> = ({ entries }) => {
                   className="rounded-xl shadow-sm border p-6 transition-colors"
                   style={containerStyle}
                 >
-                  <h3 className="text-lg font-medium mb-4" style={{ color: elementColors.text }}>Recent Insights</h3>
+                  <h3 className="text-lg font-medium mb-4" style={{ color: elementColors.text }}>
+                    {analysisDateRange.startDate ? 
+                      `Analysis for ${analysisDateRange.startDate.toLocaleDateString()} ${analysisDateRange.endDate ? `to ${analysisDateRange.endDate.toLocaleDateString()}` : ''}` :
+                      analysisDateRange.selectedDates.length > 0 ? 
+                        `Analysis for ${analysisDateRange.selectedDates.length} selected dates` :
+                        "Recent Insights"
+                    }
+                  </h3>
                   
                   <div className="space-y-4">
                     <div 
@@ -315,7 +343,9 @@ const JournalGallery: React.FC<JournalGalleryProps> = ({ entries }) => {
                     >
                       <p>
                         {entries.length > 0 ? 
-                          "Your journals this week show a pattern of increased anxiety around work-related topics. Try incorporating some mindfulness practices into your daily routine." :
+                          analysisDateRange.startDate || analysisDateRange.selectedDates.length > 0 ?
+                            "Analyzing your selected journal entries. The most frequent topics during this period were work (35%), relationships (22%), and health (15%)." :
+                            "Your journals this week show a pattern of increased anxiety around work-related topics. Try incorporating some mindfulness practices into your daily routine." :
                           "Start journaling to see insights about your writing patterns and mood trends."}
                       </p>
                     </div>
@@ -352,13 +382,36 @@ const JournalGallery: React.FC<JournalGalleryProps> = ({ entries }) => {
                         <div className="text-sm">gratitude</div>
                       </div>
                     </div>
+                    
+                    {(analysisDateRange.startDate || analysisDateRange.selectedDates.length > 0) && (
+                      <div 
+                        className="p-4 rounded-lg mt-4 transition-colors"
+                        style={{ 
+                          backgroundColor: isDarkMode ? '#374151' : '#F8FAFC',
+                          color: elementColors.text
+                        }}
+                      >
+                        <h4 className="font-medium mb-2">Key Trends</h4>
+                        <ul className="space-y-2 pl-4 list-disc">
+                          <li>You mentioned "work" 15 times in selected entries</li>
+                          <li>Your mood tends to improve on weekends</li>
+                          <li>Morning entries are generally more positive than evening ones</li>
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
               
               <div className="md:col-span-1">
+                {/* Calendar Component Integration */}
+                <JournalCalendar 
+                  entries={entries}
+                  onAnalyze={handleAnalyzeDates}
+                />
+                
                 <div 
-                  className="rounded-xl shadow-sm border p-6 h-full transition-colors"
+                  className="rounded-xl shadow-sm border p-6 mt-6 transition-colors"
                   style={containerStyle}
                 >
                   <h3 className="text-lg font-medium mb-4" style={{ color: elementColors.text }}>Journal Stats</h3>
