@@ -581,7 +581,7 @@ const AnalysisPage: React.FC = () => {
                               </Button>
                             )}
                           </CardContent>
-                          <CardFooter className="pt-0">
+                          <CardFooter className="pt-0 z-30">
                             <Button 
                               variant="outline" 
                               size="sm" 
@@ -615,7 +615,7 @@ const AnalysisPage: React.FC = () => {
                               <p className="mt-2 text-sm line-clamp-2">
                                 {entry.content}
                               </p>
-                              <div className="mt-4">
+                              <div className="mt-4 z-30">
                                 <Button 
                                   variant="outline" 
                                   size="sm" 

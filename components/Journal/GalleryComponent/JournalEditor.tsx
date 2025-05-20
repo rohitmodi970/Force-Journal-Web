@@ -1,81 +1,292 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { Loader2, Save } from "lucide-react";
+import { useTheme } from "@/utilities/context/ThemeContext";
+import Link from "next/link";
 import { JournalEntry } from "../types";
+import Toast from "@/components/ui/toast";
 
 interface JournalEditorProps {
   selectedDate: Date;
   entries: JournalEntry[];
+  onSave?: (newEntry: boolean) => void;
 }
 
 const JournalEditor: React.FC<JournalEditorProps> = ({
   selectedDate,
-  entries
+  entries,
+  onSave
 }) => {
+  // Theme context
+  const { currentTheme, isDarkMode, elementColors } = useTheme();
+
+  // Form state
   const [title, setTitle] = useState<string>("");
   const [content, setContent] = useState<string>("");
   const [journalType, setJournalType] = useState<string>("personal");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   
-  const formatDateString = (date: Date) => {
+  // Toast state
+  const [toastVisible, setToastVisible] = useState<boolean>(false);
+  const [toastMessage, setToastMessage] = useState<string>("");
+  const [toastType, setToastType] = useState<"success" | "error" | "info" | "warning">("info");
+  
+  // Current entry management
+  const [currentJournalId, setCurrentJournalId] = useState<string | null>(null);
+  const [entriesForDate, setEntriesForDate] = useState<JournalEntry[]>([]);
+  const [selectedEntryIndex, setSelectedEntryIndex] = useState<number>(0);
+
+  // Show toast notification
+  const showToast = (message: string, type: "success" | "error" | "info" | "warning") => {
+    setToastMessage(message);
+    setToastType(type);
+    setToastVisible(true);
+  };
+
+  // Format date to YYYY-MM-DD string
+  const formatDateString = (date: Date): string => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   };
   
-  // Find existing entry for the selected date
-  const dateString = formatDateString(selectedDate);
-  const existingEntry = entries.find(entry => entry.date === dateString);
-  
-  // Initialize form with existing entry data if available
-  React.useEffect(() => {
-    if (existingEntry) {
-      setTitle(existingEntry.title || "");
-      setContent(existingEntry.content || "");
-      setJournalType(existingEntry.journalType || "personal");
-      setTags(existingEntry.tags || []);
+  // Get entries for the selected date
+  useEffect(() => {
+    const dateString = formatDateString(selectedDate);
+    const filteredEntries = entries.filter(entry => entry.date === dateString)
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    
+    setEntriesForDate(filteredEntries);
+    
+    // Select the most recent entry, or reset form if no entries
+    if (filteredEntries.length > 0) {
+      setSelectedEntryIndex(0);
+      loadEntry(filteredEntries[0]);
     } else {
-      // Reset form when switching to a date with no entry
-      setTitle("");
-      setContent("");
-      setJournalType("personal");
-      setTags([]);
+      resetForm();
     }
-  }, [selectedDate, existingEntry]);
+  }, [selectedDate, entries]);
   
-  const handleAddTag = () => {
+  // Load an entry into the form
+  const loadEntry = (entry: JournalEntry): void => {
+    setTitle(entry.title || "");
+    setContent(entry.content || "");
+    setJournalType(entry.journalType || "personal");
+    setTags(entry.tags || []);
+    setCurrentJournalId(entry.journalId);
+  };
+  
+  // Reset the form for a new entry
+  const resetForm = (): void => {
+    setTitle("");
+    setContent("");
+    setJournalType("personal");
+    setTags([]);
+    setCurrentJournalId(null);
+  };
+  
+  // Handle selecting a different entry for the same day
+  const handleEntrySelect = (index: number): void => {
+    if (index >= 0 && index < entriesForDate.length) {
+      setSelectedEntryIndex(index);
+      loadEntry(entriesForDate[index]);
+    }
+  };
+  
+  // Handle creating a new entry
+  const handleNewEntry = (): void => {
+    resetForm();
+    setSelectedEntryIndex(-1); // -1 indicates creating a new entry
+    showToast("Started new journal entry", "info");
+  };
+  
+  // Tag management
+  const handleAddTag = (): void => {
     if (tagInput.trim() !== "" && !tags.includes(tagInput.trim())) {
       setTags([...tags, tagInput.trim()]);
       setTagInput("");
+      showToast(`Tag "${tagInput.trim()}" added`, "success");
     }
   };
   
-  const handleRemoveTag = (tagToRemove: string) => {
+  const handleRemoveTag = (tagToRemove: string): void => {
     setTags(tags.filter(tag => tag !== tagToRemove));
+    showToast(`Tag "${tagToRemove}" removed`, "info");
   };
   
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent): void => {
     if (e.key === 'Enter' && tagInput.trim() !== "") {
       e.preventDefault();
       handleAddTag();
     }
   };
   
-  const handleSave = () => {
-    // Here you would save the journal entry
-    // This is just a placeholder for the actual save functionality
-    alert(`Journal entry saved for ${selectedDate.toLocaleDateString()}`);
+  // Save journal entry
+  const handleSave = async (): Promise<void> => {
+    try {
+      setIsLoading(true);
+      const timestamp = new Date().toISOString();
+      
+      const entryData = {
+        title,
+        content,
+        journalType,
+        tags,
+        date: formatDateString(selectedDate),
+        timestamp
+      };
+      
+      // Update existing entry
+      if (currentJournalId) {
+        const response = await fetch('/api/journal-entry', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            journalId: currentJournalId,
+            ...entryData
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to update journal entry');
+        }
+        
+        showToast('Journal entry updated', 'success');
+      } 
+      // Create new entry
+      else {
+        const response = await fetch('/api/journal-entry', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(entryData),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to create journal entry');
+        }
+        
+        const data = await response.json();
+        setCurrentJournalId(data.entry.journalId);
+        showToast('Journal entry created', 'success');
+      }
+      
+      // Callback to parent component to refresh entries
+      if (onSave) onSave(currentJournalId === null);
+      
+    } catch (error) {
+      console.error('Error saving journal:', error);
+      showToast('Failed to save journal entry', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Format time for display
+  const formatTime = (timestamp: string): string => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  // Dynamic styles based on theme
+  const containerStyle = {
+    backgroundColor: isDarkMode ? '#2D3748' : '#FFFFFF',
+    borderColor: isDarkMode ? '#4A5568' : '#E2E8F0',
+    color: elementColors.text
+  };
+
+  const inputStyle = {
+    backgroundColor: isDarkMode ? '#4A5568' : '#FFFFFF',
+    borderColor: isDarkMode ? '#718096' : '#E2E8F0',
+    color: elementColors.text
+  };
+
+  const buttonStyle = {
+    backgroundColor: elementColors.button,
+    color: isDarkMode ? '#FFFFFF' : '#FFFFFF',
+    hoverBackgroundColor: currentTheme.hover
   };
   
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+    <div 
+      className="rounded-xl shadow-sm border p-6 transition-colors"
+      style={containerStyle}
+    >
+      {/* Toast notification */}
+      <Toast 
+        message={toastMessage} 
+        type={toastType} 
+        visible={toastVisible} 
+        onClose={() => setToastVisible(false)} 
+        duration={3000}
+      />
+      
+      {/* Entry selector for multiple entries on the same day */}
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center">
+          <div className="flex overflow-x-auto scrollbar-thin pb-2 mr-2">
+            {entriesForDate.map((entry, index) => (
+              <button
+                key={entry.journalId}
+                onClick={() => handleEntrySelect(index)}
+                className={`px-3 py-1.5 mr-2 rounded-md text-sm whitespace-nowrap transition-colors ${
+                  selectedEntryIndex === index
+                    ? 'font-medium'
+                    : 'hover:opacity-80'
+                }`}
+                style={{
+                  backgroundColor: selectedEntryIndex === index 
+                    ? currentTheme.light 
+                    : isDarkMode ? '#4A5568' : '#F1F5F9',
+                  color: selectedEntryIndex === index 
+                    ? currentTheme.primary 
+                    : elementColors.text
+                }}
+              >
+                {formatTime(entry.timestamp)}
+                {entry.title && ` - ${entry.title.substring(0, 15)}${entry.title.length > 15 ? '...' : ''}`}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={handleNewEntry}
+            className="px-3 py-1.5 rounded-md text-sm whitespace-nowrap hover:opacity-90 transition-colors"
+            style={{
+              backgroundColor: currentTheme.light,
+              color: currentTheme.primary
+            }}
+          >
+            + New Entry
+          </button>
+        </div>
+        
+        <Link 
+          href="/user/journal-entry"
+          className="text-sm flex items-center hover:underline transition-colors"
+          style={{ color: currentTheme.primary }}
+        >
+          Advanced Journal Writing →
+        </Link>
+      </div>
+      
+      {/* Rest of your component... */}
       <div className="mb-4">
         <input
           type="text"
           placeholder="Title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full px-4 py-2 text-xl font-medium border-b border-gray-200 focus:outline-none focus:border-blue-500"
+          className="w-full px-4 py-2 text-xl font-medium border-b focus:outline-none transition-colors"
+          style={{
+            borderColor: isDarkMode ? '#4A5568' : '#E2E8F0',
+            color: elementColors.text,
+            backgroundColor: 'transparent'
+          }}
         />
       </div>
       
@@ -84,17 +295,34 @@ const JournalEditor: React.FC<JournalEditorProps> = ({
           placeholder="What's on your mind today?"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          className="w-full h-64 px-4 py-3 text-gray-700 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full h-64 px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 resize-none transition-colors"
+          style={{
+            ...inputStyle,
+            borderColor: isDarkMode ? '#4A5568' : '#E2E8F0',
+            //@ts-ignore
+            focusRing: currentTheme.primary
+          }}
         />
       </div>
       
       <div className="flex flex-wrap gap-2 mb-4">
         <div className="flex-1">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Journal Type</label>
+          <label 
+            className="block text-sm font-medium mb-1"
+            style={{ color: elementColors.text }}
+          >
+            Journal Type
+          </label>
           <select
             value={journalType}
             onChange={(e) => setJournalType(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full p-2 border rounded-md focus:outline-none focus:ring-1 transition-colors"
+            style={{
+              ...inputStyle,
+              borderColor: isDarkMode ? '#4A5568' : '#E2E8F0',
+              //@ts-ignore
+              focusRing: currentTheme.primary
+            }}
           >
             <option value="personal">Personal</option>
             <option value="work">Work</option>
@@ -105,7 +333,12 @@ const JournalEditor: React.FC<JournalEditorProps> = ({
         </div>
         
         <div className="flex-1">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Add Tags</label>
+          <label 
+            className="block text-sm font-medium mb-1"
+            style={{ color: elementColors.text }}
+          >
+            Add Tags
+          </label>
           <div className="flex">
             <input
               type="text"
@@ -113,11 +346,21 @@ const JournalEditor: React.FC<JournalEditorProps> = ({
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="flex-1 p-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="flex-1 p-2 border rounded-l-md focus:outline-none focus:ring-1 transition-colors"
+              style={{
+                ...inputStyle,
+                borderColor: isDarkMode ? '#4A5568' : '#E2E8F0',
+                //@ts-ignore
+                focusRing: currentTheme.primary
+              }}
             />
             <button
               onClick={handleAddTag}
-              className="px-3 bg-blue-600 text-white rounded-r-md hover:bg-blue-700 focus:outline-none"
+              className="px-3 rounded-r-md hover:opacity-90 transition-colors"
+              style={{
+                backgroundColor: currentTheme.primary,
+                color: '#FFFFFF'
+              }}
             >
               +
             </button>
@@ -130,12 +373,17 @@ const JournalEditor: React.FC<JournalEditorProps> = ({
           {tags.map((tag, index) => (
             <span
               key={index}
-              className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full flex items-center"
+              className="text-sm px-3 py-1 rounded-full flex items-center transition-colors"
+              style={{
+                backgroundColor: currentTheme.light,
+                color: currentTheme.primary
+              }}
             >
               {tag}
               <button
                 onClick={() => handleRemoveTag(tag)}
-                className="ml-1.5 text-blue-600 hover:text-blue-800 focus:outline-none"
+                className="ml-1.5 hover:opacity-80 focus:outline-none"
+                style={{ color: currentTheme.primary }}
               >
                 ×
               </button>
@@ -144,37 +392,30 @@ const JournalEditor: React.FC<JournalEditorProps> = ({
         </div>
       )}
       
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <button className="p-2 rounded-full hover:bg-gray-100 text-gray-500">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-            </svg>
-          </button>
-          <button className="p-2 rounded-full hover:bg-gray-100 text-gray-500">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </button>
-          <button className="p-2 rounded-full hover:bg-gray-100 text-gray-500">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-            </svg>
-          </button>
-        </div>
-        
-        <div>
-          <button 
-            onClick={handleSave}
-            disabled={!content.trim()}
-            className={`px-4 py-2 rounded-md text-white ${
-              !content.trim() ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-            }`}
-          >
-            Save Entry
-          </button>
-        </div>
+      <div className="flex justify-end">
+        <button 
+          onClick={handleSave}
+          disabled={!content.trim() || isLoading}
+          className={`px-4 py-2 rounded-md flex items-center transition-colors ${
+            !content.trim() || isLoading ? 'opacity-60 cursor-not-allowed' : 'hover:opacity-90'
+          }`}
+          style={{
+            backgroundColor: !content.trim() || isLoading ? '#9CA3AF' : elementColors.button,
+            color: '#FFFFFF'
+          }}
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="w-4 h-4 mr-2" />
+              {currentJournalId ? 'Update Entry' : 'Save Entry'}
+            </>
+          )}
+        </button>
       </div>
     </div>
   );

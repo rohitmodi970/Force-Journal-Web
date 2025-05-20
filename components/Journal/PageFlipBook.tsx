@@ -126,7 +126,7 @@ const PageFlipBook = ({ entries }: PageFlipBookProps) => {
 
   // Navigate to edit page for the current entry
   const handleEditEntry = (entryId: string) => {
-    router.push(`/journal-entry-edit/${entryId}`);
+    router.push(`/user/journal//${entryId}`);
   };
 
   // Helper function to convert CSS gradient direction to actual CSS value

@@ -4,41 +4,9 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/utilities/auth'; // Adjust import based on your auth setup
 import connectDB from '@/db/connectDB';
 import User from '@/models/User';
-import mongoose, { Schema } from 'mongoose';
+import Feedback from '@/models/FeedbackForm';
 import nodemailer from 'nodemailer';
 
-// Define Feedback Schema
-interface IFeedback {
-  userId: number;
-  name: string;
-  email: string;
-  subject: string;
-  message: string;
-  status: 'pending' | 'reviewed' | 'resolved';
-  userAgent?: string;
-  ipAddress?: string;
-}
-
-const FeedbackSchema = new Schema<IFeedback>(
-  {
-    userId: { type: Number, required: true },
-    name: { type: String, required: true },
-    email: { type: String, required: true },
-    subject: { type: String, required: true },
-    message: { type: String, required: true },
-    status: { 
-      type: String, 
-      enum: ['pending', 'reviewed', 'resolved'], 
-      default: 'pending' 
-    },
-    userAgent: { type: String },
-    ipAddress: { type: String }
-  },
-  { timestamps: true }
-);
-
-// Create or access the Feedback model
-const Feedback = mongoose.models.Feedback || mongoose.model<IFeedback>('Feedback', FeedbackSchema);
 
 // Configure email transporter
 const transporter = nodemailer.createTransport({
@@ -264,7 +232,7 @@ async function sendConfirmationEmail(
         <p><span class="emoji">💡</span> Your insights help shape the future of Force. We're committed to creating the best possible experience for our users, and your input is an essential part of that process.</p>
         
         <div style="text-align: center;">
-          <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard" class="button">Return to Dashboard 📊</a>
+          <a href="${process.env.NEXT_PUBLIC_APP_URL}/user/dashboard" class="button">Return to Dashboard 📊</a>
         </div>
         
         <p>If you have any additional comments or questions, feel free to reply directly to this email.</p>

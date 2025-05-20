@@ -1,437 +1,240 @@
 'use client'
+import React from 'react';
+import { motion } from 'framer-motion';
+import { Clock, FileImage, Globe, Zap, MessageSquare, ChevronRight } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/quilted-gallery/ui/card';
+import { Button } from '@/components/ui/button';
+import { useTheme } from '@/utilities/context/ThemeContext';
 
-import React from 'react'
-import Image from 'next/image'
-import Link from 'next/link'
-import { motion } from 'framer-motion'
-import { useTheme } from '@/utilities/context/ThemeContext'
-import { FiUsers, FiMessageCircle, FiBook, FiGlobe } from 'react-icons/fi'
+const WhatNext = () => {
+  const { isDarkMode, currentTheme, elementColors } = useTheme();
 
-const WhatsNext = () => {
-  const { isDarkMode, elementColors, currentTheme } = useTheme()
-  
-  const cardVariants = {
-    hidden: { opacity: 0, y: 50 },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      transition: { duration: 0.5 }
+  // Determine colors based on theme state
+  const cardBgColor = isDarkMode ? 'bg-gray-800/80' : 'bg-white';
+  const pageBgColor = isDarkMode ? 'bg-gray-900' : 'bg-gray-50';
+  const textColor = isDarkMode ? 'text-gray-100' : 'text-gray-900';
+  const mutedTextColor = isDarkMode ? 'text-gray-300' : 'text-gray-500';
+  const feedbackBgColor = isDarkMode ? 'bg-gray-800/50' : 'bg-gray-50';
+  const cardHoverBgColor = isDarkMode ? 'hover:bg-gray-700/90' : 'hover:bg-gray-50';
+  const borderColor = isDarkMode ? 'border-gray-700' : 'border-gray-200';
+
+  // Define color type for type safety
+    type FeatureColor = 'purple' | 'blue' | 'green' | 'yellow';
+  // Feature data for easy mapping
+  const features = [
+    {
+      icon: FileImage,
+      color: 'purple' as FeatureColor,
+      title: 'Deeper Insights: Image & Video Analysis',
+      description: 'Upload images and videos to your journal for even deeper personal insight.',
+      content: 'Our AI will analyze the visual content you share, helping you understand the environments, people, and moments that matter most to you. Connect visual experiences with your written and spoken reflections.'
     },
-    hover: { 
-      scale: 1.05,
-      boxShadow: isDarkMode 
-        ? "0px 10px 20px rgba(0,0,0,0.3)" 
-        : "0px 10px 20px rgba(0,0,0,0.1)",
-      transition: { duration: 0.3 }
+    {
+      icon: MessageSquare,
+      color: 'blue'as FeatureColor,
+      title: 'Transcribing Meetings & Lectures',
+      description: 'Turn any audio conversation into searchable, analyzable text.',
+      content: 'Record important meetings or lectures, and Force will automatically transcribe them for you. You\'ll be able to highlight key points, search for specific topics, and even get AI-powered summaries.'
+    },
+    {
+      icon: Zap,
+      color: 'green'as FeatureColor,
+      title: 'Force Experiences',
+      description: 'Guided reflection sessions designed for specific life events.',
+      content: 'Whether you\'re preparing for a job interview, processing a breakup, or celebrating a personal win, Force Experiences will guide you through specially designed reflection sessions tailored to important life moments.'
+    },
+    {
+      icon: Globe,
+      color: 'yellow'as FeatureColor,
+      title: 'Force Community',
+      description: 'Connect with others on their personal growth journeys.',
+      content: 'Join groups focused on specific goals or interests, share selected insights from your journal (always with your explicit permission), and learn from others\' reflections to accelerate your personal growth.'
     }
-  }
-  
+  ];
+
+  // Dynamic color classes for feature icons
+  const featureColors = {
+    purple: {
+      bg: isDarkMode ? 'bg-purple-900/30' : 'bg-force-purple/10',
+      text: 'text-force-purple',
+      border: isDarkMode ? 'border-purple-800/50' : 'border-force-purple/20',
+      shadow: isDarkMode ? 'shadow-purple-900/20' : 'shadow-force-purple/10'
+    },
+    blue: {
+      bg: isDarkMode ? 'bg-blue-900/30' : 'bg-force-blue/10',
+      text: 'text-force-blue',
+      border: isDarkMode ? 'border-blue-800/50' : 'border-force-blue/20',
+      shadow: isDarkMode ? 'shadow-blue-900/20' : 'shadow-force-blue/10'
+    },
+    green: {
+      bg: isDarkMode ? 'bg-green-900/30' : 'bg-force-green/10',
+      text: 'text-force-green',
+      border: isDarkMode ? 'border-green-800/50' : 'border-force-green/20',
+      shadow: isDarkMode ? 'shadow-green-900/20' : 'shadow-force-green/10'
+    },
+    yellow: {
+      bg: isDarkMode ? 'bg-yellow-900/30' : 'bg-force-yellow/10',
+      text: 'text-force-yellow',
+      border: isDarkMode ? 'border-yellow-800/50' : 'border-force-yellow/20',
+      shadow: isDarkMode ? 'shadow-yellow-900/20' : 'shadow-force-yellow/10'
+    }
+  };
+
+  // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: {
+    show: {
       opacity: 1,
       transition: {
         staggerChildren: 0.1
       }
     }
-  }
-  
-  const fadeIn = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { duration: 0.8 } }
-  }
+  };
 
-  // Derive theme-based styles
-  const bgColor = isDarkMode ? 'bg-gray-900' : 'bg-gray-50'
-  const textColor = isDarkMode ? 'text-white' : 'text-gray-900'
-  const cardBgColor = isDarkMode ? 'bg-gray-800' : 'bg-white'
-  const subTextColor = isDarkMode ? 'text-gray-300' : 'text-gray-600'
-  const headingColor = isDarkMode ? 'text-gray-100' : 'text-gray-800'
-  const infoBoxBg = isDarkMode ? 'bg-gray-800/50' : 'bg-blue-50'
-  const infoBoxBorder = isDarkMode ? 'border-gray-700' : 'border-blue-100'
-  const disabledBg = isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
-  const disabledText = isDarkMode ? 'text-gray-300' : 'text-gray-800'
+  const cardVariants = {
+    hidden: { 
+      opacity: 0, 
+      y: 20 
+    },
+    show: { 
+      opacity: 1, 
+      y: 0,
+      transition: {
+        duration: 0.4,
+        ease: "easeOut"
+      }
+    },
+    hover: {
+      y: -5,
+      transition: {
+        duration: 0.2,
+        ease: "easeInOut"
+      }
+    }
+  };
 
-  // Button with current theme primary color
-  const PrimaryButton = ({ children, href }: { children: React.ReactNode, href?: string }) => (
-    <Link href={href || "#"}>
-      <motion.div 
-        className={`inline-block px-4 py-2 rounded-md text-white transition-colors`}
-        style={{ backgroundColor: elementColors.button }}
-        whileHover={{ scale: 1.05, backgroundColor: currentTheme.hover }}
-        whileTap={{ scale: 0.95 }}
-      >
-        {children}
-      </motion.div>
-    </Link>
-  )
+  const iconVariants = {
+    initial: { scale: 1 },
+    hover: { 
+      scale: 1.1,
+      transition: {
+        duration: 0.2,
+        type: "spring",
+        stiffness: 400
+      }
+    }
+  };
 
   return (
-    <div className={`container mx-auto py-12 px-4 sm:px-6 ${bgColor} ${textColor}`}>
-      <motion.h1 
-        className="text-3xl md:text-4xl font-bold mb-2 text-center"
+    <motion.div 
+      className={`transition-colors duration-300 ${pageBgColor} p-6 rounded-xl`}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <motion.div 
+        className={`mb-8 ${textColor} max-w-2xl mx-auto text-center`}
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.6 }}
       >
-        What's Next
-      </motion.h1>
-      
-      <motion.p 
-        className={`text-center mb-8 md:mb-12 ${subTextColor}`}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2, duration: 0.5 }}
-      >
-        Explore our AI tools and community features to enhance your experience
-      </motion.p>
-      
-      <motion.div 
-        className="mb-12 md:mb-16"
-        initial="hidden"
-        animate="visible"
-        variants={fadeIn}
-      >
-        <h2 className={`text-xl md:text-2xl font-bold mb-4 md:mb-6 ${headingColor} flex items-center`}>
-          <span className="inline-block mr-2">⚡</span> AI Tools
-        </h2>
-        
-        <motion.div 
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8"
-          variants={containerVariants}
-        >
-          {/* Image to Text Card */}
-          <motion.div 
-            className={`rounded-lg overflow-hidden ${cardBgColor} shadow-lg`}
-            variants={cardVariants}
-            whileHover="hover"
-          >
-            <div className={`p-4 md:p-6 flex flex-col items-center sm:items-start`} style={{ color: currentTheme.primary }}>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"></svg>
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              
-              <h2 className="text-xl md:text-2xl font-bold mb-2 text-center sm:text-left">Image to Text Extraction</h2>
-              <p className={`mb-4 ${subTextColor} text-center sm:text-left`}>
-          Extract text from images using our advanced AI-powered OCR technology. 
-          Upload any image containing text and get accurate text extraction in seconds.
-              </p>
-              <div className="text-center sm:text-left">
-          <PrimaryButton href="/user/ocr">
-            Extract Text from Images
-          </PrimaryButton>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Video Analysis Card */}
-          <motion.div 
-            className={`rounded-lg overflow-hidden ${cardBgColor} shadow-lg`}
-            variants={cardVariants}
-            whileHover="hover"
-          >
-            <div className={`p-4 md:p-6 flex flex-col items-center sm:items-start`} style={{ color: currentTheme.primary }}>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-              <h2 className="text-xl md:text-2xl font-bold mb-2 text-center sm:text-left">Video Analysis</h2>
-              <p className={`mb-4 ${subTextColor} text-center sm:text-left`}>
-          Analyze videos for content, objects, activities, and more using AI. 
-          Get insights and data from your video content automatically.
-              </p>
-              <div className="text-center sm:text-left">
-          <div className={`inline-block ${disabledBg} ${disabledText} px-4 py-2 rounded cursor-not-allowed`}>
-            <div className="flex items-center">
-              <span>Coming Soon</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Document Summarization Card */}
-          <motion.div 
-            className={`rounded-lg overflow-hidden ${cardBgColor} shadow-lg`}
-            variants={cardVariants}
-            whileHover="hover"
-          >
-            <div className={`p-4 md:p-6 flex flex-col items-center sm:items-start`} style={{ color: currentTheme.primary }}>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <h2 className="text-xl md:text-2xl font-bold mb-2 text-center sm:text-left">Document Summarization</h2>
-              <p className={`mb-4 ${subTextColor} text-center sm:text-left`}>
-          Automatically generate concise summaries of lengthy documents.
-          Save time and extract key information with our AI summarization tool.
-              </p>
-              <div className="text-center sm:text-left">
-          <div className={`inline-block ${disabledBg} ${disabledText} px-4 py-2 rounded cursor-not-allowed`}>
-            <div className="flex items-center">
-              <span>Coming Soon</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Speech-to-Text Card */}
-          <motion.div 
-            className={`rounded-lg overflow-hidden ${cardBgColor} shadow-lg`}
-            variants={cardVariants}
-            whileHover="hover"
-          >
-            <div className={`p-4 md:p-6 flex flex-col items-center sm:items-start`} style={{ color: currentTheme.primary }}>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-              </svg>
-              <h2 className="text-xl md:text-2xl font-bold mb-2 text-center sm:text-left">Speech-to-Text</h2>
-              <p className={`mb-4 ${subTextColor} text-center sm:text-left`}>
-          Convert spoken language into written text with high accuracy.
-          Perfect for transcribing meetings, lectures, and interviews.
-              </p>
-              <div className="text-center sm:text-left">
-          <div className={`inline-block ${disabledBg} ${disabledText} px-4 py-2 rounded cursor-not-allowed`}>
-            <div className="flex items-center">
-              <span>Coming Soon</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"></svg>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              
-            </div>
-          </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Image Generation Card */}
-          <motion.div 
-            className={`rounded-lg overflow-hidden ${cardBgColor} shadow-lg`}
-            variants={cardVariants}
-            whileHover="hover"
-          >
-            <div className={`p-4 md:p-6 flex flex-col items-center sm:items-start`} style={{ color: currentTheme.primary }}>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"></svg>
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
-              
-              <h2 className="text-xl md:text-2xl font-bold mb-2 text-center sm:text-left">AI Image Generation</h2>
-              <p className={`mb-4 ${subTextColor} text-center sm:text-left`}>
-          Create stunning, unique images from text descriptions.
-          Generate artwork, product visualizations, and more with AI.
-              </p>
-              
-              <div className="text-center sm:text-left">
-          <div className={`inline-block ${disabledBg} ${disabledText} px-4 py-2 rounded cursor-not-allowed`}>
-            <div className="flex items-center">
-              <span>Coming Soon</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"/>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              
-            </div>
-          </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Content Translation Card */}
-          <motion.div 
-            className={`rounded-lg overflow-hidden ${cardBgColor} shadow-lg`}
-            variants={cardVariants}
-            whileHover="hover"
-          >
-            <div className={`p-4 md:p-6 flex flex-col items-center sm:items-start`} style={{ color: currentTheme.primary }}>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"></svg>
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
-              <h2 className="text-xl md:text-2xl font-bold mb-2 text-center sm:text-left">AI Translation</h2>
-              <p className={`mb-4 ${subTextColor} text-center sm:text-left`}>
-          Translate content between multiple languages with contextual accuracy.
-          Support for documents, websites, and real-time translation.
-              </p>
-              <div className="text-center sm:text-left">
-          <div className={`inline-block ${disabledBg} ${disabledText} px-4 py-2 rounded cursor-not-allowed`}>
-            <div className="flex items-center">
-              <span>Coming Soon</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
+        <h1 className="text-4xl font-bold mb-3">What's Next for Force</h1>
+        <p className={`${mutedTextColor} text-lg`}>
+          Welcome to the Force beta! We're focused on perfecting your AI journaling companion, 
+          but we're also dreaming big. Here's a sneak peek at exciting features we're building 
+          to support your growth journey even further.
+        </p>
       </motion.div>
-      
-      {/* Community Features */}
+
       <motion.div 
-        className="mb-12 md:mb-16"
+        className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto"
+        variants={containerVariants}
         initial="hidden"
-        animate="visible"
-        variants={fadeIn}
+        animate="show"
       >
-        <h2 className={`text-xl md:text-2xl font-bold mb-4 md:mb-6 ${headingColor} flex items-center`}>
-          <span className="inline-block mr-2">🤝</span> Force Community Features
-        </h2>
-        
-        <motion.div 
-          className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8"
-          variants={containerVariants}
-        >
-          {/* Community Forums */}
-          <motion.div 
-        className={`rounded-lg overflow-hidden ${cardBgColor} shadow-lg`}
-        variants={cardVariants}
-        whileHover="hover"
+        {features.map((feature, index) => (
+          <motion.div
+            key={index}
+            variants={cardVariants}
+            whileHover="hover"
+            className="h-full"
           >
-        <div className={`p-4 md:p-6 flex flex-col sm:flex-row items-center sm:items-start`}
-            style={{ color: currentTheme.primary }}>
-          <FiMessageCircle className="text-3xl md:text-4xl mb-2 sm:mb-0 sm:mr-4" />
-          <div>
-            <h2 className="text-xl md:text-2xl font-bold mb-2 text-center sm:text-left">Community Forums</h2>
-            <p className={`mb-4 ${subTextColor} text-center sm:text-left`}>
-          Connect with other Force users to discuss topics, share ideas, and get help.
-          Our moderated forums provide a supportive environment for collaboration.
-            </p>
-            <div className="text-center sm:text-left">
-          <div className={`inline-block ${disabledBg} ${disabledText} px-4 py-2 rounded cursor-not-allowed`}>
-            <div className="flex items-center">
-              <span>Coming Soon</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-            </div>
-          </div>
-        </div>
+            <Card className={`feature-coming-soon border ${borderColor} ${cardBgColor} transition-all duration-300 h-full
+                              ${cardHoverBgColor} cursor-pointer relative overflow-hidden backdrop-blur-sm
+                              shadow-lg ${featureColors[feature?.color].shadow} group`}>
+              <CardHeader className="pb-2">
+                <motion.div 
+                  className={`w-14 h-14 ${featureColors[feature?.color].bg} rounded-xl flex items-center justify-center mb-4
+                              border ${featureColors[feature?.color].border} shadow-inner`}
+                  variants={iconVariants}
+                  whileHover="hover"
+                >
+                  <feature.icon className={`w-7 h-7 ${featureColors[feature?.color].text}`} />
+                </motion.div>
+                <CardTitle className={`flex items-center gap-2 ${textColor} text-xl`}>
+                  {feature.title}
+                  <motion.span 
+                    className={`bg-opacity-10 ${isDarkMode ? 'bg-gray-400' : 'bg-gray-600'} px-2 py-1 rounded-full text-xs 
+                                flex items-center gap-1 ml-auto ${mutedTextColor} whitespace-nowrap`}
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    <Clock className="w-3 h-3" /> Coming Soon
+                  </motion.span>
+                </CardTitle>
+                <CardDescription className={`${mutedTextColor} text-sm font-medium mt-1`}>
+                  {feature.description}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className={`text-sm ${mutedTextColor} leading-relaxed`}>
+                  {feature.content}
+                </p>
+                <motion.div 
+                  className={`mt-4 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
+                  initial={{ x: -10, opacity: 0 }}
+                  whileHover={{ x: 0, opacity: 1 }}
+                >
+                  <div className={`flex items-center ${featureColors[feature.color].text} text-sm font-medium`}>
+                    Learn more <ChevronRight className="w-4 h-4 ml-1" />
+                  </div>
+                </motion.div>
+              </CardContent>
+              
+              {/* Gradient border effect */}
+              <motion.div 
+                className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                initial={{ opacity: 0 }}
+                whileHover={{ opacity: 1 }}
+              >
+                <div className={`absolute inset-0 rounded-lg border-2 border-${feature.color}-500/30`}></div>
+              </motion.div>
+            </Card>
           </motion.div>
-          
-          {/* Expert Network */}
-          <motion.div 
-        className={`rounded-lg overflow-hidden ${cardBgColor} shadow-lg`}
-        variants={cardVariants}
-        whileHover="hover"
-          >
-        <div className={`p-4 md:p-6 flex flex-col sm:flex-row items-center sm:items-start`} style={{ color: currentTheme.primary }}>
-          <FiUsers className="text-3xl md:text-4xl mb-2 sm:mb-0 sm:mr-4" />
-          <div>
-            <h2 className="text-xl md:text-2xl font-bold mb-2 text-center sm:text-left">Expert Network</h2>
-            <p className={`mb-4 ${subTextColor} text-center sm:text-left`}>
-          Connect with AI experts, data scientists, and experienced practitioners.
-          Schedule 1-on-1 consultations or participate in expert-led workshops.
-            </p>
-            <div className="text-center sm:text-left">
-          <div className={`inline-block ${disabledBg} ${disabledText} px-4 py-2 rounded cursor-not-allowed`}>
-            <div className="flex items-center">
-              <span>Coming Soon</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-            </div>
-          </div>
-        </div>
-          </motion.div>
-          
-          {/* Learning Resources */}
-          <motion.div 
-        className={`rounded-lg overflow-hidden ${cardBgColor} shadow-lg`}
-        variants={cardVariants}
-        whileHover="hover"
-          >
-        <div className={`p-4 md:p-6 flex flex-col sm:flex-row items-center sm:items-start`} style={{ color: currentTheme.primary }}>
-          <FiBook className="text-3xl md:text-4xl mb-2 sm:mb-0 sm:mr-4" />
-          <div>
-            <h2 className="text-xl md:text-2xl font-bold mb-2 text-center sm:text-left">Learning Resources</h2>
-            <p className={`mb-4 ${subTextColor} text-center sm:text-left`}>
-          Access tutorials, guides, and educational content to enhance your AI skills.
-          From beginner concepts to advanced techniques, expand your knowledge.
-            </p>
-            <div className="text-center sm:text-left">
-          <div className={`inline-block ${disabledBg} ${disabledText} px-4 py-2 rounded cursor-not-allowed`}>
-            <div className="flex items-center">
-              <span>Coming Soon</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-            </div>
-          </div>
-        </div>
-          </motion.div>
-          
-          {/* Events & Webinars */}
-          <motion.div 
-        className={`rounded-lg overflow-hidden ${cardBgColor} shadow-lg`}
-        variants={cardVariants}
-        whileHover="hover"
-          >
-        <div className={`p-4 md:p-6 flex flex-col sm:flex-row items-center sm:items-start`} style={{ color: currentTheme.primary }}>
-          <FiGlobe className="text-3xl md:text-4xl mb-2 sm:mb-0 sm:mr-4" />
-          <div>
-            <h2 className="text-xl md:text-2xl font-bold mb-2 text-center sm:text-left">Events & Webinars</h2>
-            <p className={`mb-4 ${subTextColor} text-center sm:text-left`}>
-          Stay up to date with the latest AI trends through our virtual events.
-          Participate in webinars, workshops, and networking opportunities.
-            </p>
-            <div className="text-center sm:text-left">
-          <div className={`inline-block ${disabledBg} ${disabledText} px-4 py-2 rounded cursor-not-allowed`}>
-            <div className="flex items-center">
-              <span>Coming Soon</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-            </div>
-          </div>
-        </div>
-          </motion.div>
-        </motion.div>
+        ))}
       </motion.div>
-      
+
       <motion.div 
-        className={`mt-8 md:mt-12 p-6 md:p-8 rounded-xl shadow-lg ${infoBoxBg} border ${infoBoxBorder}`}
-        initial={{ opacity: 0, y: 50 }}
+        className={`mt-12 text-center p-8 ${feedbackBgColor} rounded-2xl transition-colors duration-300 max-w-2xl mx-auto shadow-xl`}
+        initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5, duration: 0.7 }}
+        transition={{ duration: 0.7, delay: 0.4 }}
       >
-        <h2 className="text-xl md:text-2xl font-bold mb-4">About Our Platform</h2>
-        <p className={subTextColor}>
-          The Force platform combines cutting-edge AI tools with a vibrant community to support your projects and growth.
-          Our AI-powered tools help you extract information and gain insights from various media types, while our 
-          community features connect you with like-minded individuals and experts.
+        <h3 className={`text-xl font-semibold mb-3 ${textColor}`}>Which of these ideas excites you most?</h3>
+        <p className={`${mutedTextColor} mb-6`}>
+          We'd love your feedback to help us prioritize our development roadmap.
         </p>
-        <p className={`mt-4 ${subTextColor}`}>
-          Stay tuned as we roll out new tools and features throughout the year. Our roadmap includes advanced capabilities 
-          for data analysis, media processing, language translation, and creative content generation, as well as 
-          expanded community resources to help you connect, learn, and innovate.
-        </p>
-        
-        <motion.div 
-          className="mt-6 text-center md:text-left"
-          whileHover={{ scale: 1.02 }}
+        <motion.div
+        onClick={() => window.open('/user/feedback', '_blank')}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
         >
-          <Link href="/user/feedback">
-            <div 
-              className="inline-block text-white px-6 py-3 rounded-md transition-colors" 
-              style={{ backgroundColor: elementColors.button }}
-              onMouseOver={(e) => e.currentTarget.style.backgroundColor = currentTheme.hover}
-              onMouseOut={(e) => e.currentTarget.style.backgroundColor = elementColors.button}
-            >
-              Share Your Feedback
-            </div>
-          </Link>
+          <Button className="bg-force-purple hover:bg-force-purple/90 text-white px-6 py-2 rounded-full font-medium shadow-lg hover:shadow-xl transition-all duration-300">
+            Share Your Feedback
+          </Button>
         </motion.div>
       </motion.div>
-    </div>
-  )
-}
+    </motion.div>
+  );
+};
 
-export default WhatsNext
+export default WhatNext;

@@ -143,7 +143,7 @@ const JournalCard: React.FC<JournalCardProps> = ({
           </svg>
         </span>
         <button 
-          className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-primary/80 hover:text-primary"
+          className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-primary/80 hover:text-primary z-30"
           onClick={(e) => {
             e.stopPropagation();
             // Handle bookmark logic here

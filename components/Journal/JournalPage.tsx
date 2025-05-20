@@ -24,7 +24,7 @@ const JournalPage = ({ entry, isEven, backgroundClass, backgroundStyle }: Journa
   };
 
   const handleEditEntry = () => {
-    router.push(`/journal-entry-edit/${entry.journalId}`);
+    router.push(`/user/journal/${entry.journalId}`);
   };
   
   // Function to open media in a modal or new page
