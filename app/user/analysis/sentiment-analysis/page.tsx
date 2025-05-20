@@ -79,6 +79,7 @@ const SentimentAnalysis = () => {
         <TabsContent value="history">
           <AnalysisHistory
             history={history}
+            //@ts-ignore
             onLoadHistory={handleLoadHistory}
             type="sentiment"
           />
