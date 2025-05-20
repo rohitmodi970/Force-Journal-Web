@@ -85,7 +85,7 @@ const AnalysisPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [processingEntries, setProcessingEntries] = useState<Record<string, boolean>>({});
-  const [history, setHistory] = useState<AnalysisHistoryEntry<'entries'>[]>([]);
+  const [history, setHistory] = useState<AnalysisHistoryEntry[]>([]);
 
   // Theme context
   const { currentTheme, isDarkMode } = useTheme();
@@ -740,13 +740,18 @@ const AnalysisPage: React.FC = () => {
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="history">
+                    <TabsContent value="history">
                     <AnalysisHistory
-                      history={history}
-                      onLoadHistory={handleLoadHistory}
+                      history={history.map(entry => ({
+                      ...entry,
+                      analysis: {
+                        ...entry.analysis,
+                      }
+                      }))}
+                      onLoadHistory={(entry) => handleLoadHistory(entry as AnalysisHistoryEntry)}
                       type="entries"
                     />
-                  </TabsContent>
+                    </TabsContent>
                 </Tabs>
 
                 {/* Empty state */}
