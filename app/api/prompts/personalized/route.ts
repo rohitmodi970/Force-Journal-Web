@@ -33,13 +33,21 @@ export async function GET() {
     }
     console.log('Found user with userId:', user.userId);
 
+    // Define interface for journal entries with createdAt
+    interface JournalWithCreatedAt {
+      content: string;
+      createdAt: Date;
+      [key: string]: any;
+    }
+
     // Get the most recent journal entries for better context
     const recentEntries = await Journal
       .find({ userId: user.userId })
       .sort({ createdAt: -1 })
       .limit(3)
       .select('content createdAt')
-      .lean();
+      .lean()
+      .then(entries => entries as unknown as JournalWithCreatedAt[]);
 
     if (!recentEntries || recentEntries.length === 0) {
       console.log('No journal entries found for userId:', user.userId);
@@ -71,6 +79,7 @@ export async function GET() {
     const prompt = `Based on the following recent journal entries, generate both a personalized writing prompt and AI suggestions. Analyze the entries for mood trends, patterns, and potential areas for growth.
 
 Recent Journal Entries:
+
 ${recentEntries.map((entry, index) => `Entry ${index + 1} (${new Date(entry.createdAt).toLocaleDateString()}):
 ${entry.content}
 ---`).join('\n\n')}
