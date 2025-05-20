@@ -60,14 +60,17 @@ const JournalPage = ({ entry, isEven, backgroundClass, backgroundStyle }: Journa
               )}
             </p>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="bg-background/50 hover:bg-background/80 rounded-full shadow-sm backdrop-blur-sm z-50"
-            onClick={handleEditEntry}
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
+            <button
+              type="button"
+              className="flex items-center gap-1 text-xs text-muted-foreground italic group bg-transparent border-none outline-none cursor-pointer hover:text-primary transition-colors"
+              style={{ padding: 0, background: "none" }}
+              onClick={handleEditEntry}
+              tabIndex={0}
+              aria-label="Change page"
+            >
+              <span>Edit</span>
+              <Edit className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            </button>
         </div>
         
         <div className="journal-content whitespace-pre-line mb-6 font-journal text-lg leading-relaxed">

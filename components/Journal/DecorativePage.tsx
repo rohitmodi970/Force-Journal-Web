@@ -30,34 +30,7 @@ const DecorativePage = ({ isEven, backgroundClass, backgroundStyle }: Decorative
   
   const renderDecorativeContent = () => {
     switch (decorationType) {
-      case "floral":
-        return (
-          <div className="h-full w-full flex items-center justify-center p-10">
-            <div className="relative w-full h-full border-[3px] border-primary/20 rounded-lg p-6">
-              <div className="absolute -top-3 -left-3 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-primary/60">
-                  <path d="M12 2a9 9 0 0 0-9 9c0 3.4 3.1 6.8 4.4 8.2.3.3.6.5.9.8.9.7 1.8 1 3.7 1s2.8-.3 3.7-1c.3-.2.6-.5.9-.8 1.3-1.4 4.4-4.8 4.4-8.2a9 9 0 0 0-9-9z" />
-                  <path d="M12 16c2.8-4.3 4-6.5 4-8.6 0-2.2-1.8-4-4-4s-4 1.8-4 4c0 2.1 1.2 4.3 4 8.6z" />
-                </svg>
-              </div>
-              <div className="absolute -bottom-3 -right-3 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-primary/60">
-                  <path d="M12 22c6-6.5 9-10 9-13.5a9 9 0 1 0-18 0C3 12 6 15.5 12 22z" />
-                  <circle cx="12" cy="8.5" r="2" />
-                </svg>
-              </div>
-              <div className="h-full w-full flex items-center justify-center">
-                <div className="text-center">
-                  <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-primary/40 mx-auto mb-4">
-                    <path d="M12 2a9 9 0 0 0-9 9c0 3.4 3.1 6.8 4.4 8.2.3.3.6.5.9.8.9.7 1.8 1 3.7 1s2.8-.3 3.7-1c.3-.2.6-.5.9-.8 1.3-1.4 4.4-4.8 4.4-8.2a9 9 0 0 0-9-9z" />
-                    <path d="M12 16c2.8-4.3 4-6.5 4-8.6 0-2.2-1.8-4-4-4s-4 1.8-4 4c0 2.1 1.2 4.3 4 8.6z" />
-                  </svg>
-                  <p className="font-journal text-2xl text-primary/70">Memories Bloom</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
+      
       
       case "quotes":
         return (

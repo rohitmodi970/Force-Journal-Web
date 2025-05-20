@@ -530,7 +530,7 @@ const JournalEntry: React.FC<{
     }
     backendSyncTimerRef.current = setTimeout(() => {
       syncToBackend(entryId);
-    }, 120000); // 2 min
+    }, 30000); // 30 sec
   };
 
 

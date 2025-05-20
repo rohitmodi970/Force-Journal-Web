@@ -366,54 +366,117 @@ function getOnboardingCompleteTemplate(user: UserEmailData): string {
     <!DOCTYPE html>
     <html>
     <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
       <style>
         body {
-          font-family: Arial, sans-serif;
-          line-height: 1.6;
-          color: #333;
-          max-width: 600px;
-          margin: 0 auto;
+          font-family: 'Segoe UI', Arial, sans-serif;
+          background: #f4f8fb;
+          color: #222;
+          margin: 0;
+          padding: 0;
         }
         .container {
-          padding: 20px;
-          border: 1px solid #ddd;
-          border-radius: 5px;
+          background: #fff;
+          max-width: 600px;
+          margin: 40px auto;
+          border-radius: 12px;
+          box-shadow: 0 4px 24px rgba(0,0,0,0.07), 0 1.5px 6px rgba(0,0,0,0.03);
+          padding: 32px 28px 24px 28px;
         }
         .header {
           text-align: center;
-          margin-bottom: 20px;
+          margin-bottom: 28px;
         }
         .logo {
-          max-width: 150px;
-          margin-bottom: 10px;
-        }
-        .footer {
-          margin-top: 30px;
-          text-align: center;
-          font-size: 12px;
-          color: #777;
+          max-width: 120px;
+          margin-bottom: 12px;
         }
         .success-box {
-          background-color: #d4edda;
-          border-color: #c3e6cb;
-          color: #155724;
-          padding: 15px;
-          border-radius: 4px;
-          margin: 20px 0;
+          background: linear-gradient(90deg, #e0ffe7 0%, #f0fff4 100%);
+          border-left: 6px solid #4CAF50;
+          color: #256029;
+          padding: 18px 20px;
+          border-radius: 8px;
+          margin: 24px 0 18px 0;
           text-align: center;
         }
+        .success-box h3 {
+          margin: 0 0 6px 0;
+          font-size: 1.25rem;
+          letter-spacing: 0.5px;
+        }
+        .steps {
+          margin: 18px 0 24px 0;
+          padding: 0;
+          list-style: none;
+        }
+        .steps li {
+          margin: 0 0 10px 0;
+          padding-left: 24px;
+          position: relative;
+          font-size: 1rem;
+        }
+        .steps li:before {
+          content: "✓";
+          color: #4CAF50;
+          font-weight: bold;
+          position: absolute;
+          left: 0;
+        }
         .button {
-          background-color: #4CAF50;
+          background: linear-gradient(90deg, #4CAF50 0%, #43a047 100%);
           border: none;
-          color: white;
-          padding: 10px 20px;
+          color: #fff;
+          padding: 12px 32px;
           text-align: center;
           text-decoration: none;
           display: inline-block;
-          font-size: 16px;
-          margin: 10px 0;
+          font-size: 1.08rem;
+          font-weight: 500;
+          margin: 18px 0 0 0;
           cursor: pointer;
-          border-radius: 4px;
+          border-radius: 6px;
+          box-shadow: 0 2px 8px rgba(76,175,80,0.08);
+          transition: background 0.2s;
+        }
+        .button:hover {
+          background: linear-gradient(90deg, #43a047 0%, #388e3c 100%);
+        }
+        .ai-insights {
+          background: linear-gradient(90deg, #f1f6ff 0%, #f8fbff 100%);
+          border-left: 6px solid #4285F4;
+          padding: 18px 20px;
+          border-radius: 8px;
+          margin: 24px 0;
+        }
+        .ai-insights h3 {
+          color: #1a57cb;
+          margin: 0 0 10px 0;
+          font-size: 1.15rem;
+        }
+        .footer {
+          margin-top: 36px;
+          text-align: center;
+          font-size: 12px;
+          color: #888;
+        }
+        .divider {
+          border: none;
+          border-top: 1px solid #e0e0e0;
+          margin: 28px 0 18px 0;
+        }
+        .quote {
+          font-style: italic;
+          color: #555;
+          border-left: 3px solid #4285F4;
+          padding-left: 12px;
+          margin: 16px 0;
+        }
+        @media (max-width: 600px) {
+          .container {
+            padding: 16px 6vw 18px 6vw;
+          }
         }
       </style>
     </head>
@@ -421,37 +484,48 @@ function getOnboardingCompleteTemplate(user: UserEmailData): string {
       <div class="container">
         <div class="header">
           <img src="${process.env.COMPANY_LOGO_URL || 'https://yourcompany.com/logo.png'}" alt="Force Company Logo" class="logo" />
-          <h2>Onboarding Complete!</h2>
+          <h2 style="margin:0;font-weight:600;color:#222;">Onboarding Complete!</h2>
         </div>
-        
-        <p>Hello ${user.name || 'there'},</p>
-        
         <div class="success-box">
-          <h3>🎉 Congratulations! 🎉</h3>
-          <p>You've successfully completed the onboarding process.</p>
+          <h3>🎉 Welcome, ${user.name || 'there'}!</h3>
+          <p>You've successfully completed onboarding and your account is ready.</p>
         </div>
-        
-        <p>Your account is now fully set up and you have access to all features of our platform.</p>
-        
-        <p>Here are some things you can do next:</p>
-        <ul>
-          <li>Explore your dashboard</li>
-          <li>Update your profile settings</li>
-          <li>Connect with other users</li>
-          <li>Check out our knowledge base</li>
+        <p style="font-size:1.07rem;line-height:1.7;margin:18px 0 0 0;">
+          Here's what you can do next:
+        </p>
+        <ul class="steps">
+          <li>Explore your personalized dashboard</li>
+          <li>Update your profile and preferences</li>
+          <li>Connect and collaborate with other users</li>
+          <li>Access our knowledge base and resources</li>
         </ul>
         
-        <div style="text-align: center;">
-          <a href="${process.env.NEXTAUTH_URL}/dashboard" class="button">Go to Dashboard</a>
+        <div class="ai-insights">
+          <h3>Force AI Journal</h3>
+          <p>Our AI journal feature is designed to help you track your progress, organize your thoughts, and enhance your productivity.</p>
+          <div class="quote">
+            "Journaling with AI assistance provides a structured way to reflect on your work and generate new insights."
+          </div>
+          <p>Try using the AI journal to:</p>
+          <ul>
+            <li>Document your project milestones</li>
+            <li>Receive AI-powered suggestions for improvement</li>
+            <li>Analyze patterns in your workflow</li>
+            <li>Generate comprehensive reports based on your entries</li>
+          </ul>
         </div>
         
-        <p>If you have any questions or need assistance, our support team is always here to help.</p>
-        
-        <p>Best regards,<br>The Force Team</p>
-        
+        <div style="text-align:center;">
+          <a href="${process.env.NEXTAUTH_URL}/dashboard" class="button">Go to Dashboard</a>
+        </div>
+        <hr class="divider"/>
+        <p style="font-size:0.98rem;margin:0 0 10px 0;">
+          Need help or have questions? Our support team is here for you at any time.
+        </p>
+        <p style="margin:0 0 10px 0;">Best regards,<br><b>The Force Team</b></p>
         <div class="footer">
           <p>© ${new Date().getFullYear()} Force Company. All rights reserved.</p>
-          <p>This email was sent to ${user.email}</p>
+          <p>This email was sent to <span style="color:#4CAF50;">${user.email}</span></p>
         </div>
       </div>
     </body>
