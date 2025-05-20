@@ -5,7 +5,7 @@ import connectDB from '@/db/connectDB';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import Journal from '@/models/JournalModel';
 import User from '@/models/User';
-import { decryptJournalData } from '@/utilities/encryption'; // <-- Import decryptJournalData
+import { decryptJournalData } from '@/utilities/encryption'; // Use the full decryptJournalData
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
@@ -34,13 +34,6 @@ export async function GET() {
     }
     console.log('Found user with userId:', user.userId);
 
-    // Define interface for journal entries with createdAt
-    interface JournalWithCreatedAt {
-      content: string;
-      createdAt: Date;
-      [key: string]: any;
-    }
-
     // Get the most recent journal entries for better context
     const recentEntriesRaw = await Journal
       .find({ userId: user.userId })
@@ -49,13 +42,12 @@ export async function GET() {
       .select({ content: 1, createdAt: 1 }) // Explicitly select fields
       .lean<{ content: string; createdAt: Date }[]>();
 
-    // Decrypt journal entries
-    const recentEntries: JournalWithCreatedAt[] = (recentEntriesRaw as { content: string; createdAt: Date }[]).map((entry: { content: string; createdAt: Date }) => {
+    // Decrypt journal entries using decryptJournalData
+    const recentEntries = (recentEntriesRaw as { content: string; createdAt: Date }[]).map((entry) => {
       const decrypted = decryptJournalData(entry);
       return {
         ...entry,
-        content: decrypted.content,
-        createdAt: entry.createdAt,
+        ...decrypted, // This will overwrite encrypted fields with decrypted ones
       };
     });
 
