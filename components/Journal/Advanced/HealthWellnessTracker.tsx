@@ -3,9 +3,10 @@ import { Line } from 'react-chartjs-2';
 
 interface HealthWellnessTrackerProps {
   healthMetrics: { sentiment: number; physicalWellness: number; mentalResilience: number }[];
+  insight?: string;
 }
 
-const HealthWellnessTracker: React.FC<HealthWellnessTrackerProps> = ({ healthMetrics }) => {
+const HealthWellnessTracker: React.FC<HealthWellnessTrackerProps> = ({ healthMetrics, insight }) => {
   const chartData = {
     labels: healthMetrics.map((_, i) => `Entry ${i + 1}`),
     datasets: [
@@ -39,6 +40,11 @@ const HealthWellnessTracker: React.FC<HealthWellnessTrackerProps> = ({ healthMet
   return (
     <div>
       <Line data={chartData} options={{ plugins: { title: { display: true, text: 'Health & Wellness Tracker' } } }} />
+      {insight && (
+        <div className="mt-4 p-3 bg-blue-50 rounded text-blue-900 text-sm">
+          <strong>Insight:</strong> {insight}
+        </div>
+      )}
     </div>
   );
 };
