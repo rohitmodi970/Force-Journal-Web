@@ -8,7 +8,7 @@ import { FormData } from './OnboardingForm';
 
 interface Question1Props {
   value: string;
-  handleInputChange: (field: keyof FormData, value: string) => void;
+  handleInputChange: (value: string) => void;
   goToNextSection: () => void;
 }
 
@@ -40,7 +40,7 @@ const Question1: React.FC<Question1Props> = ({
       <div className="relative">
         <textarea
           value={value}
-          onChange={(e) => handleInputChange('goal', e.target.value)}
+          onChange={(e) => handleInputChange(e.target.value)}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           placeholder="I want to improve my productivity, find more balance in life..."

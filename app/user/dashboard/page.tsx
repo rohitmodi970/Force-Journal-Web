@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/quilte
 import { Button } from '@/components/ui/button2';
 
 // Custom components
+import QuickLinks from '@/components/QuickLinks.';
 import RecentEntries from '@/components/RecentEntries';
 import FloatingActionButton from '@/components/FloatingActionButton';
 import ThemeSidebar from '@/components/Navbar/ThemeSidebar';
@@ -216,6 +217,9 @@ export default function Dashboard() {
           elementColors={elementColors}
           handleLogout={handleLogout}
         />
+        
+        {/* QuickLinks component - NEW */}
+        <QuickLinks />
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
           <div className="md:col-span-2 space-y-4 lg:space-y-6">

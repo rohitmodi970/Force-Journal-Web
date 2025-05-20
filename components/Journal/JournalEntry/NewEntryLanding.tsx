@@ -24,9 +24,15 @@ interface NewEntryLandingProps {
     tags: string[];
     journalType: string;
   }) => void;
+  quickLink?: 'blank' | 'template' | 'ocr';
+  templateId?: string;
 }
 
-const NewEntryLanding: React.FC<NewEntryLandingProps> = ({ onStartNewEntry }) => {
+const NewEntryLanding: React.FC<NewEntryLandingProps> = ({ 
+  onStartNewEntry, 
+  quickLink,
+  templateId
+}) => {
   // Get theme context
   const { currentTheme, isDarkMode, elementColors, currentFont } = useTheme();
   
@@ -46,40 +52,6 @@ const NewEntryLanding: React.FC<NewEntryLandingProps> = ({ onStartNewEntry }) =>
 
   // Use a local reference to hold the worker instance
   const workerRef = useRef<any>(null);
-
-  useEffect(() => {
-    // Initialize Tesseract worker
-    const initWorker = async () => {
-      try {
-        // Use static CDN URLs instead of blob URLs
-        const worker = await createWorker('eng', 1, {
-          logger: m => {
-            if (m.status === 'recognizing text') {
-              setProgress(Math.round((m.progress || 0) * 100));
-            }
-          },
-          // Specify explicit paths to avoid CSP issues with blob URLs
-          workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@v4.0.2/dist/worker.min.js',
-          corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@v4.0.2/tesseract-core.wasm.js',
-          langPath: 'https://tessdata.projectnaptha.com/4.0.0',
-        });
-
-        workerRef.current = worker;
-        setWorkerReady(true);
-      } catch (error) {
-        console.error("Error initializing Tesseract worker:", error);
-      }
-    };
-
-    initWorker();
-
-    // Cleanup worker when component unmounts
-    return () => {
-      if (workerRef.current) {
-        workerRef.current.terminate().catch(console.error);
-      }
-    };
-  }, []);
 
   // Templates for journal entries
   const templates: Template[] = [
@@ -120,6 +92,76 @@ const NewEntryLanding: React.FC<NewEntryLandingProps> = ({ onStartNewEntry }) =>
       journalType: 'creative'
     }
   ];
+
+  // Handle quick links
+  useEffect(() => {
+    if (quickLink) {
+      setActiveTab(quickLink);
+      
+      // If quickLink is blank, start a blank entry immediately
+      if (quickLink === 'blank') {
+        handleStartBlankEntry();
+      }
+      
+      // If quickLink is template and templateId is provided
+      if (quickLink === 'template' && templateId) {
+        const template = templates.find(t => t.id === templateId);
+        if (template) {
+          setSelectedTemplate(template);
+          // Auto-start with the selected template
+          setTimeout(() => {
+            onStartNewEntry({
+              title: template.title,
+              content: template.content,
+              tags: template.tags,
+              journalType: template.journalType
+            });
+          }, 100);
+        }
+      }
+      
+      // If quickLink is ocr, trigger file input
+      if (quickLink === 'ocr') {
+        setTimeout(() => {
+          triggerFileInput();
+        }, 500);
+      }
+    }
+  }, [quickLink, templateId]);
+
+  useEffect(() => {
+    // Initialize Tesseract worker
+    const initWorker = async () => {
+      try {
+        // Use static CDN URLs instead of blob URLs
+        const worker = await createWorker('eng', 1, {
+          logger: m => {
+            if (m.status === 'recognizing text') {
+              setProgress(Math.round((m.progress || 0) * 100));
+            }
+          },
+          // Specify explicit paths to avoid CSP issues with blob URLs
+          workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@v4.0.2/dist/worker.min.js',
+          corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@v4.0.2/tesseract-core.wasm.js',
+          langPath: 'https://tessdata.projectnaptha.com/4.0.0',
+        });
+
+        workerRef.current = worker;
+        setWorkerReady(true);
+      } catch (error) {
+        console.error("Error initializing Tesseract worker:", error);
+      }
+    };
+
+    initWorker();
+
+    // Cleanup worker when component unmounts
+    return () => {
+      if (workerRef.current) {
+        workerRef.current.terminate().catch(console.error);
+      }
+    };
+  }, []);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -239,6 +281,11 @@ const NewEntryLanding: React.FC<NewEntryLandingProps> = ({ onStartNewEntry }) =>
   const selectedTemplateBgStyle = {
     backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : currentTheme.light
   };
+
+  // If there's a quickLink that has already triggered an action, return null to prevent UI flicker
+  if ((quickLink === 'blank') || (quickLink === 'template' && templateId && selectedTemplate)) {
+    return null;
+  }
 
   return (
     <div className={`w-full max-w-6xl mx-auto p-6 font-${currentFont}`}>
@@ -542,6 +589,7 @@ const NewEntryLanding: React.FC<NewEntryLandingProps> = ({ onStartNewEntry }) =>
                       </div>
                     </motion.div>
                   )}
+                  
                 </motion.div>
               )}
             </motion.div>

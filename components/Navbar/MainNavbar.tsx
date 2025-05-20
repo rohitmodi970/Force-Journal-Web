@@ -101,7 +101,7 @@ const MainNavbar = () => {
       ],
     },
     {
-      name: 'Upcoming',
+      name: "What's Next",
       href: '/user/whats-next',
       icon: 'HiOutlineChip',
     },

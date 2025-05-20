@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
     
     // Parse form data
     const formData = await req.formData();
-    const goal = formData.get('') as string;
+    const goal = formData.get('goal') as string;
     const feelingAudio = formData.get('feelingAudio') as File | null;
     const prettyPhoto = formData.get('prettyPhoto') as File | null;
     
