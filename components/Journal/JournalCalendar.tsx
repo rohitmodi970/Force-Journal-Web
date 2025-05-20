@@ -8,7 +8,7 @@ import { JournalEntry } from './types';
 
 interface JournalCalendarProps {
   entries: JournalEntry[];
-  onAnalyze: (startDate: Date, endDate: Date | null, selectedDates: Date[]) => void;
+  onAnalyze: (startDate: Date, endDate: Date | null, selectedDates: Date[], analysisType: 'sentiment' | 'textual') => void;
 }
 
 type DateSelectionMode = 'range' | 'multiple';
@@ -24,21 +24,13 @@ const JournalCalendar: React.FC<JournalCalendarProps> = ({ entries, onAnalyze })
     to: undefined,
   });
   const [selectedDates, setSelectedDates] = useState<Date[]>([]);
+  const [analysisType, setAnalysisType] = useState<'sentiment' | 'textual'>('sentiment');
 
   // Get all dates that have journal entries
   const datesWithEntries = entries.map(entry => {
     const [year, month, day] = entry.date.split('-').map(Number);
     return new Date(year, month - 1, day);
   });
-
-  // Function to check if a date has entries
-  const hasEntries = (date: Date): boolean => {
-    return datesWithEntries.some(entryDate => 
-      date.getDate() === entryDate.getDate() &&
-      date.getMonth() === entryDate.getMonth() &&
-      date.getFullYear() === entryDate.getFullYear()
-    );
-  };
 
   // Custom modifiers for the calendar
   const modifiers = {
@@ -56,9 +48,9 @@ const JournalCalendar: React.FC<JournalCalendarProps> = ({ entries, onAnalyze })
   // Handle analysis button click
   const handleAnalyze = () => {
     if (selectionMode === 'range' && dateRange.from) {
-      onAnalyze(dateRange.from, dateRange.to || dateRange.from, []);
+      onAnalyze(dateRange.from, dateRange.to || dateRange.from, [], analysisType);
     } else if (selectionMode === 'multiple' && selectedDates.length > 0) {
-      onAnalyze(new Date(0), null, selectedDates);
+      onAnalyze(new Date(0), null, selectedDates, analysisType);
     }
   };
 
@@ -107,9 +99,33 @@ const JournalCalendar: React.FC<JournalCalendarProps> = ({ entries, onAnalyze })
             </div>
           </div>
         </div>
+        {/* Analysis Type Selection */}
+        <div className="mt-4 flex gap-4 items-center">
+          <span className="text-sm font-medium" style={{ color: elementColors.text }}>Analysis Type:</span>
+          <label className="flex items-center gap-1">
+            <input
+              type="radio"
+              name="analysisType"
+              value="sentiment"
+              checked={analysisType === 'sentiment'}
+              onChange={() => setAnalysisType('sentiment')}
+            />
+            <span>Sentiment</span>
+          </label>
+          <label className="flex items-center gap-1">
+            <input
+              type="radio"
+              name="analysisType"
+              value="textual"
+              checked={analysisType === 'textual'}
+              onChange={() => setAnalysisType('textual')}
+            />
+            <span>Textual</span>
+          </label>
+        </div>
       </CardHeader>
       
-      <CardContent>
+      <CardContent className="overflow-x-auto max-w-xs mx-auto">
         {selectionMode === 'range' ? (
           <>
             <Calendar
@@ -118,7 +134,7 @@ const JournalCalendar: React.FC<JournalCalendarProps> = ({ entries, onAnalyze })
               onSelect={range => setDateRange(range || { from: undefined, to: undefined })}
               modifiers={modifiers}
               modifiersStyles={modifiersStyles}
-              className="rounded-md border flex flex-row"
+              className="rounded-md border min-w-[320px]"
               styles={{
                 day_selected: {
                   backgroundColor: `${currentTheme.primary}80`,
@@ -159,7 +175,7 @@ const JournalCalendar: React.FC<JournalCalendarProps> = ({ entries, onAnalyze })
               required={false}
               modifiers={modifiers}
               modifiersStyles={modifiersStyles}
-              className="rounded-md border"
+              className="rounded-md border min-w-[320px]"
               styles={{
                 day_selected: {
                   backgroundColor: currentTheme.primary,
