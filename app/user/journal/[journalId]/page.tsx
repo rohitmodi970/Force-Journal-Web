@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useTheme } from '@/utilities/context/ThemeContext';
 import { Calendar, Clock, Image, Mic, Video, FileText, PenTool, ArrowLeft, Save, XCircle, Upload, Tag, Trash2 } from 'lucide-react';
 import { useSession } from "next-auth/react";
+import ThemeSidebar from '@/components/Navbar/ThemeSidebar';
 // Types for our data
 interface Media {
   driveFileId: string;
@@ -524,6 +525,7 @@ const JournalPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl" style={{ color: elementColors.text }}>
+      <ThemeSidebar />
       {/* Navigation and Controls */}
       <div className="mb-6 sticky top-0 z-10 bg-opacity-95 p-4 shadow-md rounded-lg backdrop-blur-sm" 
         style={{
