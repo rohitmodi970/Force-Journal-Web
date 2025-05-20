@@ -11,7 +11,11 @@ import {
   getMimeType,
   deleteFileFromDrive
 } from '@/utilities/googleDrive';
-
+import { 
+  encryptJournalData, 
+  decryptJournalData,
+  JOURNAL_ENCRYPTED_FIELDS 
+} from '@/utilities/encryption';
 // Add debugging for authentication issues
 const getAuthenticatedUser = async () => {
   const session = await getServerSession(authOptions);
@@ -102,7 +106,8 @@ export async function POST(req: NextRequest) {
     const requestBody = await req.json();
     const journalId = await Journal.generateJournalId(user.userId);
     
-    const newEntry = new Journal({
+    // Create journal entry with plain data
+    const journalData = {
       title: requestBody.title || '',
       content: requestBody.content || '',
       date: requestBody.date || new Date().toISOString(),
@@ -113,12 +118,20 @@ export async function POST(req: NextRequest) {
       media: { image: [], audio: [], video: [], document: [] },
       journalId,
       userId: user.userId
-    });
+    };
 
+    // Encrypt sensitive fields before saving
+    const encryptedData = encryptJournalData(journalData);
+    
+    const newEntry = new Journal(encryptedData);
     const savedEntry = await newEntry.save();
+    
+    // Decrypt for response to client
+    const decryptedEntry = decryptJournalData(savedEntry.toObject());
+    
     console.log('Journal entry created successfully');
     return NextResponse.json(
-      { message: 'Journal entry created', entry: savedEntry },
+      { message: 'Journal entry created', entry: decryptedEntry },
       { status: 201 }
     );
   } catch (error: any) {
@@ -159,12 +172,15 @@ export async function PUT(req: NextRequest) {
       );
     }
 
+    // Encrypt sensitive fields before update
+    const encryptedData = encryptJournalData({
+      ...updateData,
+      timestamp: new Date().toISOString()
+    });
+
     const updatedEntry = await Journal.findOneAndUpdate(
       { journalId },
-      {
-        ...updateData,
-        timestamp: new Date().toISOString()
-      },
+      encryptedData,
       { new: true }
     );
 
@@ -175,9 +191,12 @@ export async function PUT(req: NextRequest) {
       );
     }
 
+    // Decrypt for response to client
+    const decryptedEntry = decryptJournalData(updatedEntry.toObject());
+
     return NextResponse.json({
       message: 'Journal updated',
-      entry: updatedEntry
+      entry: decryptedEntry
     });
   } catch (error: any) {
     console.error('Error updating journal:', error);
@@ -221,17 +240,25 @@ export async function GET(req: NextRequest) {
 
     if (journalId) {
       const entry = await Journal.findOne({ journalId, userId: user.userId });
-      return entry 
-        ? NextResponse.json(entry)
-        : NextResponse.json(
-            { error: 'Journal not found' },
-            { status: 404 }
-          );
+      if (!entry) {
+        return NextResponse.json(
+          { error: 'Journal not found' },
+          { status: 404 }
+        );
+      }
+      
+      // Decrypt single entry
+      const decryptedEntry = decryptJournalData(entry.toObject());
+      return NextResponse.json(decryptedEntry);
     }
 
+    // Get all entries
     const entries = await Journal.find({ userId: user.userId }).sort({ date: -1 });
-    console.log(entries)
-    return NextResponse.json(entries);
+    
+    // Decrypt all entries
+    const decryptedEntries = entries.map(entry => decryptJournalData(entry.toObject()));
+    
+    return NextResponse.json(decryptedEntries);
   } catch (error: any) {
     console.error('Error fetching journals:', error);
     return NextResponse.json(

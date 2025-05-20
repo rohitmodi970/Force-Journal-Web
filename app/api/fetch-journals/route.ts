@@ -6,6 +6,7 @@ import User from '@/models/User';
 import connectDB from '@/db/connectDB';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/utilities/auth';
+import { decryptJournalData } from '@/utilities/encryption';
 
 export async function GET(request: NextRequest) {
   try {
@@ -69,16 +70,23 @@ export async function GET(request: NextRequest) {
     // Get total count for pagination
     const total = await Journal.countDocuments(query);
 
-    // Transform the data for frontend consumption
-    const formattedJournals = journals.map(journal => ({
-      id: journal.journalId,
-      title: journal.title || 'Untitled Entry',
-      preview: journal.content ? journal.content.substring(0, 150) + (journal.content.length > 150 ? '...' : '') : '',
-      date: journal.date || new Date(journal.timestamp).toLocaleString(),
-      mood: journal.mood || 'Neutral',
-      moodColor: getMoodColor(journal.mood),
-      tags: journal.tags || []
-    }));
+    // Decrypt sensitive fields for each journal
+    const formattedJournals = journals.map(journalRaw => {
+      const journal = decryptJournalData(journalRaw);
+      return {
+        id: journal.journalId,
+        title: journal.title || 'Untitled Entry',
+        preview: journal.content
+          ? (typeof journal.content === 'string'
+              ? journal.content.substring(0, 150) + (journal.content.length > 150 ? '...' : '')
+              : '')
+          : '',
+        date: journal.date || new Date(journal.timestamp).toLocaleString(),
+        mood: journal.mood || 'Neutral',
+        moodColor: getMoodColor(journal.mood),
+        tags: Array.isArray(journal.tags) ? journal.tags : []
+      };
+    });
 
     return NextResponse.json({
       journals: formattedJournals,

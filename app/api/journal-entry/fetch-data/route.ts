@@ -5,8 +5,9 @@ import { authOptions } from '@/utilities/auth';
 import User from '@/models/User';
 import Journal from '@/models/JournalModel';
 import connectDB from '@/db/connectDB';
+import { decryptJournalData } from '@/utilities/encryption';
 
-// Get all journal IDs for the authenticated user
+// Get all journals for the authenticated user, decrypted
 export async function GET(req: NextRequest) {
     try {
         await connectDB();
@@ -30,20 +31,19 @@ export async function GET(req: NextRequest) {
             );
         }
 
-        // Fetch all journal IDs for the user
+        // Fetch all journals for the user
         const journals = await Journal.find(
-            { userId: user.userId }, 
-            { journalId: 1, _id: 0 }
-        );
-        
-        // Extract just the journalId values
-        const journalIds = journals.map(journal => journal.journalId);
+            { userId: user.userId }
+        ).lean();
 
-        return NextResponse.json({ journalIds }, { status: 200 });
+        // Decrypt sensitive fields for each journal
+        const decryptedJournals = journals.map(journal => decryptJournalData(journal));
+
+        return NextResponse.json({ journals: decryptedJournals }, { status: 200 });
     } catch (error: any) {
-        console.error('Error fetching journal IDs:', error);
+        console.error('Error fetching journals:', error);
         return NextResponse.json(
-            { error: error.message || 'Failed to fetch journal IDs' },
+            { error: error.message || 'Failed to fetch journals' },
             { status: 500 }
         );
     }

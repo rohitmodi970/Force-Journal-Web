@@ -4,6 +4,7 @@ import User from '@/models/User';
 import connectDB from '@/db/connectDB';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/utilities/auth';
+import { decryptJournalData } from '@/utilities/encryption';
 
 export async function GET(
   request: NextRequest
@@ -26,8 +27,6 @@ export async function GET(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const journalId = pathParts[pathParts.length - 1];
-
     const journal = await Journal.findOne({
       journalId,
       userId: user.userId
@@ -37,21 +36,24 @@ export async function GET(
       return NextResponse.json({ error: 'Journal entry not found' }, { status: 404 });
     }
 
+    // Decrypt sensitive fields
+    const decryptedJournal = decryptJournalData(journal);
+
     const formattedJournal = {
-      id: journal.journalId,
-      title: journal.title || 'Untitled Entry',
-      content: journal.content || '',
-      date: journal.date || new Date(journal.timestamp).toLocaleString(),
-      mood: journal.mood || 'Neutral',
-      moodColor: getMoodColor(journal.mood),
-      tags: journal.tags || [],
-      media: journal.media || {
+      id: decryptedJournal.journalId,
+      title: decryptedJournal.title || 'Untitled Entry',
+      content: decryptedJournal.content || '',
+      date: decryptedJournal.date || new Date(decryptedJournal.timestamp).toLocaleString(),
+      mood: decryptedJournal.mood || 'Neutral',
+      moodColor: getMoodColor(decryptedJournal.mood),
+      tags: Array.isArray(decryptedJournal.tags) ? decryptedJournal.tags : [],
+      media: decryptedJournal.media || {
         image: [],
         audio: [],
         video: [],
         document: []
       },
-      timestamp: journal.timestamp
+      timestamp: decryptedJournal.timestamp
     };
 
     return NextResponse.json(formattedJournal);

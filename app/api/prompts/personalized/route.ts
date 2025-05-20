@@ -5,6 +5,7 @@ import connectDB from '@/db/connectDB';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import Journal from '@/models/JournalModel';
 import User from '@/models/User';
+import { decryptJournalData } from '@/utilities/encryption'; // <-- Import decryptJournalData
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
@@ -41,13 +42,22 @@ export async function GET() {
     }
 
     // Get the most recent journal entries for better context
-    const recentEntries = await Journal
+    const recentEntriesRaw = await Journal
       .find({ userId: user.userId })
       .sort({ createdAt: -1 })
       .limit(3)
-      .select('content createdAt')
-      .lean()
-      .then(entries => entries as unknown as JournalWithCreatedAt[]);
+      .select({ content: 1, createdAt: 1 }) // Explicitly select fields
+      .lean<{ content: string; createdAt: Date }[]>();
+
+    // Decrypt journal entries
+    const recentEntries: JournalWithCreatedAt[] = (recentEntriesRaw as { content: string; createdAt: Date }[]).map((entry: { content: string; createdAt: Date }) => {
+      const decrypted = decryptJournalData(entry);
+      return {
+        ...entry,
+        content: decrypted.content,
+        createdAt: entry.createdAt,
+      };
+    });
 
     if (!recentEntries || recentEntries.length === 0) {
       console.log('No journal entries found for userId:', user.userId);
@@ -124,15 +134,15 @@ Return ONLY the JSON object, no additional text.`;
     const response = await result.response;
     const text = response.text();
     console.log('Raw Gemini response:', text);
-    
+
     // Clean the response by removing markdown code blocks and any extra whitespace
     const cleanedText = text
       .replace(/```json\n?|\n?```/g, '') // Remove markdown code block markers
       .replace(/^json\n?/g, '') // Remove any "json" prefix
       .trim();
-    
+
     console.log('Cleaned response:', cleanedText);
-    
+
     // Parse the JSON response
     let responseData;
     try {
@@ -178,4 +188,4 @@ Return ONLY the JSON object, no additional text.`;
     }
     return NextResponse.json({ error: 'Failed to generate prompt' }, { status: 500 });
   }
-} 
+}
