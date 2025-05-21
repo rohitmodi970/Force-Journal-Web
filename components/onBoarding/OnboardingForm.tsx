@@ -200,8 +200,7 @@ const OnboardingForm: React.FC = () => {
 
       // Update the session with onboarding complete
       await updateSession({
-        onboardingComplete: true,
-        new_user: false
+        onboardingComplete: true
       });
 
       // Wait for session changes to propagate

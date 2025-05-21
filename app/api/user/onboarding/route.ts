@@ -196,8 +196,7 @@ export async function POST(req: NextRequest) {
     // Update user to mark onboarding as complete
     try {
       await User.findByIdAndUpdate(user._id, { 
-        onboardingComplete: true,
-        new_user: false
+        onboardingComplete: true
       });
     } catch (updateError) {
       console.error('Error updating user:', updateError);

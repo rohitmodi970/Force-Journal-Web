@@ -129,7 +129,6 @@ export const authOptions: NextAuthOptions = {
           // Update IP address
           await User.findByIdAndUpdate(user._id, {
             ip_address: credentials.ipAddress || user.ip_address || '0.0.0.0'
-            // Don't update new_user status here - we'll only do this after onboarding
           });
 
           return {
@@ -188,7 +187,12 @@ export const authOptions: NextAuthOptions = {
           existingUser.googleRefreshToken = account.refresh_token;
           existingUser.googleTokenExpiry = new Date(Date.now() + (account.expires_at || 3600 * 24 * 7) * 1000); // 7 days
           existingUser.ip_address = await getIpAddress();
-          // Don't update new_user status here - we'll keep the onboarding flag
+          
+          // If onboarding is complete, set new_user to false
+          if (existingUser.onboardingComplete) {
+            existingUser.new_user = false;
+          }
+          
           await existingUser.save();
 
           // Update the user object to include additional info
@@ -215,6 +219,12 @@ export const authOptions: NextAuthOptions = {
           existingUser.googleAccessToken = account.access_token;
           existingUser.googleRefreshToken = account.refresh_token;
           existingUser.googleTokenExpiry = new Date(Date.now() + (account.expires_at || 3600 * 24 * 7) * 1000); // 7 days
+          
+          // If onboarding is complete, set new_user to false
+          if (existingUser.onboardingComplete) {
+            existingUser.new_user = false;
+          }
+          
           await existingUser.save();
 
           // Update the user object with existing user's status

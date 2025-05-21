@@ -98,7 +98,7 @@ export default withAuth(
         
         // Make onboarding accessible for new users and users who haven't completed onboarding
         if (pathname.startsWith('/user/onboarding') && 
-            (token?.new_user === true || token?.onboardingComplete === false)) {
+            ( token?.onboardingComplete === false)) {
           console.log("✅ User accessing onboarding, allowed");
           return true;
         }

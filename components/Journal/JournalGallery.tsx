@@ -429,7 +429,7 @@ const JournalGallery: React.FC<JournalGalleryProps> = ({ entries }) => {
         <Tabs defaultValue="write" className="w-full">
           <TabsList 
             className="mb-4 w-full max-w-md"
-            //@ts-expect-error shadcn TabsTrigger style prop: style is not in shadcn TabsTrigger types
+            
             style={{ 
               backgroundColor: isDarkMode ? '#374151' : '#F1F5F9',
             }}
@@ -437,7 +437,7 @@ const JournalGallery: React.FC<JournalGalleryProps> = ({ entries }) => {
             <TabsTrigger 
               value="write" 
               className="flex-1 data-[state=active]:text-white"
-              //@ts-expect-error shadcn TabsTrigger style prop: style is not in shadcn TabsTrigger types
+             
               style={{ 
                 color: elementColors.text,
                 backgroundColor: 'transparent',
@@ -449,7 +449,7 @@ const JournalGallery: React.FC<JournalGalleryProps> = ({ entries }) => {
             <TabsTrigger 
               value="analyze" 
               className="flex-1 data-[state=active]:text-white"
-              //@ts-expect-error shadcn TabsTrigger style prop: style is not in shadcn TabsTrigger types
+              
               style={{ 
                 color: elementColors.text,
                 backgroundColor: 'transparent', 
