@@ -99,7 +99,7 @@ const MoodTracker: React.FC = () => {
   ];
 
   const handleWriteAboutIt = () => {
-    router.push('/new-entry');
+    router.push('/user/journal-entry');
   };
 
   return (

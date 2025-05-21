@@ -47,7 +47,7 @@ const WordChoiceChart = ({ data = mockData }) => {
         </PieChart>
       </ResponsiveContainer>
       <p className="mt-4 text-gray-600 text-sm">
-        {top.name} vocabulary dominates your journal ({top.value}%), with {second.name.toLowerCase()} language close behind ({second.value}%), reflecting an expressive writing style.
+        {top?.name} vocabulary dominates your journal ({top?.value}%), with {second?.name?.toLowerCase()} language close behind ({second?.value}%), reflecting an expressive writing style.
       </p>
     </div>
   );

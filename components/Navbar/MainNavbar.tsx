@@ -90,15 +90,8 @@ const MainNavbar = () => {
     },
     {
       name: 'Account',
-      href: '/user/profile',
+      href: '/user/settings',
       icon: 'HiUser',
-      subItems: [
-        {
-          name: 'Settings',
-          href: '/user/settings',
-          icon: 'HiAdjustments',
-        },
-      ],
     },
     {
       name: "What's Next",

@@ -21,127 +21,12 @@ import AIInsightsCard from '@/components/AIInsightsCard';
 import WeeklySummary from '@/components/WeeklySummary';
 import StreakChallengeCard from '@/components/StreakChallengeCard';
 import AISuggestions from '@/components/AISuggestions';
+import { NewUserGuidance,FirstEntryPrompt } from '@/components/DashBoardomponents';
 
-// New User Guide Components
-interface OnboardingTipProps {
-  title: string;
-  description: string;
-  index: number;
-  onDismiss: () => void;
-}
 
-const OnboardingTip = ({ title, description, index, onDismiss }: OnboardingTipProps) => {
-  return (
-    <div className="relative bg-primary/10 border border-primary/20 rounded-lg p-4 mb-4 shadow-sm animate-fadeIn">
-      <div className="flex items-start">
-        <div className="flex-shrink-0 bg-primary/20 text-primary rounded-full h-8 w-8 flex items-center justify-center mr-3">
-          {index}
-        </div>
-        <div className="flex-1">
-          <h4 className="font-medium text-lg">{title}</h4>
-          <p className="text-sm text-muted-foreground mt-1">{description}</p>
-        </div>
-        <button 
-          onClick={onDismiss} 
-          className="text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="Dismiss tip"
-        >
-          <Check size={18} />
-        </button>
-      </div>
-    </div>
-  );
-};
 
-const NewUserGuidance = ({ onDismissAll }: { onDismissAll: () => void }) => {
-  const [activeTips, setActiveTips] = useState({
-    prompt: true,
-    insights: true,
-    quickLinks: true,
-    entries: true
-  });
 
-  const handleDismiss = (tipName: string) => {
-    setActiveTips(prev => ({
-      ...prev,
-      [tipName]: false
-    }));
-    
-    // Check if all tips are dismissed
-    const updatedTips = {...activeTips, [tipName]: false};
-    if (!Object.values(updatedTips).some(Boolean)) {
-      onDismissAll();
-    }
-  };
 
-  return (
-    <div className="space-y-4 mb-6">
-      <div className="flex items-center justify-between bg-muted/50 p-4 rounded-lg">
-        <div className="flex items-center">
-          <Info size={20} className="mr-2 text-primary" />
-          <h3 className="font-semibold">Getting Started Guide</h3>
-        </div>
-        <Button variant="outline" size="sm" onClick={onDismissAll}>
-          Dismiss All
-        </Button>
-      </div>
-      
-      <div className="space-y-3">
-        {activeTips.prompt && (
-          <OnboardingTip 
-            index={1}
-            title="Start Your Journey"
-            description="Begin with the daily prompt to inspire your first journal entry. Click 'Write Now' to get started!"
-            onDismiss={() => handleDismiss('prompt')}
-          />
-        )}
-        
-        {activeTips.insights && (
-          <OnboardingTip 
-            index={2}
-            title="AI-Powered Insights"
-            description="As you write more entries, you'll receive personalized insights and patterns about your journaling habits."
-            onDismiss={() => handleDismiss('insights')}
-          />
-        )}
-        
-        {activeTips.quickLinks && (
-          <OnboardingTip 
-            index={3}
-            title="Quick Navigation"
-            description="Use the Quick Links to navigate to different features of your journal quickly."
-            onDismiss={() => handleDismiss('quickLinks')}
-          />
-        )}
-        
-        {activeTips.entries && (
-          <OnboardingTip 
-            index={4}
-            title="Track Your Progress"
-            description="Build a journaling streak and watch your entry count grow over time. Consistency is key!"
-            onDismiss={() => handleDismiss('entries')}
-          />
-        )}
-      </div>
-    </div>
-  );
-};
-
-// First Entry Prompt Card
-const FirstEntryPrompt = ({ onClick }: { onClick: () => void }) => {
-  return (
-    <Card className="p-6 border-2 border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer" onClick={onClick}>
-      <div className="flex flex-col items-center text-center space-y-4">
-        <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center">
-          <ArrowRight className="text-primary" size={24} />
-        </div>
-        <h3 className="text-xl font-semibold">Write Your First Entry</h3>
-        <p className="text-muted-foreground">Start your journaling journey by capturing your thoughts, feelings, or experiences.</p>
-        <Button className="mt-2">Create First Entry</Button>
-      </div>
-    </Card>
-  );
-};
 
 interface JournalStats {
   totalEntries: number;
@@ -304,7 +189,7 @@ export default function Dashboard() {
   };
   
   const handleCreateFirstEntry = () => {
-    router.push('/new-entry');
+    router.push('/user/journal-entry');
   };
 
   const showAIInsight = () => {
@@ -385,19 +270,14 @@ export default function Dashboard() {
         <QuickLinks />
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
-          <div className="md:col-span-2 space-y-4 lg:space-y-6">
+          <div className="md:col-span-2 space-y-4 lg:space-y-6  ">
             {/* Daily Prompt and AI Suggestions */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <DailyPrompt prompt={promptData.prompt} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-auto">
               <AISuggestions suggestions={promptData.suggestions} />
+              <DailyPrompt prompt={promptData.prompt} />
             </div>
             
-            {/* First Entry Prompt for New Users OR Recent Entries for returning users */}
-            {newUser && stats?.totalEntries === 0 ? (
-              <FirstEntryPrompt onClick={handleCreateFirstEntry} />
-            ) : (
-              <RecentEntries />
-            )}
+            
           </div>
           
           <div className="md:col-span-1 space-y-4 lg:space-y-6">
@@ -475,6 +355,12 @@ export default function Dashboard() {
             } : undefined} />
           </div>
         </div>
+        {/* First Entry Prompt for New Users OR Recent Entries for returning users */}
+            {newUser && stats?.totalEntries === 0 ? (
+              <FirstEntryPrompt onClick={handleCreateFirstEntry} />
+            ) : (
+              <RecentEntries />
+            )}
       </main>
       
       <FloatingActionButton />

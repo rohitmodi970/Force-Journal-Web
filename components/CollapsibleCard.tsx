@@ -24,10 +24,10 @@ const CollapsibleCard: React.FC<CollapsibleCardProps> = ({
   const { currentTheme, isDarkMode } = useTheme();
 
   return (
-    <Card className={cn("overflow-hidden border transition-all duration-300", 
+    <Card className={cn("overflow-hidden border transition-all duration-300 h-auto", 
       isOpen ? "shadow-md" : "shadow-sm", className)}>
       <CardHeader className="p-4 cursor-pointer" onClick={() => setIsOpen(!isOpen)}>
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center h-auto">
           <div className="flex items-center gap-2">
             {icon && <span style={{ color: currentTheme.primary }}>{icon}</span>}
             <CardTitle className="text-lg font-medium">{title}</CardTitle>

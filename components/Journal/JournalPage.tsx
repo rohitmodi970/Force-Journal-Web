@@ -60,7 +60,7 @@ const JournalPage = ({ entry, isEven, backgroundClass, backgroundStyle }: Journa
               )}
             </p>
           </div>
-            <button
+            {/* <button
               type="button"
               className="flex items-center gap-1 text-xs text-muted-foreground italic group bg-transparent border-none outline-none cursor-pointer hover:text-primary transition-colors"
               style={{ padding: 0, background: "none" }}
@@ -70,7 +70,7 @@ const JournalPage = ({ entry, isEven, backgroundClass, backgroundStyle }: Journa
             >
               <span>Edit</span>
               <Edit className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-            </button>
+            </button> */}
         </div>
         
         <div className="journal-content whitespace-pre-line mb-6 font-journal text-lg leading-relaxed">

@@ -10,7 +10,6 @@ import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import MediaSelector from './file-attachements/MediaSelector';
 import MediaPreview from './file-attachements/MediaPreview';
-import NewEntryLanding from '@/components/Journal/JournalEntry/NewEntryLanding';
 import Toast from '@/components/ui/toast';
 import SentimentAnalysisDashboard from '@/components/Journal/JournalEntry/SentimentAnalysis';
 import ThemeSidebar from '@/components/Navbar/ThemeSidebar';
@@ -83,8 +82,7 @@ const JournalEntry: React.FC<{
   // View modes
   const viewModes = [
     { id: 'writing', name: 'Writing Mode', description: 'Standard editor with all tools' },
-    { id: 'focus', name: 'Focus Mode', description: 'Distraction-free writing environment' },
-    { id: 'preview', name: 'Preview Mode', description: 'See how your entry looks formatted' }
+    { id: 'focus', name: 'Focus Mode', description: 'Distraction-free writing environment' }
   ];
   // Define media limits
   const MEDIA_LIMITS = {

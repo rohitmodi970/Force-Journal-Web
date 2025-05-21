@@ -53,25 +53,27 @@ export async function GET() {
 
     if (!recentEntries || recentEntries.length === 0) {
       console.log('No journal entries found for userId:', user.userId);
+      // If no journal entries found, return default prompt for new user
+      console.log('Returning default prompt for new user - no journal history available');
       return NextResponse.json({
         prompt: {
           text: "What's on your mind today?",
-          explanation: "Start your journaling journey by sharing your thoughts and feelings."
+          explanation: "Start your journaling journey by sharing your thoughts and feelings. The first step is always the most important one."
         },
         suggestions: {
           moodTrends: {
-            primaryMood: "neutral",
-            trend: "starting",
-            intensity: 0.5
+        primaryMood: "neutral",
+        trend: "starting",
+        intensity: 0.5
           },
           aiNudge: {
-            theme: "Getting Started",
-            suggestion: "Begin your journaling journey by writing about your day",
-            action: "Try writing for 5 minutes about what made you smile today"
+        theme: "Getting Started",
+        suggestion: "Begin your journaling journey by writing about your day. Don't worry about structure - just express yourself freely.",
+        action: "Try writing for 5 minutes about what made you smile today or something you're looking forward to tomorrow."
           },
           patternInsight: {
-            pattern: "New to journaling",
-            exploration: "Explore different writing styles and find what works best for you"
+        pattern: "New to journaling",
+        exploration: "Explore different writing styles and find what works best for you. Some people prefer structured entries while others enjoy free-flowing thoughts."
           }
         }
       });

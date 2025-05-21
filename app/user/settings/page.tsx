@@ -3,7 +3,8 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { useTheme, ColorOption } from "@/utilities/context/ThemeContext"
-import { User, Bell, Shield, Moon, Sun, ChevronRight, Palette, Settings as SettingsIcon } from 'lucide-react'
+import { User, Bell, Shield, Moon, Sun, ChevronRight, Palette, Settings as SettingsIcon, Trash2 } from 'lucide-react'
+import DeleteAccountComponent from '@/components/DeleteAccountComponent'
 
 const SettingsPage = () => {
     const { currentTheme, isDarkMode, colorOptions, setCurrentTheme, toggleDarkMode } = useTheme();
@@ -265,7 +266,7 @@ const SettingsPage = () => {
                                     <div className="space-y-4">
                                         <Link 
                                             href="/user/security" 
-                                            className=" p-4 rounded-lg hover:bg-opacity-80 transition-all flex items-center justify-between"
+                                            className="p-4 rounded-lg hover:bg-opacity-80 transition-all flex items-center justify-between"
                                             style={{ backgroundColor: isDarkMode ? '#2a303c' : '#f8fafc' }}
                                         >
                                             <div className="flex items-center">
@@ -281,6 +282,27 @@ const SettingsPage = () => {
                                             </div>
                                             <ChevronRight size={20} className="opacity-60" />
                                         </Link>
+                                        
+                                        {/* New Account Deletion Card */}
+                                        <div 
+                                            className="p-4 rounded-lg"
+                                            style={{ backgroundColor: isDarkMode ? '#2a303c' : '#f8fafc' }}
+                                        >
+                                            <div className="flex items-center mb-4">
+                                                <div className="w-10 h-10 rounded-full flex items-center justify-center mr-3"
+                                                    style={{ backgroundColor: '#fee2e2', color: '#ef4444' }}
+                                                >
+                                                    <Trash2 size={18} />
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-medium">Danger Zone</h3>
+                                                    <p className="text-sm opacity-70">Manage account deletion</p>
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Delete Account Component */}
+                                            <DeleteAccountComponent theme={currentTheme} />
+                                        </div>
                                     </div>
                                 </div>
                             )}
