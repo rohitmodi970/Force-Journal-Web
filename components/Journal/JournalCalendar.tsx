@@ -136,6 +136,7 @@ const JournalCalendar: React.FC<JournalCalendarProps> = ({ entries, onAnalyze })
               modifiersStyles={modifiersStyles}
               className="rounded-md border min-w-[320px]"
               styles={{
+                //@ts-ignore
                 day_selected: {
                   backgroundColor: `${currentTheme.primary}80`,
                   color: isDarkMode ? '#FFFFFF' : '#FFFFFF'
@@ -177,6 +178,7 @@ const JournalCalendar: React.FC<JournalCalendarProps> = ({ entries, onAnalyze })
               modifiersStyles={modifiersStyles}
               className="rounded-md border min-w-[320px]"
               styles={{
+                //@ts-ignore
                 day_selected: {
                   backgroundColor: currentTheme.primary,
                   color: isDarkMode ? '#FFFFFF' : '#FFFFFF'

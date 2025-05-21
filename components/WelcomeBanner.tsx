@@ -44,7 +44,7 @@ const WelcomeBanner = ({
   const router = useRouter();
   const [timeGreeting, setTimeGreeting] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-
+console.log(stats)
   // Time-based greeting
   useEffect(() => {
     const hour = new Date().getHours();
