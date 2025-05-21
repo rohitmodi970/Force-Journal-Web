@@ -145,7 +145,7 @@ export function decryptFields(data: Record<string, any>, fieldsToDecrypt: string
  */
 
 // List of journal fields that should be encrypted
-export const JOURNAL_ENCRYPTED_FIELDS = ['title', 'content', 'tags', 'mood', 'journalType'];
+export const JOURNAL_ENCRYPTED_FIELDS = ['title', 'content', 'mood', 'journalType'];
 
 /**
  * Encrypt journal data before saving to database
