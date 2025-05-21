@@ -728,6 +728,18 @@ const JournalEntry: React.FC<{
       setIsUnsaved(false);
       setPendingBackendSync(false);
       showMessage('Journal entry saved successfully');
+
+      // --- METRICS TRACKING ---
+      // Send character count to metrics API
+      const charCount = (title ? title.length : 0) + (content ? content.length : 0);
+      if (charCount > 0) {
+        fetch('/api/metrics/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ charactersWritten: charCount })
+        });
+      }
+      // --- END METRICS TRACKING ---
     } catch (error: unknown) {
       console.error('Error saving journal entry:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to save journal entry';

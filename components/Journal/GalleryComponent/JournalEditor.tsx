@@ -176,6 +176,17 @@ const JournalEditor: React.FC<JournalEditorProps> = ({
         showToast('Journal entry created', 'success');
       }
       
+      // --- METRICS TRACKING ---
+      const charCount = (title ? title.length : 0) + (content ? content.length : 0);
+      if (charCount > 0) {
+        fetch('/api/metrics/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ charactersWritten: charCount })
+        });
+      }
+      // --- END METRICS TRACKING ---
+      
       // Callback to parent component to refresh entries
       if (onSave) onSave(currentJournalId === null);
       
