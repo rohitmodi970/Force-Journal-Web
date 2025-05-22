@@ -269,7 +269,7 @@ const WelcomeBanner = ({
           <div className="max-w-[40vw]">
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center ">
               {timeGreeting}, <span className="ml-2 tracking-tight" style={{ color: currentTheme.primary }}>{userName} </span>
-              <span>!</span>
+              
               {isNewUser && (
                 <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10" style={{ color: currentTheme.primary }}>
                   New
@@ -525,10 +525,10 @@ const WelcomeBanner = ({
                 <div className="h-8 w-8 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0">
                   <CalendarDays className="h-4 w-4 text-blue-500" />
                 </div>
-                <h3 className="font-medium">Getting Started</h3>
+                <h3 className="font-medium">Understand Your thoughts & feelings deeply</h3>
               </div>
               <p className="text-sm text-muted-foreground">
-                Write your first journal entry to begin tracking your thoughts and feelings
+                We listen via Text & Audio
               </p>
             </div>
             
@@ -537,10 +537,10 @@ const WelcomeBanner = ({
                 <div className="h-8 w-8 rounded-full bg-purple-500/10 flex items-center justify-center flex-shrink-0">
                   <TrendingUp className="h-4 w-4 text-purple-500" />
                 </div>
-                <h3 className="font-medium">Track Your Mood</h3>
+                <h3 className="font-medium">See Your Unique patterns</h3>
               </div>
               <p className="text-sm text-muted-foreground">
-                Log your emotions to discover patterns in your wellbeing over time
+                Like a personal mind map
               </p>
               <div className="mt-2 flex gap-1">
                 {["😔", "😐", "🙂", "😊"].map((emoji, index) => (
@@ -554,15 +554,15 @@ const WelcomeBanner = ({
               </div>
             </div>
             
-            <div className="bg-background/30 backdrop-blur-sm rounded-xl p-4 border border-primary/10 hover:border-primary/20 transition-all">
+            <div className="bg-background/30 backdrop-blur-sm rounded-xl p-4 border border-primary/10 hover:border-primary/20 transition-all flex flex-col ">
               <div className="flex items-center gap-3 mb-2">
                 <div className="h-8 w-8 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0">
                   <Info className="h-4 w-4 text-green-500" />
                 </div>
-                <h3 className="font-medium">Insights</h3>
+                <h3 className="font-medium">Get gentle nudges to act on your goals</h3>
               </div>
               <p className="text-sm text-muted-foreground">
-                Discover patterns and gain self-awareness through regular journaling
+                We're your accountability buddy!
               </p>
             </div>
           </div>

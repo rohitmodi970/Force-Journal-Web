@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { User, UserPlus, Mail, Phone, Calendar, Globe, Moon, Heart, ChevronRight } from 'lucide-react';
+import { useTheme } from '@/utilities/context/ThemeContext'; // Import the theme context
 
 // Types based on the Mongoose schema
 interface SocialMedia {
@@ -38,6 +39,9 @@ export default function ProfilePage() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
+  
+  // Use the theme context
+  const { currentTheme, isDarkMode, elementColors } = useTheme();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -65,7 +69,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <div className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2`} style={{ borderColor: currentTheme.primary }}></div>
       </div>
     );
   }
@@ -73,7 +77,7 @@ export default function ProfilePage() {
   if (error) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <div className={`${isDarkMode ? 'bg-red-900 border-red-700 text-red-100' : 'bg-red-100 border-red-400 text-red-700'} border px-4 py-3 rounded`}>
           <p>{error}</p>
         </div>
       </div>
@@ -83,7 +87,7 @@ export default function ProfilePage() {
   if (!userData) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
+        <div className={`${isDarkMode ? 'bg-yellow-900 border-yellow-700 text-yellow-100' : 'bg-yellow-100 border-yellow-400 text-yellow-700'} border px-4 py-3 rounded`}>
           <p>No user data available.</p>
         </div>
       </div>
@@ -97,15 +101,28 @@ export default function ProfilePage() {
     return new Date(dateString).toLocaleDateString();
   };
 
+  // Define gradient colors based on theme
+  const gradientFrom = currentTheme.primary;
+  const gradientTo = currentTheme.active;
+
+  // Define card background and text colors based on dark mode
+  const cardBg = isDarkMode ? 'bg-gray-800' : 'bg-white';
+  const sectionBg = isDarkMode ? 'bg-gray-700' : 'bg-gray-50';
+  const textColor = isDarkMode ? 'text-gray-100' : 'text-gray-800';
+  const textMuted = isDarkMode ? 'text-gray-300' : 'text-gray-500';
+  const textItalic = isDarkMode ? 'text-gray-400 italic' : 'text-gray-500 italic';
+
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 mt-24">
-      <div className="bg-white shadow rounded-lg overflow-hidden">
+      <div className={`${cardBg} shadow rounded-lg overflow-hidden`}>
         
         {/* Profile Header */}
-        <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-6 text-white">
+        <div style={{ 
+          background: `linear-gradient(to right, ${gradientFrom}, ${gradientTo})` 
+        }} className="p-6 text-white">
           <div className="flex flex-col sm:flex-row items-center">
             <div className="mb-4 sm:mb-0 sm:mr-6">
-              <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center overflow-hidden">
+              <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center overflow-hidden border-4" style={{ borderColor: currentTheme.light }}>
                 {profile.photoUrl ? (
                   <img 
                     src={profile.photoUrl} 
@@ -139,7 +156,8 @@ export default function ProfilePage() {
           <div className="mt-6 flex justify-end">
             <Link 
               href="/user/profile/manage-profile" 
-              className="bg-white text-blue-600 px-4 py-2 rounded-lg font-medium flex items-center hover:bg-blue-50 transition-colors"
+              className="bg-white px-4 py-2 rounded-lg font-medium flex items-center hover:bg-opacity-90 transition-colors"
+              style={{ color: currentTheme.primary }}
             >
               <UserPlus size={16} className="mr-2" />
               Edit Profile
@@ -152,118 +170,124 @@ export default function ProfilePage() {
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Basic Info Section */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h2 className="text-lg font-medium text-gray-800 mb-4">Basic Information</h2>
+            <div className={`${sectionBg} p-4 rounded-lg`} style={{ borderLeft: `4px solid ${currentTheme.primary}` }}>
+              <h2 className={`text-lg font-medium ${textColor} mb-4`}>Basic Information</h2>
               
               <div className="space-y-3">
                 <div className="flex items-start">
-                  <Mail className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
+                  <Mail className={`w-5 h-5 ${textMuted} mt-0.5 mr-3`} style={{ color: currentTheme.primary }} />
                   <div>
-                    <p className="text-sm text-gray-500">Email</p>
-                    <p>{userData.email}</p>
+                    <p className={`text-sm ${textMuted}`}>Email</p>
+                    <p className={textColor}>{userData.email}</p>
                   </div>
                 </div>
                 
                 <div className="flex items-start">
-                  <Phone className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
+                  <Phone className={`w-5 h-5 ${textMuted} mt-0.5 mr-3`} style={{ color: currentTheme.primary }} />
                   <div>
-                    <p className="text-sm text-gray-500">Phone</p>
-                    <p>{userData.phone || 'Not specified'}</p>
+                    <p className={`text-sm ${textMuted}`}>Phone</p>
+                    <p className={textColor}>{userData.phone || 'Not specified'}</p>
                   </div>
                 </div>
                 
                 <div className="flex items-start">
-                  <Calendar className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
+                  <Calendar className={`w-5 h-5 ${textMuted} mt-0.5 mr-3`} style={{ color: currentTheme.primary }} />
                   <div>
-                    <p className="text-sm text-gray-500">Date of Birth</p>
-                    <p>{profile.dob ? formatDate(profile.dob) : 'Not specified'}</p>
+                    <p className={`text-sm ${textMuted}`}>Date of Birth</p>
+                    <p className={textColor}>{profile.dob ? formatDate(profile.dob) : 'Not specified'}</p>
                   </div>
                 </div>
               </div>
             </div>
             
             {/* Personality Section */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h2 className="text-lg font-medium text-gray-800 mb-4">Personality & Preferences</h2>
+            <div className={`${sectionBg} p-4 rounded-lg`} style={{ borderLeft: `4px solid ${currentTheme.primary}` }}>
+              <h2 className={`text-lg font-medium ${textColor} mb-4`}>Personality & Preferences</h2>
               
               <div className="space-y-3">
                 <div className="flex items-start">
-                  <User className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
+                  <User className={`w-5 h-5 ${textMuted} mt-0.5 mr-3`} style={{ color: currentTheme.primary }} />
                   <div>
-                    <p className="text-sm text-gray-500">Personality Type</p>
-                    <p>{profile.personalityType || 'Not specified'}</p>
+                    <p className={`text-sm ${textMuted}`}>Personality Type</p>
+                    <p className={textColor}>{profile.personalityType || 'Not specified'}</p>
                   </div>
                 </div>
                 
                 <div className="flex items-start">
-                  <Moon className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
+                  <Moon className={`w-5 h-5 ${textMuted} mt-0.5 mr-3`} style={{ color: currentTheme.primary }} />
                   <div>
-                    <p className="text-sm text-gray-500">Sleeping Habits</p>
-                    <p>{profile.sleepingHabits || 'Not specified'}</p>
+                    <p className={`text-sm ${textMuted}`}>Sleeping Habits</p>
+                    <p className={textColor}>{profile.sleepingHabits || 'Not specified'}</p>
                   </div>
                 </div>
               </div>
             </div>
             
             {/* Interests Section */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h2 className="text-lg font-medium text-gray-800 mb-4">Interests</h2>
+            <div className={`${sectionBg} p-4 rounded-lg`} style={{ borderLeft: `4px solid ${currentTheme.primary}` }}>
+              <h2 className={`text-lg font-medium ${textColor} mb-4`}>Interests</h2>
               
               <div className="flex items-start">
-                <Heart className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
+                <Heart className={`w-5 h-5 ${textMuted} mt-0.5 mr-3`} style={{ color: currentTheme.primary }} />
                 <div>
-                  <p className="text-sm text-gray-500">Things I Like</p>
+                  <p className={`text-sm ${textMuted}`}>Things I Like</p>
                   {profile.interests && profile.interests.length > 0 ? (
                     <ul className="list-disc list-inside">
                       {profile.interests.map((interest, index) => (
-                        <li key={index}>{interest}</li>
+                        <li key={index} className={textColor}>{interest}</li>
                       ))}
                     </ul>
                   ) : (
-                    <p>No interests specified</p>
+                    <p className={textColor}>No interests specified</p>
                   )}
                 </div>
               </div>
             </div>
             
             {/* Languages Section */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h2 className="text-lg font-medium text-gray-800 mb-4">Languages</h2>
+            <div className={`${sectionBg} p-4 rounded-lg`} style={{ borderLeft: `4px solid ${currentTheme.primary}` }}>
+              <h2 className={`text-lg font-medium ${textColor} mb-4`}>Languages</h2>
               
               <div className="flex items-start">
-                <Globe className="w-5 h-5 text-gray-500 mt-0.5 mr-3" />
+                <Globe className={`w-5 h-5 ${textMuted} mt-0.5 mr-3`} style={{ color: currentTheme.primary }} />
                 <div>
-                  <p className="text-sm text-gray-500">Languages I Know</p>
+                  <p className={`text-sm ${textMuted}`}>Languages I Know</p>
                   {profile.languages && profile.languages.length > 0 ? (
                     <ul className="list-disc list-inside">
                       {profile.languages.map((language, index) => (
-                        <li key={index}>{language}</li>
+                        <li key={index} className={textColor}>{language}</li>
                       ))}
                     </ul>
                   ) : (
-                    <p>No languages specified</p>
+                    <p className={textColor}>No languages specified</p>
                   )}
                 </div>
               </div>
             </div>
             
             {/* Social Media Section */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h2 className="text-lg font-medium text-gray-800 mb-4">Social Media</h2>
+            <div className={`${sectionBg} p-4 rounded-lg col-span-1 md:col-span-2`} style={{ borderLeft: `4px solid ${currentTheme.primary}` }}>
+              <h2 className={`text-lg font-medium ${textColor} mb-4`}>Social Media</h2>
               
               {profile.socialMedia && Object.keys(profile.socialMedia).length > 0 ? (
                 <ul className="space-y-2">
                   {Object.entries(profile.socialMedia).map(([platform, link]) => (
                     <li key={platform} className="flex items-center">
-                      <span className="text-gray-500 capitalize mr-2">{platform}:</span>
-                      <a href={link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline truncate">
+                      <span className={`${textMuted} capitalize mr-2`}>{platform}:</span>
+                      <a 
+                        href={link} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="hover:underline truncate"
+                        style={{ color: currentTheme.primary }}
+                      >
                         {link}
                       </a>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-gray-500 italic">No social media links provided</p>
+                <p className={textItalic}>No social media links provided</p>
               )}
             </div>
           </div>

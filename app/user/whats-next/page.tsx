@@ -9,14 +9,15 @@ import { useTheme } from '@/utilities/context/ThemeContext';
 const WhatNext = () => {
   const { isDarkMode, currentTheme, elementColors } = useTheme();
 
-  // Determine colors based on theme state
-  const cardBgColor = isDarkMode ? 'bg-gray-800/80' : 'bg-white';
-  const pageBgColor = isDarkMode ? 'bg-gray-900' : 'bg-gray-50';
+  // Enhance light mode colors for better visual appeal
+  const cardBgColor = isDarkMode ? 'bg-gray-800/80' : 'bg-white/90';
+  const pageBgColor = isDarkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-gray-50 to-blue-50';
   const textColor = isDarkMode ? 'text-gray-100' : 'text-gray-900';
-  const mutedTextColor = isDarkMode ? 'text-gray-300' : 'text-gray-500';
-  const feedbackBgColor = isDarkMode ? 'bg-gray-800/50' : 'bg-gray-50';
-  const cardHoverBgColor = isDarkMode ? 'hover:bg-gray-700/90' : 'hover:bg-gray-50';
-  const borderColor = isDarkMode ? 'border-gray-700' : 'border-gray-200';
+  const mutedTextColor = isDarkMode ? 'text-gray-300' : 'text-gray-600';
+  const feedbackBgColor = isDarkMode ? 'bg-gray-800/50' : 'bg-white/80';
+  const cardHoverBgColor = isDarkMode ? 'hover:bg-gray-700/90' : 'hover:bg-white';
+  const borderColor = isDarkMode ? 'border-gray-700' : 'border-gray-100';
+  const cardShadow = isDarkMode ? 'shadow-md shadow-gray-900/30' : 'shadow-xl shadow-blue-900/5';
 
   // Define color type for type safety
     type FeatureColor = 'purple' | 'blue' | 'green' | 'yellow';
@@ -52,31 +53,35 @@ const WhatNext = () => {
     }
   ];
 
-  // Dynamic color classes for feature icons
+  // Enhanced color palette for light mode
   const featureColors = {
     purple: {
-      bg: isDarkMode ? 'bg-purple-900/30' : 'bg-force-purple/10',
-      text: 'text-force-purple',
-      border: isDarkMode ? 'border-purple-800/50' : 'border-force-purple/20',
-      shadow: isDarkMode ? 'shadow-purple-900/20' : 'shadow-force-purple/10'
+      bg: isDarkMode ? 'bg-purple-900/30' : 'bg-force-purple/25',
+      text: isDarkMode ? 'text-purple-400' : 'text-force-purple',
+      border: isDarkMode ? 'border-purple-800/50' : 'border-force-purple/40',
+      shadow: isDarkMode ? 'shadow-purple-900/20' : 'shadow-force-purple/20',
+      gradient: isDarkMode ? '' : 'bg-gradient-to-br from-purple-50 to-force-purple/10'
     },
     blue: {
-      bg: isDarkMode ? 'bg-blue-900/30' : 'bg-force-blue/10',
-      text: 'text-force-blue',
-      border: isDarkMode ? 'border-blue-800/50' : 'border-force-blue/20',
-      shadow: isDarkMode ? 'shadow-blue-900/20' : 'shadow-force-blue/10'
+      bg: isDarkMode ? 'bg-blue-900/30' : 'bg-force-blue/25',
+      text: isDarkMode ? 'text-blue-400' : 'text-force-blue',
+      border: isDarkMode ? 'border-blue-800/50' : 'border-force-blue/40',
+      shadow: isDarkMode ? 'shadow-blue-900/20' : 'shadow-force-blue/20',
+      gradient: isDarkMode ? '' : 'bg-gradient-to-br from-blue-50 to-force-blue/10'
     },
     green: {
-      bg: isDarkMode ? 'bg-green-900/30' : 'bg-force-green/10',
-      text: 'text-force-green',
-      border: isDarkMode ? 'border-green-800/50' : 'border-force-green/20',
-      shadow: isDarkMode ? 'shadow-green-900/20' : 'shadow-force-green/10'
+      bg: isDarkMode ? 'bg-green-900/30' : 'bg-force-green/25',
+      text: isDarkMode ? 'text-green-400' : 'text-force-green',
+      border: isDarkMode ? 'border-green-800/50' : 'border-force-green/40',
+      shadow: isDarkMode ? 'shadow-green-900/20' : 'shadow-force-green/20',
+      gradient: isDarkMode ? '' : 'bg-gradient-to-br from-green-50 to-force-green/10'
     },
     yellow: {
-      bg: isDarkMode ? 'bg-yellow-900/30' : 'bg-force-yellow/10',
-      text: 'text-force-yellow',
-      border: isDarkMode ? 'border-yellow-800/50' : 'border-force-yellow/20',
-      shadow: isDarkMode ? 'shadow-yellow-900/20' : 'shadow-force-yellow/10'
+      bg: isDarkMode ? 'bg-yellow-900/30' : 'bg-force-yellow/25',
+      text: isDarkMode ? 'text-yellow-400' : 'text-force-yellow',
+      border: isDarkMode ? 'border-yellow-800/50' : 'border-force-yellow/40',
+      shadow: isDarkMode ? 'shadow-yellow-900/20' : 'shadow-force-yellow/20',
+      gradient: isDarkMode ? '' : 'bg-gradient-to-br from-yellow-50 to-force-yellow/10'
     }
   };
 
@@ -127,7 +132,7 @@ const WhatNext = () => {
 
   return (
     <motion.div 
-      className={`transition-colors duration-300 ${pageBgColor} p-6 rounded-xl`}
+      className={`transition-colors duration-300 ${pageBgColor} p-6 rounded-xl min-h-screen`}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
@@ -161,7 +166,8 @@ const WhatNext = () => {
           >
             <Card className={`feature-coming-soon border ${borderColor} ${cardBgColor} transition-all duration-300 h-full
                               ${cardHoverBgColor} cursor-pointer relative overflow-hidden backdrop-blur-sm
-                              shadow-lg ${featureColors[feature?.color].shadow} group`}>
+                              ${cardShadow} ${featureColors[feature?.color].gradient} group`}>
+              <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-${feature.color === 'purple' ? 'purple' : feature.color === 'blue' ? 'blue' : feature.color === 'green' ? 'green' : 'yellow'}-400 to-transparent opacity-60`}></div>
               <CardHeader className="pb-2">
                 <motion.div 
                   className={`w-14 h-14 ${featureColors[feature?.color].bg} rounded-xl flex items-center justify-center mb-4
@@ -169,13 +175,14 @@ const WhatNext = () => {
                   variants={iconVariants}
                   whileHover="hover"
                 >
-                  <feature.icon className={`w-7 h-7 ${featureColors[feature?.color].text}`} />
+                  <feature.icon className={`w-7 h-7 ${featureColors[feature?.color].text} ${isDarkMode ? 'opacity-90' : 'opacity-100'}`} strokeWidth={2} />
                 </motion.div>
                 <CardTitle className={`flex items-center gap-2 ${textColor} text-xl`}>
                   {feature.title}
                   <motion.span 
-                    className={`bg-opacity-10 ${isDarkMode ? 'bg-gray-400' : 'bg-gray-600'} px-2 py-1 rounded-full text-xs 
-                                flex items-center gap-1 ml-auto ${mutedTextColor} whitespace-nowrap`}
+                    className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 ml-auto
+                                ${isDarkMode ? 'bg-gray-700/50 text-gray-300' : 'bg-gray-200 text-gray-600'} 
+                                whitespace-nowrap`}
                     whileHover={{ scale: 1.05 }}
                   >
                     <Clock className="w-3 h-3" /> Coming Soon
@@ -200,13 +207,13 @@ const WhatNext = () => {
                 </motion.div>
               </CardContent>
               
-              {/* Gradient border effect */}
+              {/* Enhanced gradient border effect */}
               <motion.div 
                 className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                 initial={{ opacity: 0 }}
                 whileHover={{ opacity: 1 }}
               >
-                <div className={`absolute inset-0 rounded-lg border-2 border-${feature.color}-500/30`}></div>
+                <div className={`absolute inset-0 rounded-lg border-2 ${featureColors[feature.color].border}`}></div>
               </motion.div>
             </Card>
           </motion.div>
@@ -214,7 +221,7 @@ const WhatNext = () => {
       </motion.div>
 
       <motion.div 
-        className={`mt-12 text-center p-8 ${feedbackBgColor} rounded-2xl transition-colors duration-300 max-w-2xl mx-auto shadow-xl`}
+        className={`mt-12 text-center p-8 ${feedbackBgColor} rounded-2xl transition-colors duration-300 max-w-2xl mx-auto shadow-xl backdrop-blur-sm`}
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, delay: 0.4 }}
@@ -224,7 +231,7 @@ const WhatNext = () => {
           We'd love your feedback to help us prioritize our development roadmap.
         </p>
         <motion.div
-        onClick={() => window.open('/user/feedback', '_blank')}
+          onClick={() => window.open('/user/feedback', '_blank')}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}
         >

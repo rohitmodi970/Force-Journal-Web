@@ -72,17 +72,17 @@ const MainNavbar = () => {
       icon: 'HiChartPie',
       subItems: [
         {
-          name: 'Deep Analysis',
+          name: 'Emotional Quotient',
           href: '/user/analysis/advanced',
           icon: 'HiDocumentReport',
         },
         {
-          name: 'Entry Analysis',
+          name: 'Pattern Recognition',
           href: '/user/analysis/entries-analysis',
           icon: 'HiDocumentSearch',
         },
         {
-          name: 'Voice Analytics',
+          name: 'Tone & Energy',
           href: '/user/analysis/audio-analysis',
           icon: 'HiVolumeUp',
         },
