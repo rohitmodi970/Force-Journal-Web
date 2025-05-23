@@ -7,6 +7,7 @@ import JournalCalendar from "./JournalCalendar";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend,
 } from 'recharts';
+import ThemeSidebar from "../Navbar/ThemeSidebar";
 
 interface JournalGalleryProps {
   entries: JournalEntry[];
@@ -339,6 +340,7 @@ const JournalGallery: React.FC<JournalGalleryProps> = ({ entries }) => {
 
   return (
     <div className="max-w-5xl mx-auto transition-colors" style={{ color: elementColors.text }}>
+      <ThemeSidebar/>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl md:text-3xl font-bold">My Journal</h1>
         <div className="flex gap-2">
