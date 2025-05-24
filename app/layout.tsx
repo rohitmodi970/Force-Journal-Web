@@ -23,7 +23,7 @@ export default function RootLayout({
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-    
+    <meta name="google-site-verification" content="aBm-Kkg-k42EQZHBkxj88IBE54lhQij-xuCWSTojkg8" />
       </head>
       <body className={inter.className} suppressHydrationWarning>
         <Providers>

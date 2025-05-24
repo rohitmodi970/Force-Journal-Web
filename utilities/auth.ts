@@ -80,7 +80,7 @@ export const authOptions: NextAuthOptions = {
           authorization: {
             params: {
               scope: "openid email profile https://www.googleapis.com/auth/drive.file",
-              // prompt: "consent",
+              //  prompt: "select_account",   //-- Only show consent for new users or when additional permissions are needed or  // No prompt parameter = silent login for returning users
               access_type: "offline",
               response_type: "code",
               include_granted_scopes: "true"
